@@ -3,10 +3,12 @@ package did
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	mbase "github.com/multiformats/go-multibase"
 	varint "github.com/multiformats/go-varint"
+	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 const Prefix = "did:"
@@ -24,7 +26,12 @@ var MethodOffset = varint.UvarintSize(uint64(DIDCore))
 //
 // The underlying type is string, so DIDs are safe to compare with == and to use
 // as keys in maps.
-type DID string
+//
+// Note: this is not `type DID string` because cbor-gen does not recognise
+// MarshalCBOR or UnmarshalCBOR when type is not struct.
+type DID struct {
+	str string
+}
 
 func (d DID) DID() DID {
 	return d
@@ -32,14 +39,14 @@ func (d DID) DID() DID {
 
 // String formats the decentralized identity document (DID) as a string.
 func (d DID) String() string {
-	return string(d)
+	return d.str
 }
 
 func (d DID) MarshalJSON() ([]byte, error) {
-	if d == "" {
+	if d.str == "" {
 		return json.Marshal(nil)
 	}
-	return json.Marshal(d.String())
+	return json.Marshal(d.str)
 }
 
 func (d *DID) UnmarshalJSON(b []byte) error {
@@ -59,8 +66,29 @@ func (d *DID) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func (d DID) MarshalCBOR(w io.Writer) error {
+	b, err := Encode(d)
+	if err != nil {
+		return err
+	}
+	return cbg.WriteByteArray(w, b)
+}
+
+func (d *DID) UnmarshalCBOR(r io.Reader) error {
+	b, err := cbg.ReadByteArray(r, 32)
+	if err != nil {
+		return err
+	}
+	decoded, err := Decode(b)
+	if err != nil {
+		return err
+	}
+	*d = decoded
+	return nil
+}
+
 func Encode(d DID) ([]byte, error) {
-	str := string(d)
+	str := d.str
 	if !strings.HasPrefix(str, Prefix) {
 		return nil, fmt.Errorf("must start with 'did:'")
 	}
@@ -86,30 +114,30 @@ func Encode(d DID) ([]byte, error) {
 func Decode(bytes []byte) (DID, error) {
 	code, n, err := varint.FromUvarint(bytes)
 	if err != nil {
-		return "", err
+		return DID{}, err
 	}
 	switch code {
 	case Ed25519, RSA:
 		b58key, _ := mbase.Encode(mbase.Base58BTC, bytes)
-		return DID(KeyPrefix + b58key), nil
+		return DID{KeyPrefix + b58key}, nil
 	case DIDCore:
-		return DID(Prefix + string(bytes[n:])), nil
+		return DID{Prefix + string(bytes[n:])}, nil
 	}
-	return "", fmt.Errorf("unsupported DID encoding: 0x%x", code)
+	return DID{}, fmt.Errorf("unsupported DID encoding: 0x%x", code)
 }
 
 func Parse(str string) (DID, error) {
 	if !strings.HasPrefix(str, Prefix) {
-		return "", fmt.Errorf("must start with 'did:'")
+		return DID{}, fmt.Errorf("must start with 'did:'")
 	}
 	if strings.HasPrefix(str, KeyPrefix) {
 		code, _, err := mbase.Decode(str[len(KeyPrefix):])
 		if err != nil {
-			return "", err
+			return DID{}, err
 		}
 		if code != mbase.Base58BTC {
-			return "", fmt.Errorf("not Base58BTC encoded")
+			return DID{}, fmt.Errorf("not Base58BTC encoded")
 		}
 	}
-	return DID(str), nil
+	return DID{str}, nil
 }

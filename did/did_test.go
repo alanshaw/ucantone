@@ -54,7 +54,23 @@ func TestEquivalence(t *testing.T) {
 	d1, err := Parse("did:key:z6Mkod5Jr3yd5SC7UDueqK4dAAw5xYJYjksy722tA9Boxc4z")
 	require.NoError(t, err)
 
+	if d0 != d1 {
+		require.Fail(t, "DIDs were not equal")
+	}
+
 	require.Equal(t, d0, d1)
+}
+
+func TestMapKey(t *testing.T) {
+	d0, err := Parse("did:key:z6Mkod5Jr3yd5SC7UDueqK4dAAw5xYJYjksy722tA9Boxc4z")
+	require.NoError(t, err)
+
+	d1, err := Parse("did:key:z6Mkod5Jr3yd5SC7UDueqK4dAAw5xYJYjksy722tA9Boxc4z")
+	require.NoError(t, err)
+
+	m := map[DID]string{}
+	m[d0] = "test"
+	require.Equal(t, "test", m[d1])
 }
 
 func TestRoundtripJSON(t *testing.T) {

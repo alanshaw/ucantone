@@ -30,7 +30,7 @@ func (t *InvocationModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Iss (did.DID) (slice)
+	// t.Iss (did.DID) (struct)
 	if len("iss") > 8192 {
 		return xerrors.Errorf("Value in field \"iss\" was too long")
 	}
@@ -42,18 +42,9 @@ func (t *InvocationModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if len(t.Iss) > 2097152 {
-		return xerrors.Errorf("Byte array in field t.Iss was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Iss))); err != nil {
+	if err := t.Iss.MarshalCBOR(cw); err != nil {
 		return err
 	}
-
-	if _, err := cw.Write(t.Iss); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -98,27 +89,15 @@ func (t *InvocationModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Iss (did.DID) (slice)
+		// t.Iss (did.DID) (struct)
 		case "iss":
 
-			maj, extra, err = cr.ReadHeader()
-			if err != nil {
-				return err
-			}
+			{
 
-			if extra > 2097152 {
-				return fmt.Errorf("t.Iss: byte array too large (%d)", extra)
-			}
-			if maj != cbg.MajByteString {
-				return fmt.Errorf("expected byte array")
-			}
+				if err := t.Iss.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Iss: %w", err)
+				}
 
-			if extra > 0 {
-				t.Iss = make([]uint8, extra)
-			}
-
-			if _, err := io.ReadFull(cr, t.Iss); err != nil {
-				return err
 			}
 
 		default:
