@@ -10,36 +10,36 @@ Typically you'll just need a common varsig header:
 package main
 
 import (
-  "encoding/base64"
-  "fmt"
+	"encoding/base64"
+	"fmt"
 
-  "github.com/alanshaw/ucantone/varsig"
-  "github.com/alanshaw/ucantone/varsig/algoithm/ed25519"
-  "github.com/alanshaw/ucantone/varsig/common"
+	"github.com/alanshaw/ucantone/varsig"
+	"github.com/alanshaw/ucantone/varsig/algoithm/ed25519"
+	"github.com/alanshaw/ucantone/varsig/common"
 	"github.com/alanshaw/ucantone/varsig/payload/dagcbor"
 )
 
 func main() {
-  data, err := varsig.Encode(common.Ed25519DagCbor)
-  if err != nil {
-    panic(err)
-  }
+	data, err := varsig.Encode(common.Ed25519DagCbor)
+	if err != nil {
+		panic(err)
+	}
 
-  fmt.Println(base64.RawStdEncoding.EncodeToString(data)) // NAHtAe0BE3E
+	fmt.Println(base64.RawStdEncoding.EncodeToString(data)) // NAHtAe0BE3E
 
-  h, err := varsig.Decode(data)
-  if err != nil {
-    panic(err)
-  }
+	h, err := varsig.Decode(data)
+	if err != nil {
+		panic(err)
+	}
 
-  sigAlgo := h.SignatureAlgorithm().(ed25519.SignatureAlgorithm)
+	sigAlgo := h.SignatureAlgorithm().(ed25519.SignatureAlgorithm)
 
-  fmt.Println("Signature Algorithm:")
+	fmt.Println("Signature Algorithm:")
 	fmt.Printf("\tCode:\t0x%02x", sigAlgo.Code())          // Code:   0xed
 	fmt.Printf("\tCurve:\t0x%02x", sigAlgo.Curve())        // Curve:  0xed
 	fmt.Printf("\tHash:\t0x%02x", sigAlgo.HashAlgorithm()) // Hash:   0x13
 
-  payloadEnc := h.PayloadEncoding().(dagcbor.PayloadEncoding)
+	payloadEnc := h.PayloadEncoding().(dagcbor.PayloadEncoding)
 
 	fmt.Println("Payload Encoing:")
 	fmt.Printf("\tCode:\t0x%02x", payloadEnc.Code())       // Code:   0x71
