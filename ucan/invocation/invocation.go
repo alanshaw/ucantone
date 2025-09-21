@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/alanshaw/ucantone/ucan"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	"github.com/alanshaw/ucantone/varsig"
+	"github.com/alanshaw/ucantone/varsig/algoithm/ed25519"
 	"github.com/alanshaw/ucantone/varsig/common"
 )
 
@@ -39,7 +41,10 @@ func Decode(data []byte) (*Invocation, error) {
 	return &Invocation{model: &model}, nil
 }
 
-func Invoke() (*Invocation, error) {
+func Invoke(iss ucan.Signer) (*Invocation, error) {
+	if iss.SignatureCode() != ed25519.Code {
+		return nil, fmt.Errorf("unknown signature code: %d", iss.SignatureCode())
+	}
 	h, err := varsig.Encode(common.Ed25519DagCbor)
 	if err != nil {
 		return nil, fmt.Errorf("encoding varsig header: %w", err)

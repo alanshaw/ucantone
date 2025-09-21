@@ -8,6 +8,7 @@ import (
 	"math"
 	"sort"
 
+	did "github.com/alanshaw/ucantone/did"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
@@ -26,8 +27,91 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{161}); err != nil {
+	if _, err := cw.Write([]byte{171}); err != nil {
 		return err
+	}
+
+	// t.Aud (did.DID) (struct)
+	if len("aud") > 8192 {
+		return xerrors.Errorf("Value in field \"aud\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("aud"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("aud")); err != nil {
+		return err
+	}
+
+	if err := t.Aud.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Cmd (string) (string)
+	if len("cmd") > 8192 {
+		return xerrors.Errorf("Value in field \"cmd\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("cmd"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("cmd")); err != nil {
+		return err
+	}
+
+	if len(t.Cmd) > 8192 {
+		return xerrors.Errorf("Value in field t.Cmd was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.Cmd))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string(t.Cmd)); err != nil {
+		return err
+	}
+
+	// t.Exp (uint64) (uint64)
+	if len("exp") > 8192 {
+		return xerrors.Errorf("Value in field \"exp\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("exp"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("exp")); err != nil {
+		return err
+	}
+
+	if t.Exp == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(*t.Exp)); err != nil {
+			return err
+		}
+	}
+
+	// t.Iat (uint64) (uint64)
+	if len("iat") > 8192 {
+		return xerrors.Errorf("Value in field \"iat\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("iat"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("iat")); err != nil {
+		return err
+	}
+
+	if t.Iat == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(*t.Iat)); err != nil {
+			return err
+		}
 	}
 
 	// t.Iss (did.DID) (struct)
@@ -45,6 +129,128 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 	if err := t.Iss.MarshalCBOR(cw); err != nil {
 		return err
 	}
+
+	// t.Prf ([]cid.Cid) (slice)
+	if len("prf") > 8192 {
+		return xerrors.Errorf("Value in field \"prf\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("prf"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("prf")); err != nil {
+		return err
+	}
+
+	if len(t.Prf) > 8192 {
+		return xerrors.Errorf("Slice value in field t.Prf was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Prf))); err != nil {
+		return err
+	}
+	for _, v := range t.Prf {
+
+		if err := cbg.WriteCid(cw, v); err != nil {
+			return xerrors.Errorf("failed to write cid field v: %w", err)
+		}
+
+	}
+
+	// t.Sub (did.DID) (struct)
+	if len("sub") > 8192 {
+		return xerrors.Errorf("Value in field \"sub\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("sub"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("sub")); err != nil {
+		return err
+	}
+
+	if err := t.Sub.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Args (datamodel.StructModel) (struct)
+	if len("args") > 8192 {
+		return xerrors.Errorf("Value in field \"args\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("args"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("args")); err != nil {
+		return err
+	}
+
+	if err := t.Args.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Meta (datamodel.StructModel) (struct)
+	if len("meta") > 8192 {
+		return xerrors.Errorf("Value in field \"meta\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("meta"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("meta")); err != nil {
+		return err
+	}
+
+	if err := t.Meta.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Cause (cid.Cid) (struct)
+	if len("cause") > 8192 {
+		return xerrors.Errorf("Value in field \"cause\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("cause"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("cause")); err != nil {
+		return err
+	}
+
+	if t.Cause == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Cause); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Cause: %w", err)
+		}
+	}
+
+	// t.Nonce ([]uint8) (slice)
+	if len("nonce") > 8192 {
+		return xerrors.Errorf("Value in field \"nonce\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("nonce"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("nonce")); err != nil {
+		return err
+	}
+
+	if len(t.Nonce) > 2097152 {
+		return xerrors.Errorf("Byte array in field t.Nonce was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Nonce))); err != nil {
+		return err
+	}
+
+	if _, err := cw.Write(t.Nonce); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -73,7 +279,7 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 
 	n := extra
 
-	nameBuf := make([]byte, 3)
+	nameBuf := make([]byte, 5)
 	for i := uint64(0); i < n; i++ {
 		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
 		if err != nil {
@@ -89,7 +295,88 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Iss (did.DID) (struct)
+		// t.Aud (did.DID) (struct)
+		case "aud":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.Aud = new(did.DID)
+					if err := t.Aud.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.Aud pointer: %w", err)
+					}
+				}
+
+			}
+			// t.Cmd (string) (string)
+		case "cmd":
+
+			{
+				sval, err := cbg.ReadStringWithMax(cr, 8192)
+				if err != nil {
+					return err
+				}
+
+				t.Cmd = string(sval)
+			}
+			// t.Exp (uint64) (uint64)
+		case "exp":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					maj, extra, err = cr.ReadHeader()
+					if err != nil {
+						return err
+					}
+					if maj != cbg.MajUnsignedInt {
+						return fmt.Errorf("wrong type for uint64 field")
+					}
+					typed := uint64(extra)
+					t.Exp = &typed
+				}
+
+			}
+			// t.Iat (uint64) (uint64)
+		case "iat":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					maj, extra, err = cr.ReadHeader()
+					if err != nil {
+						return err
+					}
+					if maj != cbg.MajUnsignedInt {
+						return fmt.Errorf("wrong type for uint64 field")
+					}
+					typed := uint64(extra)
+					t.Iat = &typed
+				}
+
+			}
+			// t.Iss (did.DID) (struct)
 		case "iss":
 
 			{
@@ -98,6 +385,143 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 					return xerrors.Errorf("unmarshaling t.Iss: %w", err)
 				}
 
+			}
+			// t.Prf ([]cid.Cid) (slice)
+		case "prf":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 8192 {
+				return fmt.Errorf("t.Prf: array too large (%d)", extra)
+			}
+
+			if maj != cbg.MajArray {
+				return fmt.Errorf("expected cbor array")
+			}
+
+			if extra > 0 {
+				t.Prf = make([]cid.Cid, extra)
+			}
+
+			for i := 0; i < int(extra); i++ {
+				{
+					var maj byte
+					var extra uint64
+					var err error
+					_ = maj
+					_ = extra
+					_ = err
+
+					{
+
+						c, err := cbg.ReadCid(cr)
+						if err != nil {
+							return xerrors.Errorf("failed to read cid field t.Prf[i]: %w", err)
+						}
+
+						t.Prf[i] = c
+
+					}
+
+				}
+			}
+			// t.Sub (did.DID) (struct)
+		case "sub":
+
+			{
+
+				if err := t.Sub.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Sub: %w", err)
+				}
+
+			}
+			// t.Args (datamodel.StructModel) (struct)
+		case "args":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.Args = new(StructModel)
+					if err := t.Args.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.Args pointer: %w", err)
+					}
+				}
+
+			}
+			// t.Meta (datamodel.StructModel) (struct)
+		case "meta":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.Meta = new(StructModel)
+					if err := t.Meta.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.Meta pointer: %w", err)
+					}
+				}
+
+			}
+			// t.Cause (cid.Cid) (struct)
+		case "cause":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Cause: %w", err)
+					}
+
+					t.Cause = &c
+				}
+
+			}
+			// t.Nonce ([]uint8) (slice)
+		case "nonce":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 2097152 {
+				return fmt.Errorf("t.Nonce: byte array too large (%d)", extra)
+			}
+			if maj != cbg.MajByteString {
+				return fmt.Errorf("expected byte array")
+			}
+
+			if extra > 0 {
+				t.Nonce = make([]uint8, extra)
+			}
+
+			if _, err := io.ReadFull(cr, t.Nonce); err != nil {
+				return err
 			}
 
 		default:
