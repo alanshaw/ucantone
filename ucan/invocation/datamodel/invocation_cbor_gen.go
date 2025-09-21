@@ -18,7 +18,7 @@ var _ = cid.Undef
 var _ = math.E
 var _ = sort.Sort
 
-func (t *InvocationModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
+func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
@@ -48,8 +48,8 @@ func (t *InvocationModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 	return nil
 }
 
-func (t *InvocationModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
-	*t = InvocationModel1_0_0_rc1{}
+func (t *TokenPayloadModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = TokenPayloadModel1_0_0_rc1{}
 
 	cr := cbg.NewCborReader(r)
 
@@ -68,7 +68,7 @@ func (t *InvocationModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 	}
 
 	if extra > cbg.MaxLength {
-		return fmt.Errorf("InvocationModel1_0_0_rc1: map struct too large (%d)", extra)
+		return fmt.Errorf("TokenPayloadModel1_0_0_rc1: map struct too large (%d)", extra)
 	}
 
 	n := extra
@@ -110,7 +110,7 @@ func (t *InvocationModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 
 	return nil
 }
-func (t *InvocationModel) MarshalCBOR(w io.Writer) error {
+func (t *SigPayloadModel) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
@@ -119,7 +119,7 @@ func (t *InvocationModel) MarshalCBOR(w io.Writer) error {
 	cw := cbg.NewCborWriter(w)
 	fieldCount := 2
 
-	if t.Payload1_0_0_rc1 == nil {
+	if t.TokenPayload1_0_0_rc1 == nil {
 		fieldCount--
 	}
 
@@ -151,8 +151,8 @@ func (t *InvocationModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Payload1_0_0_rc1 (datamodel.InvocationModel1_0_0_rc1) (struct)
-	if t.Payload1_0_0_rc1 != nil {
+	// t.TokenPayload1_0_0_rc1 (datamodel.TokenPayloadModel1_0_0_rc1) (struct)
+	if t.TokenPayload1_0_0_rc1 != nil {
 
 		if len("ucan/inv@1.0.0-rc.1") > 8192 {
 			return xerrors.Errorf("Value in field \"ucan/inv@1.0.0-rc.1\" was too long")
@@ -165,15 +165,15 @@ func (t *InvocationModel) MarshalCBOR(w io.Writer) error {
 			return err
 		}
 
-		if err := t.Payload1_0_0_rc1.MarshalCBOR(cw); err != nil {
+		if err := t.TokenPayload1_0_0_rc1.MarshalCBOR(cw); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (t *InvocationModel) UnmarshalCBOR(r io.Reader) (err error) {
-	*t = InvocationModel{}
+func (t *SigPayloadModel) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = SigPayloadModel{}
 
 	cr := cbg.NewCborReader(r)
 
@@ -192,7 +192,7 @@ func (t *InvocationModel) UnmarshalCBOR(r io.Reader) (err error) {
 	}
 
 	if extra > cbg.MaxLength {
-		return fmt.Errorf("InvocationModel: map struct too large (%d)", extra)
+		return fmt.Errorf("SigPayloadModel: map struct too large (%d)", extra)
 	}
 
 	n := extra
@@ -236,7 +236,7 @@ func (t *InvocationModel) UnmarshalCBOR(r io.Reader) (err error) {
 				return err
 			}
 
-			// t.Payload1_0_0_rc1 (datamodel.InvocationModel1_0_0_rc1) (struct)
+			// t.TokenPayload1_0_0_rc1 (datamodel.TokenPayloadModel1_0_0_rc1) (struct)
 		case "ucan/inv@1.0.0-rc.1":
 
 			{
@@ -249,9 +249,9 @@ func (t *InvocationModel) UnmarshalCBOR(r io.Reader) (err error) {
 					if err := cr.UnreadByte(); err != nil {
 						return err
 					}
-					t.Payload1_0_0_rc1 = new(InvocationModel1_0_0_rc1)
-					if err := t.Payload1_0_0_rc1.UnmarshalCBOR(cr); err != nil {
-						return xerrors.Errorf("unmarshaling t.Payload1_0_0_rc1 pointer: %w", err)
+					t.TokenPayload1_0_0_rc1 = new(TokenPayloadModel1_0_0_rc1)
+					if err := t.TokenPayload1_0_0_rc1.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.TokenPayload1_0_0_rc1 pointer: %w", err)
 					}
 				}
 

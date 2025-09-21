@@ -75,7 +75,7 @@ func (d DID) MarshalCBOR(w io.Writer) error {
 }
 
 func (d *DID) UnmarshalCBOR(r io.Reader) error {
-	b, err := cbg.ReadByteArray(r, 32)
+	b, err := cbg.ReadByteArray(r, 2048)
 	if err != nil {
 		return err
 	}

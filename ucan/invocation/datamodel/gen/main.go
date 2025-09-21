@@ -12,8 +12,8 @@ func main() {
 		panic(err)
 	}
 	if err := cbg.WriteMapEncodersToFile("../invocation_cbor_gen.go", "datamodel",
-		idm.InvocationModel1_0_0_rc1{},
-		idm.InvocationModel{},
+		idm.TokenPayloadModel1_0_0_rc1{},
+		idm.SigPayloadModel{},
 	); err != nil {
 		panic(err)
 	}
