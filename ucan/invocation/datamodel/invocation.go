@@ -10,6 +10,8 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
+// CBORMarshalable is an interface describing a type that allows both
+// marshalling to CBOR as well as unmarshalling from CBOR.
 type CBORMarshalable interface {
 	cbg.CBORMarshaler
 	cbg.CBORUnmarshaler
@@ -37,11 +39,11 @@ type TokenPayloadModel1_0_0_rc1 struct {
 	// Issuer DID (sender).
 	Iss did.DID `cborgen:"iss"`
 	// The Subject being invoked.
-	Sub did.DID `cborgen:"sub"`
+	Sub ucan.Subject `cborgen:"sub"`
 	// The DID of the intended Executor if different from the Subject.
 	Aud *did.DID `cborgen:"aud"`
 	// The command to invoke.
-	Cmd string `cborgen:"cmd"`
+	Cmd ucan.Command `cborgen:"cmd"`
 	// The command arguments.
 	Args *ArgsModel `cborgen:"args"`
 	// Delegations that prove the chain of authority
@@ -49,7 +51,7 @@ type TokenPayloadModel1_0_0_rc1 struct {
 	// Arbitrary metadata.
 	Meta *MetaModel `cborgen:"meta"`
 	// A unique, random nonce.
-	Nonce []byte `cborgen:"nonce"`
+	Nonce ucan.Nonce `cborgen:"nonce"`
 	// The timestamp at which the Invocation becomes invalid.
 	Exp *ucan.UTCUnixTimestamp `cborgen:"exp"`
 	// The timestamp at which the Invocation was created

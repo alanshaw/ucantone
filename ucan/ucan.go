@@ -2,32 +2,32 @@ package ucan
 
 import (
 	"crypto"
-	"encoding/json"
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ucan/crypto/signature"
 )
 
-// Resorce is a string that represents resource a UCAN holder can act upon.
-// It MUST have format `${string}:${string}`
-type Resource = string
+// The Principal who's authority is delegated or invoked. A Subject represents
+// the Agent that a capability is for. A Subject MUST be referenced by DID.
+//
+// https://github.com/ucan-wg/spec/blob/main/README.md#subject
+type Subject = did.DID
 
-// Ability is a string that represents some action that a UCAN holder can do.
-// It MUST have format `${string}/${string}` | "*"
-type Ability = string
-
-// UnknownCapability is a capability whose Nb type is unknown
-type UnknownCapability interface {
-	json.Marshaler
-	Can() Ability
-	With() Resource
-}
+// Commands are concrete messages ("verbs") that MUST be unambiguously
+// interpretable by the Subject of a UCAN.
+//
+// Commands MUST be lowercase, and begin with a slash (/). Segments MUST be
+// separated by a slash. A trailing slash MUST NOT be present.
+//
+// https://github.com/ucan-wg/spec/blob/main/README.md#command
+type Command = string
 
 // Capability represents an ability that a UCAN holder can perform with some
 // resource.
-type Capability[Caveats any] interface {
-	UnknownCapability
-	Nb() Caveats
+type Capability interface {
+	Subject() Subject
+	Command() Command
+	Policy() []string // TODO: define properly
 }
 
 // Principal is a DID object representation with a `did` accessor for the DID.
@@ -35,21 +35,11 @@ type Principal interface {
 	DID() did.DID
 }
 
-// Version of the UCAN spec used to produce a specific UCAN.
-// It MUST have format `${number}.${number}.${number}`
-type Version = string
-
 // UTCUnixTimestamp is a timestamp in seconds since the Unix epoch.
 type UTCUnixTimestamp = uint64
 
-// https://github.com/ucan-wg/spec/#324-nonce
-type Nonce = string
-
-// A map of arbitrary facts and proofs of knowledge. The enclosed data MUST
-// be self-evident and externally verifiable. It MAY include information such
-// as hash preimages, server challenges, a Merkle proof, dictionary data, etc.
-// See https://github.com/ucan-wg/spec/#325-facts
-type Fact = map[string]any
+// https://github.com/ucan-wg/spec/blob/main/README.md#nonce
+type Nonce = []byte
 
 // Signer is an entity that can sign UCANs with keys from a `Principal`.
 type Signer interface {

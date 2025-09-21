@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ucan"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	"github.com/alanshaw/ucantone/varsig"
@@ -17,6 +18,22 @@ type Invocation struct {
 
 func (inv *Invocation) Model() *idm.EnvelopeModel {
 	return inv.model
+}
+
+func (inv *Invocation) Issuer() did.DID {
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Iss
+}
+
+func (inv *Invocation) Subject() did.DID {
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Sub
+}
+
+func (inv *Invocation) Audience() *did.DID {
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Aud
+}
+
+func (inv *Invocation) Command() string {
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Cmd
 }
 
 func Encode(inv *Invocation) ([]byte, error) {
