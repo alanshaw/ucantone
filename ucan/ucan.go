@@ -2,6 +2,7 @@ package ucan
 
 import (
 	"github.com/alanshaw/ucantone/did"
+	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/crypto"
 	"github.com/alanshaw/ucantone/ucan/crypto/signature"
 	"github.com/alanshaw/ucantone/varsig"
@@ -21,7 +22,7 @@ type Subject = did.DID
 // separated by a slash. A trailing slash MUST NOT be present.
 //
 // https://github.com/ucan-wg/spec/blob/main/README.md#command
-type Command = string
+type Command = command.Command
 
 // Principal is a DID object representation with a `did` accessor for the DID.
 type Principal interface {
@@ -72,14 +73,10 @@ type UCAN interface {
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#issuer--audience
 	Audience() Principal
-	// The command to invoke.
+	// The command to eventually invoke.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#command
 	Command() Command
-	// The command arguments.
-	Args() any
-	// Delegations that prove the chain of authority.
-	Proofs() []Link
 	// Arbitrary metadata.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#metadata
@@ -89,6 +86,8 @@ type UCAN interface {
 	// https://github.com/ucan-wg/spec/blob/main/README.md#nonce
 	Nonce() Nonce
 	// The timestamp at which the invocation becomes invalid.
+	//
+	// https://github.com/ucan-wg/spec/blob/main/README.md#time-bounds
 	Expiration() *UTCUnixTimestamp
 	// Signature of the UCAN issuer.
 	Signature() Signature
@@ -98,7 +97,7 @@ type UCAN interface {
 //
 // https://github.com/ucan-wg/delegation/blob/main/README.md#capability
 type Capability interface {
-	// The Subject that this capability is about.
+	// The subject that this capability is about.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#subject
 	Subject() Principal
@@ -114,14 +113,45 @@ type Capability interface {
 }
 
 // UCAN Delegation is a delegable certificate capability system with
-// runtime-extensibility, ad hoc conditions, cacheability, and focused on ease
+// runtime-extensibility, ad-hoc conditions, cacheability, and focused on ease
 // of use and interoperability. Delegations act as a proofs for UCAN
-// Invocations.
+// invocations.
 //
 // https://github.com/ucan-wg/delegation/blob/main/README.md
 type Delegation interface {
-	UCAN
 	Capability
+	UCAN
+	// NotBefore is the time in seconds since the Unix epoch that the UCAN
+	// becomes valid.
+	//
+	// https://github.com/ucan-wg/spec/blob/main/README.md#time-bounds
+	NotBefore() *UTCUnixTimestamp
+}
+
+// A Task is the subset of Invocation fields that uniquely determine the work to
+// be performed.
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md#task
+type Task interface {
+	// A concrete, dispatchable message that can be sent to the Executor.
+	//
+	// https://github.com/ucan-wg/invocation/blob/main/README.md#command
+	Command() Command
+	// The subject being invoked.
+	//
+	// https://github.com/ucan-wg/invocation/blob/main/README.md#subject
+	Subject() Principal
+	// Parameters expected by the command.
+	//
+	// https://github.com/ucan-wg/invocation/blob/main/README.md#arguments
+	Arguments() any
+	// A unique, random nonce. It ensures that multiple (non-idempotent)
+	// invocations are unique. The nonce SHOULD be empty (0x) for commands that
+	// are idempotent (such as deterministic Wasm modules or standards-abiding
+	// HTTP PUT requests).
+	//
+	// https://github.com/ucan-wg/invocation/blob/main/README.md#nonce
+	Nonce() Nonce
 }
 
 // UCAN Invocation defines a format for expressing the intention to execute
@@ -129,15 +159,24 @@ type Delegation interface {
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md
 type Invocation interface {
+	Task
 	UCAN
+	// Delegations that prove the chain of authority.
+	//
+	// https://github.com/ucan-wg/invocation/blob/main/README.md#proofs
+	Proofs() []Link
 	// The timestamp at which the invocation was created.
+	//
+	// https://github.com/ucan-wg/invocation/blob/main/README.md#issued-at
 	IssuedAt() *UTCUnixTimestamp
 	// CID of the receipt that enqueued the Task.
+	//
+	// https://github.com/ucan-wg/invocation/blob/main/README.md#cause
 	Cause() *Link
 }
 
 type Receipt interface {
-	Invocation
+	Invocation // TODO
 }
 
 // Container is a format for transmitting one or more UCAN tokens as bytes,
@@ -145,9 +184,15 @@ type Receipt interface {
 //
 // https://github.com/ucan-wg/container/blob/main/Readme.md
 type Container interface {
+	// Invocations the container contains.
 	Invocations() []Invocation
+	// Delegations the container contains.
 	Delegations() []Delegation
+	// Delegation retrieves a delegation from the container by it's CID.
 	Delegation(Link) (Delegation, error)
+	// Receipts the container contains.
 	Receipts() []Receipt
+	// Receipt retrieves a receipt from the container by the CID of a [Task] that
+	// was executed.
 	Receipt(Link) (Receipt, error)
 }

@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	did "github.com/alanshaw/ucantone/did"
+	command "github.com/alanshaw/ucantone/ucan/command"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
@@ -47,7 +48,7 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Cmd (string) (string)
+	// t.Cmd (command.Command) (string)
 	if len("cmd") > 8192 {
 		return xerrors.Errorf("Value in field \"cmd\" was too long")
 	}
@@ -315,7 +316,7 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.Cmd (string) (string)
+			// t.Cmd (command.Command) (string)
 		case "cmd":
 
 			{
@@ -324,7 +325,7 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 					return err
 				}
 
-				t.Cmd = string(sval)
+				t.Cmd = command.Command(sval)
 			}
 			// t.Exp (uint64) (uint64)
 		case "exp":

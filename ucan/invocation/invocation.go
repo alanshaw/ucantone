@@ -19,54 +19,93 @@ type Invocation struct {
 	model *idm.EnvelopeModel
 }
 
-func (inv *Invocation) Args() any {
-	panic("unimplemented")
+// Parameters expected by the command.
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md#arguments
+func (inv *Invocation) Arguments() any {
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Args
 }
 
+// The DID of the intended Executor if different from the Subject.
+//
+// https://github.com/ucan-wg/spec/blob/main/README.md#issuer--audience
 func (inv *Invocation) Audience() ucan.Principal {
 	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Aud
 }
 
+// A provenance claim describing which receipt requested it.
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md#cause
 func (inv *Invocation) Cause() *cid.Cid {
-	panic("unimplemented")
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Cause
 }
 
+// The command to invoke.
+//
+// https://github.com/ucan-wg/spec/blob/main/README.md#command
 func (inv *Invocation) Command() ucan.Command {
 	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Cmd
 }
 
+// The timestamp at which the invocation becomes invalid.
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md#expiration
 func (inv *Invocation) Expiration() *ucan.UTCUnixTimestamp {
-	panic("unimplemented")
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Exp
 }
 
+// An issuance timestamp.
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md#issued-at
 func (inv *Invocation) IssuedAt() *ucan.UTCUnixTimestamp {
-	panic("unimplemented")
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Iat
 }
 
+// Issuer DID (sender).
+//
+// https://github.com/ucan-wg/spec/blob/main/README.md#issuer--audience
 func (inv *Invocation) Issuer() ucan.Principal {
 	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Iss
 }
 
+// Arbitrary metadata or extensible fields.
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md#metadata
 func (inv *Invocation) Metadata() any {
-	panic("unimplemented")
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Meta
 }
 
+// The datamodel this invocation is built from.
 func (inv *Invocation) Model() *idm.EnvelopeModel {
 	return inv.model
 }
 
+// A unique, random nonce. It ensures that multiple (non-idempotent) invocations
+// are unique. The nonce SHOULD be empty (0x) for Commands that are idempotent
+// (such as deterministic Wasm modules or standards-abiding HTTP PUT requests).
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md#nonce
 func (inv *Invocation) Nonce() ucan.Nonce {
-	panic("unimplemented")
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Nonce
 }
 
+// The path of authority from the subject to the invoker.
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md#proofs
 func (inv *Invocation) Proofs() []cid.Cid {
-	panic("unimplemented")
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Prf
 }
 
+// The signature over the payload.
+//
+// https://github.com/ucan-wg/spec/blob/main/README.md#envelope
 func (inv *Invocation) Signature() ucan.Signature {
 	return inv.sig
 }
 
+// The Subject being invoked.
+//
+// https://github.com/ucan-wg/spec/blob/main/README.md#subject
 func (inv *Invocation) Subject() ucan.Principal {
 	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Sub
 }
@@ -88,8 +127,8 @@ func Encode(inv ucan.Invocation) ([]byte, error) {
 			aud = &a
 		}
 		var args *idm.ArgsModel
-		if inv.Args() != nil {
-			if a, ok := inv.Args().(idm.CBORMarshalable); !ok {
+		if inv.Arguments() != nil {
+			if a, ok := inv.Arguments().(idm.CBORMarshalable); !ok {
 				return nil, fmt.Errorf("invocation args do not implement CBOR marshalable")
 			} else {
 				args = &idm.ArgsModel{Value: a}

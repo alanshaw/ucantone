@@ -49,7 +49,7 @@ func (c *Container) Receipts() []ucan.Receipt {
 	return c.rcpts
 }
 
-func (c *Container) Receipt(about cid.Cid) (ucan.Invocation, error) {
+func (c *Container) Receipt(about cid.Cid) (ucan.Receipt, error) {
 	for _, inv := range c.invs {
 		if inv.Command() == "/ucan/assert" {
 			// TODO: inspect inv.Args to see if `about` field matches
