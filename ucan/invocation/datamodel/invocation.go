@@ -46,17 +46,17 @@ type TokenPayloadModel1_0_0_rc1 struct {
 	Cmd ucan.Command `cborgen:"cmd"`
 	// The command arguments.
 	Args *ArgsModel `cborgen:"args"`
-	// Delegations that prove the chain of authority
+	// Delegations that prove the chain of authority.
 	Prf []cid.Cid `cborgen:"prf"`
 	// Arbitrary metadata.
 	Meta *MetaModel `cborgen:"meta"`
 	// A unique, random nonce.
 	Nonce ucan.Nonce `cborgen:"nonce"`
-	// The timestamp at which the Invocation becomes invalid.
+	// The timestamp at which the invocation becomes invalid.
 	Exp *ucan.UTCUnixTimestamp `cborgen:"exp"`
-	// The timestamp at which the Invocation was created
+	// The timestamp at which the invocation was created.
 	Iat *ucan.UTCUnixTimestamp `cborgen:"iat"`
-	// An OPTIONAL CID of the Receipt that enqueued the Task.
+	// CID of the receipt that enqueued the Task.
 	Cause *cid.Cid `cborgen:"cause"`
 }
 
