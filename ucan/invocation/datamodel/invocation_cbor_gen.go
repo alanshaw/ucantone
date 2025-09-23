@@ -27,25 +27,45 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 	}
 
 	cw := cbg.NewCborWriter(w)
+	fieldCount := 11
 
-	if _, err := cw.Write([]byte{171}); err != nil {
+	if t.Aud == nil {
+		fieldCount--
+	}
+
+	if t.Meta == nil {
+		fieldCount--
+	}
+
+	if t.Iat == nil {
+		fieldCount--
+	}
+
+	if t.Cause == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
 		return err
 	}
 
 	// t.Aud (did.DID) (struct)
-	if len("aud") > 8192 {
-		return xerrors.Errorf("Value in field \"aud\" was too long")
-	}
+	if t.Aud != nil {
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("aud"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("aud")); err != nil {
-		return err
-	}
+		if len("aud") > 8192 {
+			return xerrors.Errorf("Value in field \"aud\" was too long")
+		}
 
-	if err := t.Aud.MarshalCBOR(cw); err != nil {
-		return err
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("aud"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("aud")); err != nil {
+			return err
+		}
+
+		if err := t.Aud.MarshalCBOR(cw); err != nil {
+			return err
+		}
 	}
 
 	// t.Cmd (command.Command) (string)
@@ -94,25 +114,29 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.Iat (uint64) (uint64)
-	if len("iat") > 8192 {
-		return xerrors.Errorf("Value in field \"iat\" was too long")
-	}
+	if t.Iat != nil {
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("iat"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("iat")); err != nil {
-		return err
-	}
+		if len("iat") > 8192 {
+			return xerrors.Errorf("Value in field \"iat\" was too long")
+		}
 
-	if t.Iat == nil {
-		if _, err := cw.Write(cbg.CborNull); err != nil {
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("iat"))); err != nil {
 			return err
 		}
-	} else {
-		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(*t.Iat)); err != nil {
+		if _, err := cw.WriteString(string("iat")); err != nil {
 			return err
 		}
+
+		if t.Iat == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(*t.Iat)); err != nil {
+				return err
+			}
+		}
+
 	}
 
 	// t.Iss (did.DID) (struct)
@@ -191,41 +215,48 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.Meta (datamodel.StructModel) (struct)
-	if len("meta") > 8192 {
-		return xerrors.Errorf("Value in field \"meta\" was too long")
-	}
+	if t.Meta != nil {
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("meta"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("meta")); err != nil {
-		return err
-	}
+		if len("meta") > 8192 {
+			return xerrors.Errorf("Value in field \"meta\" was too long")
+		}
 
-	if err := t.Meta.MarshalCBOR(cw); err != nil {
-		return err
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("meta"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("meta")); err != nil {
+			return err
+		}
+
+		if err := t.Meta.MarshalCBOR(cw); err != nil {
+			return err
+		}
 	}
 
 	// t.Cause (cid.Cid) (struct)
-	if len("cause") > 8192 {
-		return xerrors.Errorf("Value in field \"cause\" was too long")
-	}
+	if t.Cause != nil {
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("cause"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("cause")); err != nil {
-		return err
-	}
+		if len("cause") > 8192 {
+			return xerrors.Errorf("Value in field \"cause\" was too long")
+		}
 
-	if t.Cause == nil {
-		if _, err := cw.Write(cbg.CborNull); err != nil {
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("cause"))); err != nil {
 			return err
 		}
-	} else {
-		if err := cbg.WriteCid(cw, *t.Cause); err != nil {
-			return xerrors.Errorf("failed to write cid field t.Cause: %w", err)
+		if _, err := cw.WriteString(string("cause")); err != nil {
+			return err
 		}
+
+		if t.Cause == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if err := cbg.WriteCid(cw, *t.Cause); err != nil {
+				return xerrors.Errorf("failed to write cid field t.Cause: %w", err)
+			}
+		}
+
 	}
 
 	// t.Nonce ([]uint8) (slice)
@@ -444,18 +475,8 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 
 			{
 
-				b, err := cr.ReadByte()
-				if err != nil {
-					return err
-				}
-				if b != cbg.CborNull[0] {
-					if err := cr.UnreadByte(); err != nil {
-						return err
-					}
-					t.Args = new(StructModel)
-					if err := t.Args.UnmarshalCBOR(cr); err != nil {
-						return xerrors.Errorf("unmarshaling t.Args pointer: %w", err)
-					}
+				if err := t.Args.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Args: %w", err)
 				}
 
 			}

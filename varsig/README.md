@@ -14,7 +14,7 @@ import (
 	"fmt"
 
 	"github.com/alanshaw/ucantone/varsig"
-	"github.com/alanshaw/ucantone/varsig/algoithm/ed25519"
+	"github.com/alanshaw/ucantone/varsig/algorithm/ed25519"
 	"github.com/alanshaw/ucantone/varsig/common"
 	"github.com/alanshaw/ucantone/varsig/payload/dagcbor"
 )

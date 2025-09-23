@@ -9,7 +9,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/crypto/signature"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	"github.com/alanshaw/ucantone/varsig"
-	"github.com/alanshaw/ucantone/varsig/algoithm/ed25519"
+	"github.com/alanshaw/ucantone/varsig/algorithm/ed25519"
 	"github.com/alanshaw/ucantone/varsig/common"
 	cid "github.com/ipfs/go-cid"
 )
@@ -126,12 +126,12 @@ func Encode(inv ucan.Invocation) ([]byte, error) {
 			a := inv.Audience().DID()
 			aud = &a
 		}
-		var args *idm.ArgsModel
+		var args idm.ArgsModel
 		if inv.Arguments() != nil {
 			if a, ok := inv.Arguments().(idm.CBORMarshalable); !ok {
 				return nil, fmt.Errorf("invocation args do not implement CBOR marshalable")
 			} else {
-				args = &idm.ArgsModel{Value: a}
+				args = idm.ArgsModel{Value: a}
 			}
 		}
 		var meta *idm.MetaModel
@@ -139,7 +139,7 @@ func Encode(inv ucan.Invocation) ([]byte, error) {
 			if a, ok := inv.Metadata().(idm.CBORMarshalable); !ok {
 				return nil, fmt.Errorf("invocation args do not implement CBOR marshalable")
 			} else {
-				args = &idm.MetaModel{Value: a}
+				meta = &idm.MetaModel{Value: a}
 			}
 		}
 

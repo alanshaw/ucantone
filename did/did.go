@@ -90,6 +90,7 @@ func (d *DID) UnmarshalCBOR(r io.Reader) error {
 func Encode(d DID) ([]byte, error) {
 	str := d.str
 	if !strings.HasPrefix(str, Prefix) {
+		fmt.Println("Encode", d.str)
 		return nil, fmt.Errorf("must start with 'did:'")
 	}
 

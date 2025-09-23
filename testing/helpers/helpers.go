@@ -4,6 +4,10 @@ import (
 	crand "crypto/rand"
 	"testing"
 
+	"github.com/alanshaw/ucantone/did"
+	"github.com/alanshaw/ucantone/principal"
+	"github.com/alanshaw/ucantone/principal/ed25519"
+	"github.com/alanshaw/ucantone/ucan"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/require"
@@ -41,4 +45,19 @@ func RandomCID(t *testing.T) cid.Cid {
 func RandomDigest(t *testing.T) multihash.Multihash {
 	t.Helper()
 	return RandomCID(t).Hash()
+}
+
+func RandomSigner(t *testing.T) principal.Signer {
+	t.Helper()
+	return Must(ed25519.Generate())(t)
+}
+
+func RandomPrincipal(t *testing.T) ucan.Principal {
+	t.Helper()
+	return RandomSigner(t)
+}
+
+func RandomDID(t *testing.T) did.DID {
+	t.Helper()
+	return RandomSigner(t).DID()
 }
