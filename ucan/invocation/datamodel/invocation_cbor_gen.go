@@ -20,6 +20,72 @@ var _ = cid.Undef
 var _ = math.E
 var _ = sort.Sort
 
+func (t *NoArgumentsModel) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{160}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *NoArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = NoArgumentsModel{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("NoArgumentsModel: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 0)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
 func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
@@ -198,7 +264,7 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Args (datamodel.StructModel) (struct)
+	// t.Args (typegen.Deferred) (struct)
 	if len("args") > 8192 {
 		return xerrors.Errorf("Value in field \"args\" was too long")
 	}
@@ -214,7 +280,7 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Meta (datamodel.StructModel) (struct)
+	// t.Meta (typegen.Deferred) (struct)
 	if t.Meta != nil {
 
 		if len("meta") > 8192 {
@@ -470,35 +536,25 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.Args (datamodel.StructModel) (struct)
+			// t.Args (typegen.Deferred) (struct)
 		case "args":
 
 			{
 
 				if err := t.Args.UnmarshalCBOR(cr); err != nil {
-					return xerrors.Errorf("unmarshaling t.Args: %w", err)
+					return xerrors.Errorf("failed to read deferred field: %w", err)
 				}
-
 			}
-			// t.Meta (datamodel.StructModel) (struct)
+			// t.Meta (typegen.Deferred) (struct)
 		case "meta":
 
 			{
 
-				b, err := cr.ReadByte()
-				if err != nil {
-					return err
-				}
-				if b != cbg.CborNull[0] {
-					if err := cr.UnreadByte(); err != nil {
-						return err
-					}
-					t.Meta = new(StructModel)
-					if err := t.Meta.UnmarshalCBOR(cr); err != nil {
-						return xerrors.Errorf("unmarshaling t.Meta pointer: %w", err)
-					}
-				}
+				t.Meta = new(cbg.Deferred)
 
+				if err := t.Meta.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("failed to read deferred field: %w", err)
+				}
 			}
 			// t.Cause (cid.Cid) (struct)
 		case "cause":

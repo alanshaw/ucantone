@@ -1,46 +1,160 @@
-package invocation
+package invocation_test
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/alanshaw/ucantone/testing/helpers"
-	"github.com/alanshaw/ucantone/ucan/crypto/signature"
-	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
-	"github.com/alanshaw/ucantone/varsig"
-	"github.com/alanshaw/ucantone/varsig/common"
+	"github.com/alanshaw/ucantone/ucan"
+	"github.com/alanshaw/ucantone/ucan/command"
+	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/stretchr/testify/require"
 )
 
-func TestEncodeDecode(t *testing.T) {
-	issuer := helpers.RandomSigner(t)
-	subject := helpers.RandomDID(t)
+func TestInvoke(t *testing.T) {
+	t.Run("minimal", func(t *testing.T) {
+		issuer := helpers.RandomSigner(t)
+		subject := helpers.RandomDID(t)
+		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		arguments := invocation.NoArguments
+		then := ucan.Now()
 
-	headerBytes, err := varsig.Encode(common.Ed25519DagCbor)
-	require.NoError(t, err)
+		initial, err := invocation.Invoke(issuer, subject, command, arguments)
+		require.NoError(t, err)
 
-	sigPayload := idm.SigPayloadModel{
-		Header: headerBytes,
-		TokenPayload1_0_0_rc1: &idm.TokenPayloadModel1_0_0_rc1{
-			Iss: issuer.DID(),
-			Sub: subject,
-		},
-	}
+		encoded, err := invocation.Encode(initial)
+		require.NoError(t, err)
 
-	var buf bytes.Buffer
-	err = sigPayload.MarshalCBOR(&buf)
-	require.NoError(t, err)
+		decoded, err := invocation.Decode(encoded)
+		require.NoError(t, err)
 
-	model := idm.EnvelopeModel{
-		Signature:  issuer.Sign(buf.Bytes()),
-		SigPayload: sigPayload,
-	}
-	sig := signature.NewSignature(common.Ed25519DagCbor, model.Signature)
-	inv := Invocation{sig: sig, model: &model}
+		require.Equal(t, issuer.DID(), decoded.Issuer().DID())
+		require.Equal(t, subject, decoded.Subject())
+		require.Equal(t, command, decoded.Command())
+		require.Nil(t, decoded.Audience())
+		require.NotEmpty(t, decoded.Nonce())
+		require.GreaterOrEqual(t, *decoded.Expiration(), then)
+	})
 
-	enc, err := Encode(&inv)
-	require.NoError(t, err)
+	t.Run("bad command", func(t *testing.T) {
+		issuer := helpers.RandomSigner(t)
+		subject := helpers.RandomDID(t)
+		arguments := invocation.NoArguments
 
-	_, err = Decode(enc)
-	require.NoError(t, err)
+		_, err := invocation.Invoke(issuer, subject, "testinvoke", arguments)
+		require.Error(t, err)
+		require.ErrorIs(t, err, command.ErrRequiresLeadingSlash)
+	})
+
+	t.Run("no nonce", func(t *testing.T) {
+		issuer := helpers.RandomSigner(t)
+		subject := helpers.RandomDID(t)
+		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		arguments := invocation.NoArguments
+
+		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNoNonce())
+		require.NoError(t, err)
+
+		encoded, err := invocation.Encode(initial)
+		require.NoError(t, err)
+
+		decoded, err := invocation.Decode(encoded)
+		require.NoError(t, err)
+
+		require.NoError(t, err)
+		require.Nil(t, decoded.Nonce())
+	})
+
+	t.Run("custom nonce", func(t *testing.T) {
+		issuer := helpers.RandomSigner(t)
+		subject := helpers.RandomDID(t)
+		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		arguments := invocation.NoArguments
+		nonce := []byte{1, 2, 3}
+
+		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNonce(nonce))
+		require.NoError(t, err)
+
+		encoded, err := invocation.Encode(initial)
+		require.NoError(t, err)
+
+		decoded, err := invocation.Decode(encoded)
+		require.NoError(t, err)
+
+		require.Equal(t, nonce, decoded.Nonce())
+	})
+
+	t.Run("no expiration", func(t *testing.T) {
+		issuer := helpers.RandomSigner(t)
+		subject := helpers.RandomDID(t)
+		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		arguments := invocation.NoArguments
+
+		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNoExpiration())
+		require.NoError(t, err)
+
+		encoded, err := invocation.Encode(initial)
+		require.NoError(t, err)
+
+		decoded, err := invocation.Decode(encoded)
+		require.NoError(t, err)
+
+		require.NoError(t, err)
+		require.Nil(t, decoded.Expiration())
+	})
+
+	t.Run("custom expiration", func(t *testing.T) {
+		issuer := helpers.RandomSigner(t)
+		subject := helpers.RandomDID(t)
+		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		arguments := invocation.NoArguments
+		expiration := ucan.Now() + 138
+
+		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithExpiration(expiration))
+		require.NoError(t, err)
+
+		encoded, err := invocation.Encode(initial)
+		require.NoError(t, err)
+
+		decoded, err := invocation.Decode(encoded)
+		require.NoError(t, err)
+
+		require.Equal(t, expiration, *decoded.Expiration())
+	})
+
+	t.Run("custom audience", func(t *testing.T) {
+		issuer := helpers.RandomSigner(t)
+		subject := helpers.RandomDID(t)
+		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		arguments := invocation.NoArguments
+		audience := helpers.RandomDID(t)
+
+		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithAudience(audience))
+		require.NoError(t, err)
+
+		encoded, err := invocation.Encode(initial)
+		require.NoError(t, err)
+
+		decoded, err := invocation.Decode(encoded)
+		require.NoError(t, err)
+
+		require.Equal(t, audience, decoded.Audience())
+	})
+
+	t.Run("custom auguments", func(t *testing.T) {
+		issuer := helpers.RandomSigner(t)
+		subject := helpers.RandomDID(t)
+		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		arguments := helpers.RandomArgs(t)
+
+		initial, err := invocation.Invoke(issuer, subject, command, arguments)
+		require.NoError(t, err)
+
+		encoded, err := invocation.Encode(initial)
+		require.NoError(t, err)
+
+		decoded, err := invocation.Decode(encoded)
+		require.NoError(t, err)
+
+		require.Equal(t, arguments, decoded.Arguments())
+	})
 }

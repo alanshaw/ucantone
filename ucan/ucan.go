@@ -1,6 +1,8 @@
 package ucan
 
 import (
+	"time"
+
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/crypto"
@@ -60,7 +62,7 @@ type Verifier interface {
 // Link is an IPLD link to a UCAN token.
 type Link = cid.Cid
 
-type UCAN interface {
+type UCAN[Meta any] interface {
 	// Issuer DID (sender).
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#issuer--audience
@@ -80,7 +82,7 @@ type UCAN interface {
 	// Arbitrary metadata.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#metadata
-	Metadata() any
+	Metadata() Meta
 	// A unique, random nonce.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#nonce
@@ -118,9 +120,9 @@ type Capability interface {
 // invocations.
 //
 // https://github.com/ucan-wg/delegation/blob/main/README.md
-type Delegation interface {
+type Delegation[Meta any] interface {
 	Capability
-	UCAN
+	UCAN[Meta]
 	// NotBefore is the time in seconds since the Unix epoch that the UCAN
 	// becomes valid.
 	//
@@ -132,7 +134,7 @@ type Delegation interface {
 // be performed.
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#task
-type Task interface {
+type Task[Args any] interface {
 	// A concrete, dispatchable message that can be sent to the Executor.
 	//
 	// https://github.com/ucan-wg/invocation/blob/main/README.md#command
@@ -144,7 +146,7 @@ type Task interface {
 	// Parameters expected by the command.
 	//
 	// https://github.com/ucan-wg/invocation/blob/main/README.md#arguments
-	Arguments() any
+	Arguments() Args
 	// A unique, random nonce. It ensures that multiple (non-idempotent)
 	// invocations are unique. The nonce SHOULD be empty (0x) for commands that
 	// are idempotent (such as deterministic Wasm modules or standards-abiding
@@ -158,9 +160,9 @@ type Task interface {
 // delegated UCAN capabilities, and the attested receipts from an execution.
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md
-type Invocation interface {
-	Task
-	UCAN
+type Invocation[Args any, Meta any] interface {
+	Task[Args]
+	UCAN[Meta]
 	// Delegations that prove the chain of authority.
 	//
 	// https://github.com/ucan-wg/invocation/blob/main/README.md#proofs
@@ -176,7 +178,7 @@ type Invocation interface {
 }
 
 type Receipt interface {
-	Invocation // TODO
+	Invocation[any, any] // TODO
 }
 
 // Container is a format for transmitting one or more UCAN tokens as bytes,
@@ -185,14 +187,20 @@ type Receipt interface {
 // https://github.com/ucan-wg/container/blob/main/Readme.md
 type Container interface {
 	// Invocations the container contains.
-	Invocations() []Invocation
+	Invocations() []Invocation[any, any]
 	// Delegations the container contains.
-	Delegations() []Delegation
+	Delegations() []Delegation[any]
 	// Delegation retrieves a delegation from the container by it's CID.
-	Delegation(Link) (Delegation, error)
+	Delegation(Link) (Delegation[any], error)
 	// Receipts the container contains.
 	Receipts() []Receipt
 	// Receipt retrieves a receipt from the container by the CID of a [Task] that
 	// was executed.
 	Receipt(Link) (Receipt, error)
+}
+
+// Now returns a UTC Unix timestamp for comparing it against time window of the
+// UCAN.
+func Now() UTCUnixTimestamp {
+	return UTCUnixTimestamp(time.Now().Unix())
 }
