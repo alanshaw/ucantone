@@ -35,7 +35,7 @@ func RandomArgs(t *testing.T) ipld.Map[string, any] {
 	for range RandomBytes(t, 1)[0] {
 		list = append(list, RandomCID(t).String())
 	}
-	m, err := datamodel.NewMap(
+	m, err := datamodel.NewMapFromCBORMarshaler(
 		&TestArgs{
 			ID:    RandomDID(t),
 			Link:  RandomCID(t),

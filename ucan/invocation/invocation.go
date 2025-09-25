@@ -22,8 +22,12 @@ import (
 )
 
 // NoArguments can be used to issue an invocation with no arguments.
-var NoArguments = &datamodel.Map{}
+var NoArguments = datamodel.NewMap()
 
+// UCAN Invocation defines a format for expressing the intention to execute
+// delegated UCAN capabilities, and the attested receipts from an execution.
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md
 type Invocation struct {
 	sig   *signature.Signature
 	model *idm.EnvelopeModel
@@ -38,7 +42,9 @@ func (inv *Invocation) Arguments() ipld.Map[string, any] {
 	return inv.args
 }
 
-// The DID of the intended Executor if different from the Subject. May be nil.
+// The DID of the intended Executor if different from the Subject.
+//
+// WARNING: May be nil.
 //
 // https://github.com/ucan-wg/spec/blob/main/README.md#issuer--audience
 func (inv *Invocation) Audience() ucan.Principal {
@@ -205,15 +211,15 @@ func Decode(data []byte) (*Invocation, error) {
 		return nil, fmt.Errorf("decoding varsig header: %w", err)
 	}
 	sig := signature.NewSignature(header, model.Signature)
-	args := datamodel.Map{}
+	var args datamodel.Map
 	err = args.UnmarshalCBOR(bytes.NewReader(model.SigPayload.TokenPayload1_0_0_rc1.Args.Raw))
 	if err != nil {
 		return nil, fmt.Errorf("unmarshaling arguments CBOR: %w", err)
 	}
 	var meta *datamodel.Map
 	if model.SigPayload.TokenPayload1_0_0_rc1.Meta != nil {
-		meta = &datamodel.Map{}
-		err = args.UnmarshalCBOR(bytes.NewReader(model.SigPayload.TokenPayload1_0_0_rc1.Meta.Raw))
+		var meta datamodel.Map
+		err = meta.UnmarshalCBOR(bytes.NewReader(model.SigPayload.TokenPayload1_0_0_rc1.Meta.Raw))
 		if err != nil {
 			return nil, fmt.Errorf("unmarshaling metadata CBOR: %w", err)
 		}
@@ -318,7 +324,7 @@ func Invoke(
 	}
 
 	var buf bytes.Buffer
-	err = tokenPayload.MarshalCBOR(&buf)
+	err = sigPayload.MarshalCBOR(&buf)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling token payload: %w", err)
 	}
@@ -331,5 +337,10 @@ func Invoke(
 		SigPayload: sigPayload,
 	}
 
-	return &Invocation{sig: sig, model: &model, args: arguments, meta: cfg.meta}, nil
+	return &Invocation{
+		sig:   sig,
+		model: &model,
+		args:  arguments,
+		meta:  cfg.meta,
+	}, nil
 }

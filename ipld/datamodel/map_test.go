@@ -13,7 +13,7 @@ import (
 func TestMap(t *testing.T) {
 	t.Run("get", func(t *testing.T) {
 		obj := helpers.TestObject{Bytes: []byte{1, 2, 3}}
-		initial, err := datamodel.NewMap(&obj)
+		initial, err := datamodel.NewMapFromCBORMarshaler(&obj)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer
@@ -31,7 +31,7 @@ func TestMap(t *testing.T) {
 
 	t.Run("keys", func(t *testing.T) {
 		obj := helpers.TestObject{Bytes: []byte{1, 2, 3}}
-		initial, err := datamodel.NewMap(&obj)
+		initial, err := datamodel.NewMapFromCBORMarshaler(&obj)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer
@@ -45,7 +45,7 @@ func TestMap(t *testing.T) {
 	})
 
 	t.Run("empty", func(t *testing.T) {
-		initial := &datamodel.Map{}
+		var initial datamodel.Map
 
 		var buf bytes.Buffer
 		err := initial.MarshalCBOR(&buf)

@@ -27,8 +27,8 @@ type Any struct {
 	Value any
 }
 
-// New creates an CBOR backed IPLD data model type. The following Go types are
-// supported:
+// NewAny creates an CBOR backed IPLD data model type from the passed data. The
+// following Go types are supported:
 //
 //   - nil
 //   - bool
@@ -38,7 +38,7 @@ type Any struct {
 //   - slice
 //   - [Map]
 //   - [cid.Cid]
-func New(data any) *Any {
+func NewAny(data any) *Any {
 	return &Any{Value: data}
 }
 
@@ -101,7 +101,7 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 
 	switch maj {
 	case cbg.MajMap:
-		m := Map{}
+		var m Map
 		a.Value = &m
 		return m.UnmarshalCBOR(pr)
 	case cbg.MajUnsignedInt, cbg.MajNegativeInt:

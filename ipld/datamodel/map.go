@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"slices"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
@@ -19,21 +20,25 @@ type Map struct {
 	values map[string]cbg.Deferred
 }
 
-// NewMap creates a new [ipld.Map] from the passed CBOR marshaler object. The
-// object MUST marshal to a CBOR map type. It's values may be any of the types
-// supported by [Any].
-func NewMap(data dagcbor.CBORMarshaler) (*Map, error) {
+func NewMap() *Map {
+	return &Map{values: map[string]cbg.Deferred{}}
+}
+
+// NewMapFromCBORMarshaler creates a new [ipld.Map] from the passed CBOR
+// marshaler object. The object MUST marshal to a CBOR map type. It's values may
+// be any of the types supported by [Any].
+func NewMapFromCBORMarshaler(data dagcbor.CBORMarshaler) (*Map, error) {
 	var buf bytes.Buffer
 	err := data.MarshalCBOR(&buf)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling CBOR: %w", err)
 	}
-	m := &Map{}
+	var m Map
 	err = m.UnmarshalCBOR(&buf)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling CBOR: %w", err)
 	}
-	return m, nil
+	return &m, nil
 }
 
 func (m *Map) Keys() iter.Seq[string] {
@@ -56,6 +61,20 @@ func (m *Map) Value(k string) (any, bool) {
 	return a.Value, true
 }
 
+func (m *Map) SetValue(k string, v any) error {
+	a := Any{Value: v}
+	var buf bytes.Buffer
+	if err := a.MarshalCBOR(&buf); err != nil {
+		return err
+	}
+	_, ok := m.values[k]
+	m.values[k] = cbg.Deferred{Raw: buf.Bytes()}
+	if !ok {
+		m.keys = append(m.keys, k)
+	}
+	return nil
+}
+
 func (m *Map) MarshalCBOR(w io.Writer) error {
 	if m == nil {
 		_, err := w.Write(cbg.CborNull)
@@ -68,7 +87,11 @@ func (m *Map) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	for _, k := range m.keys {
+	keys := make([]string, len(m.keys))
+	copy(keys, m.keys)
+	slices.Sort(keys)
+
+	for _, k := range keys {
 		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(k))); err != nil {
 			return err
 		}

@@ -20,13 +20,13 @@ func TestAny(t *testing.T) {
 		"test",
 		[]byte{1, 2, 3},
 		[]string{"one", "two", "three"},
-		helpers.Must(datamodel.NewMap(&helpers.TestObject{Bytes: []byte{1}}))(t),
-		helpers.Must(datamodel.NewMap(&helpers.TestObject2{Str: "X", Bytes: []byte{2}}))(t),
+		helpers.Must(datamodel.NewMapFromCBORMarshaler(&helpers.TestObject{Bytes: []byte{1}}))(t),
+		helpers.Must(datamodel.NewMapFromCBORMarshaler(&helpers.TestObject2{Str: "X", Bytes: []byte{2}}))(t),
 	}
 
 	for _, v := range values {
 		t.Run(fmt.Sprintf("%T", v), func(t *testing.T) {
-			initial := datamodel.New(v)
+			initial := datamodel.NewAny(v)
 
 			var buf bytes.Buffer
 			err := initial.MarshalCBOR(&buf)
