@@ -1,6 +1,9 @@
 package delegation
 
-import "github.com/alanshaw/ucantone/ucan"
+import (
+	"github.com/alanshaw/ucantone/ipld"
+	"github.com/alanshaw/ucantone/ucan"
+)
 
 type Delegation struct{}
 
@@ -24,7 +27,7 @@ func (d *Delegation) Issuer() ucan.Principal {
 	panic("unimplemented")
 }
 
-func (d *Delegation) Metadata() any {
+func (d *Delegation) Metadata() ipld.Map[string, any] {
 	panic("unimplemented")
 }
 

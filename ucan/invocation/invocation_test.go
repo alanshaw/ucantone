@@ -137,7 +137,7 @@ func TestInvoke(t *testing.T) {
 		decoded, err := invocation.Decode(encoded)
 		require.NoError(t, err)
 
-		require.Equal(t, audience, decoded.Audience())
+		require.Equal(t, &audience, decoded.Audience())
 	})
 
 	t.Run("custom auguments", func(t *testing.T) {

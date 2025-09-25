@@ -2,7 +2,7 @@ package invocation
 
 import (
 	"github.com/alanshaw/ucantone/did"
-	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
+	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/ipfs/go-cid"
 )
@@ -16,7 +16,7 @@ type invocationConfig struct {
 	noexp bool
 	nnc   []byte
 	nonnc bool
-	meta  dagcbor.CBORMarshalable
+	meta  ipld.Map[string, any]
 	prf   []cid.Cid
 	cause *cid.Cid
 }
@@ -68,7 +68,7 @@ func WithNoNonce() Option {
 }
 
 // WithMetadata configures the arbitrary metadata for the UCAN.
-func WithMetadata(meta dagcbor.CBORMarshalable) Option {
+func WithMetadata(meta ipld.Map[string, any]) Option {
 	return func(cfg *invocationConfig) error {
 		cfg.meta = meta
 		return nil

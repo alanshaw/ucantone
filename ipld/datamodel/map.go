@@ -64,7 +64,7 @@ func (m *Map) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{161}); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(m.keys))); err != nil {
 		return err
 	}
 
@@ -109,7 +109,6 @@ func (m *Map) UnmarshalCBOR(r io.Reader) (err error) {
 	}
 
 	n := extra
-
 	nameBuf := make([]byte, 2048)
 	for range n {
 		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)

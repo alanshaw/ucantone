@@ -8,6 +8,7 @@ import (
 func main() {
 	if err := cbg.WriteMapEncodersToFile("../cbor_gen.go", "helpers",
 		helpers.TestObject{},
+		helpers.TestObject2{},
 		helpers.TestArgs{},
 	); err != nil {
 		panic(err)

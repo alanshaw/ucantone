@@ -8,8 +8,6 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
-type NoArgumentsModel struct{}
-
 type TokenPayloadModel1_0_0_rc1 struct {
 	// Issuer DID (sender).
 	Iss did.DID `cborgen:"iss"`
