@@ -6,16 +6,39 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
+// Any is a CBOR backed implementation of the IPLD data model. Any supports
+// serializing/deserializing the following kinds/types:
+//
+//   - Null (nil)
+//   - Boolean (bool)
+//   - Integer (int64)
+//   - String (string)
+//   - Bytes ([]byte)
+//   - List (slice)
+//   - Map ([Map])
+//   - Link ([cid.Cid])
+//
+// Map values and list items may be any of the above types.
 type Any struct {
 	Value any
 }
 
-func New(data any) dagcbor.CBORMarshaler {
+// New creates an CBOR backed IPLD data model type. The following Go types are
+// supported:
+//
+//   - nil
+//   - bool
+//   - int64
+//   - string
+//   - []byte
+//   - slice
+//   - [Map]
+//   - [cid.Cid]
+func New(data any) *Any {
 	return &Any{Value: data}
 }
 
@@ -24,10 +47,9 @@ func (a *Any) MarshalCBOR(w io.Writer) error {
 		_, err := w.Write(cbg.CborNull)
 		return err
 	}
-	if mv, ok := a.Value.(cbg.CBORMarshaler); ok {
-		return mv.MarshalCBOR(w)
-	}
 	switch v := a.Value.(type) {
+	case *Map:
+		return v.MarshalCBOR(w)
 	case int64:
 		return cbg.CborInt(v).MarshalCBOR(w)
 	case bool:
@@ -72,7 +94,7 @@ func (a *Any) MarshalCBOR(w io.Writer) error {
 
 func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 	*a = Any{}
-	maj, extra, r, err := peekCborHeader(r)
+	maj, extra, pr, err := peekCborHeader(r)
 	if err != nil {
 		return fmt.Errorf("peeking CBOR header: %w", err)
 	}
@@ -81,10 +103,10 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 	case cbg.MajMap:
 		m := Map{}
 		a.Value = &m
-		return m.UnmarshalCBOR(r)
+		return m.UnmarshalCBOR(pr)
 	case cbg.MajUnsignedInt, cbg.MajNegativeInt:
 		var cbi cbg.CborInt
-		if err = cbi.UnmarshalCBOR(r); err != nil {
+		if err = cbi.UnmarshalCBOR(pr); err != nil {
 			return err
 		}
 		a.Value = int64(cbi)
@@ -104,7 +126,7 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 		switch extra {
 		case 42:
 			cbc := cbg.CborCid{}
-			if err = cbc.UnmarshalCBOR(r); err != nil {
+			if err = cbc.UnmarshalCBOR(pr); err != nil {
 				return err
 			}
 			a.Value = cid.Cid(cbc)
@@ -112,7 +134,7 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 	case cbg.MajTextString:
 		if extra > 0 {
-			cr := cbg.NewCborReader(r)
+			cr := cbg.NewCborReader(pr)
 			str, err := cbg.ReadStringWithMax(cr, cbg.MaxLength)
 			if err != nil {
 				return err
@@ -124,7 +146,7 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 		return nil
 	case cbg.MajByteString:
 		if extra > 0 {
-			cr := cbg.NewCborReader(r)
+			cr := cbg.NewCborReader(pr)
 			bytes, err := cbg.ReadByteArray(cr, cbg.ByteArrayMaxLen)
 			if err != nil {
 				return err
@@ -139,10 +161,23 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 			return fmt.Errorf("array too large (%d)", extra)
 		}
 		if extra > 0 {
-			cr := cbg.NewCborReader(r)
-			arr := make([]any, extra)
-			// TODO
-			a.Value = arr
+			var items reflect.Value
+			for i := range extra {
+				item := Any{}
+				if err := item.UnmarshalCBOR(r); err != nil {
+					return err
+				}
+				// TODO: ensure all items are the same type?
+				if i == 0 {
+					typ := reflect.TypeOf(item.Value)
+					if typ == nil {
+						return fmt.Errorf("nil item in list")
+					}
+					items = reflect.MakeSlice(reflect.SliceOf(typ), 0, int(extra))
+				}
+				items = reflect.Append(items, reflect.ValueOf(item.Value))
+			}
+			a.Value = items.Interface()
 		} else {
 			a.Value = []any{}
 		}

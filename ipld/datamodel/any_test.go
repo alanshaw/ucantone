@@ -20,6 +20,7 @@ func TestAny(t *testing.T) {
 		"test",
 		[]byte{1, 2, 3},
 		[]string{"one", "two", "three"},
+		helpers.Must(datamodel.NewMap(&helpers.TestObject{}))(t),
 	}
 
 	for _, v := range values {

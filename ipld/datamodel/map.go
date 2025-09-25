@@ -12,11 +12,16 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
+// Map is a CBOR backed implementation of [ipld.Map]. Keys are strings and
+// values may be any of the types supported by [Any].
 type Map struct {
 	keys   []string
 	values map[string]cbg.Deferred
 }
 
+// NewMap creates a new [ipld.Map] from the passed CBOR marshaler object. The
+// object MUST marshal to a CBOR map type. It's values may be any of the types
+// supported by [Any].
 func NewMap(data dagcbor.CBORMarshaler) (*Map, error) {
 	var buf bytes.Buffer
 	err := data.MarshalCBOR(&buf)
@@ -41,11 +46,14 @@ func (m *Map) Keys() iter.Seq[string] {
 	}
 }
 
-func (m *Map) Value(k string) any {
-	v := m.values[k]
+func (m *Map) Value(k string) (any, bool) {
+	v, ok := m.values[k]
+	if !ok {
+		return nil, false
+	}
 	a := &Any{}
 	a.UnmarshalCBOR(bytes.NewReader(v.Raw))
-	return a.Value
+	return a.Value, true
 }
 
 func (m *Map) MarshalCBOR(w io.Writer) error {
@@ -78,7 +86,7 @@ func (m *Map) MarshalCBOR(w io.Writer) error {
 }
 
 func (m *Map) UnmarshalCBOR(r io.Reader) (err error) {
-	*m = Map{}
+	*m = Map{values: map[string]cbg.Deferred{}}
 
 	cr := cbg.NewCborReader(r)
 

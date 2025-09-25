@@ -1,0 +1,46 @@
+package datamodel_test
+
+import (
+	"bytes"
+	"slices"
+	"testing"
+
+	"github.com/alanshaw/ucantone/ipld/datamodel"
+	"github.com/alanshaw/ucantone/testing/helpers"
+	"github.com/stretchr/testify/require"
+)
+
+func TestMap(t *testing.T) {
+	t.Run("get", func(t *testing.T) {
+		obj := helpers.TestObject{Bytes: []byte{1, 2, 3}}
+		initial, err := datamodel.NewMap(&obj)
+		require.NoError(t, err)
+
+		var buf bytes.Buffer
+		err = initial.MarshalCBOR(&buf)
+		require.NoError(t, err)
+
+		var decoded datamodel.Map
+		err = decoded.UnmarshalCBOR(&buf)
+		require.NoError(t, err)
+
+		value, ok := decoded.Value("bytes")
+		require.True(t, ok)
+		require.Equal(t, obj.Bytes, value)
+	})
+
+	t.Run("keys", func(t *testing.T) {
+		obj := helpers.TestObject{Bytes: []byte{1, 2, 3}}
+		initial, err := datamodel.NewMap(&obj)
+		require.NoError(t, err)
+
+		var buf bytes.Buffer
+		err = initial.MarshalCBOR(&buf)
+		require.NoError(t, err)
+
+		var decoded datamodel.Map
+		err = decoded.UnmarshalCBOR(&buf)
+		require.NoError(t, err)
+		require.Equal(t, []string{"bytes"}, slices.Collect(decoded.Keys()))
+	})
+}
