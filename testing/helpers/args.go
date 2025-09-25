@@ -18,9 +18,14 @@ type TestArgs struct {
 	Num   int64      `cborgen:"num"`
 	Bytes []byte     `cborgen:"bytes"`
 	Obj   TestObject `cborgen:"obj"`
+	List  []string   `cborgen:"list"`
 }
 
 func RandomArgs(t *testing.T) *TestArgs {
+	var list []string
+	for range RandomBytes(t, 1)[0] {
+		list = append(list, RandomCID(t).String())
+	}
 	return &TestArgs{
 		ID:    RandomDID(t),
 		Link:  RandomCID(t),
@@ -30,5 +35,6 @@ func RandomArgs(t *testing.T) *TestArgs {
 		Obj: TestObject{
 			Bytes: RandomBytes(t, 32),
 		},
+		List: list,
 	}
 }

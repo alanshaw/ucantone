@@ -139,7 +139,7 @@ func (t *TestArgs) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{166}); err != nil {
+	if _, err := cw.Write([]byte{167}); err != nil {
 		return err
 	}
 
@@ -234,6 +234,39 @@ func (t *TestArgs) MarshalCBOR(w io.Writer) error {
 
 	if err := cbg.WriteCid(cw, t.Link); err != nil {
 		return xerrors.Errorf("failed to write cid field t.Link: %w", err)
+	}
+
+	// t.List ([]string) (slice)
+	if len("list") > 8192 {
+		return xerrors.Errorf("Value in field \"list\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("list"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("list")); err != nil {
+		return err
+	}
+
+	if len(t.List) > 8192 {
+		return xerrors.Errorf("Slice value in field t.List was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.List))); err != nil {
+		return err
+	}
+	for _, v := range t.List {
+		if len(v) > 8192 {
+			return xerrors.Errorf("Value in field v was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(v))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string(v)); err != nil {
+			return err
+		}
+
 	}
 
 	// t.Bytes ([]uint8) (slice)
@@ -373,6 +406,46 @@ func (t *TestArgs) UnmarshalCBOR(r io.Reader) (err error) {
 
 				t.Link = c
 
+			}
+			// t.List ([]string) (slice)
+		case "list":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 8192 {
+				return fmt.Errorf("t.List: array too large (%d)", extra)
+			}
+
+			if maj != cbg.MajArray {
+				return fmt.Errorf("expected cbor array")
+			}
+
+			if extra > 0 {
+				t.List = make([]string, extra)
+			}
+
+			for i := 0; i < int(extra); i++ {
+				{
+					var maj byte
+					var extra uint64
+					var err error
+					_ = maj
+					_ = extra
+					_ = err
+
+					{
+						sval, err := cbg.ReadStringWithMax(cr, 8192)
+						if err != nil {
+							return err
+						}
+
+						t.List[i] = string(sval)
+					}
+
+				}
 			}
 			// t.Bytes ([]uint8) (slice)
 		case "bytes":
