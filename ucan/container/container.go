@@ -10,7 +10,6 @@ import (
 
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/container/datamodel"
-	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/ipfs/go-cid"
 )
@@ -25,6 +24,26 @@ const (
 )
 
 var ErrNotFound = errors.New("not found")
+
+// FormatCodec converts a container codec code into a human readable string.
+func FormatCodec(codec byte) string {
+	switch codec {
+	case Raw:
+		return "raw"
+	case Base64:
+		return "base64"
+	case Base64url:
+		return "base64url"
+	case RawGzip:
+		return "raw+gzip"
+	case Base64Gzip:
+		return "base64+gzip"
+	case Base64urlGzip:
+		return "base64url+gzip"
+	default:
+		return "unknown"
+	}
+}
 
 type Container struct {
 	invs  []ucan.Invocation
@@ -96,20 +115,20 @@ func Encode(codec byte, container ucan.Container) ([]byte, error) {
 		}
 		tokens = append(tokens, b)
 	}
-	for _, inv := range container.Invocations() {
-		b, err := invocation.Encode(inv)
-		if err != nil {
-			return nil, fmt.Errorf("encoding invocation: %w", err)
-		}
-		tokens = append(tokens, b)
-	}
-	for _, dlg := range container.Delegations() {
-		b, err := delegation.Encode(dlg)
-		if err != nil {
-			return nil, fmt.Errorf("encoding delegation: %w", err)
-		}
-		tokens = append(tokens, b)
-	}
+	// for _, dlg := range container.Delegations() {
+	// 	b, err := delegation.Encode(dlg)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("encoding delegation: %w", err)
+	// 	}
+	// 	tokens = append(tokens, b)
+	// }
+	// for _, rcpt := range container.Receipts() {
+	// 	b, err := receipt.Encode(rcpt)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("encoding receipt: %w", err)
+	// 	}
+	// 	tokens = append(tokens, b)
+	// }
 	model := datamodel.ContainerModel{Ctn1: tokens}
 	var buf bytes.Buffer
 	err := model.MarshalCBOR(&buf)
@@ -197,7 +216,7 @@ func Decode(input []byte) (*Container, error) {
 	var rcpts []ucan.Receipt
 	var dlgs []ucan.Delegation
 	for _, b := range model.Ctn1 {
-		if inv, err := invocation.Decode(b); err != nil {
+		if inv, err := invocation.Decode(b); err == nil {
 			invs = append(invs, inv)
 			continue
 		}
