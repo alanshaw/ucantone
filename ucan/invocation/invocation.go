@@ -218,7 +218,7 @@ func Decode(data []byte) (*Invocation, error) {
 	}
 	var meta *datamodel.Map
 	if model.SigPayload.TokenPayload1_0_0_rc1.Meta != nil {
-		var meta datamodel.Map
+		meta = &datamodel.Map{}
 		err = meta.UnmarshalCBOR(bytes.NewReader(model.SigPayload.TokenPayload1_0_0_rc1.Meta.Raw))
 		if err != nil {
 			return nil, fmt.Errorf("unmarshaling metadata CBOR: %w", err)
