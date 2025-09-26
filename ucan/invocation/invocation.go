@@ -31,8 +31,8 @@ var NoArguments = datamodel.NewMap()
 type Invocation struct {
 	sig   *signature.Signature
 	model *idm.EnvelopeModel
-	args  ipld.Map[string, any]
-	meta  ipld.Map[string, any]
+	args  *datamodel.Map
+	meta  *datamodel.Map
 }
 
 // Parameters expected by the command.
@@ -48,11 +48,10 @@ func (inv *Invocation) Arguments() ipld.Map[string, any] {
 //
 // https://github.com/ucan-wg/spec/blob/main/README.md#issuer--audience
 func (inv *Invocation) Audience() ucan.Principal {
-	aud := inv.model.SigPayload.TokenPayload1_0_0_rc1.Aud
-	if aud == nil {
+	if inv.model.SigPayload.TokenPayload1_0_0_rc1.Aud == nil {
 		return nil
 	}
-	return aud
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Aud
 }
 
 // A provenance claim describing which receipt requested it.
@@ -94,6 +93,9 @@ func (inv *Invocation) Issuer() ucan.Principal {
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#metadata
 func (inv *Invocation) Metadata() ipld.Map[string, any] {
+	if inv.meta == nil {
+		return nil
+	}
 	return inv.meta
 }
 
@@ -271,7 +273,7 @@ func Invoke(
 
 	var meta *cbg.Deferred
 	if cfg.meta != nil {
-		if cmmeta, ok := cfg.meta.(dagcbor.CBORMarshaler); ok {
+		if cmmeta, ok := (*cfg.meta).(dagcbor.CBORMarshaler); ok {
 			var buf bytes.Buffer
 			err := cmmeta.MarshalCBOR(&buf)
 			if err != nil {
@@ -337,10 +339,32 @@ func Invoke(
 		SigPayload: sigPayload,
 	}
 
+	var argsMap *datamodel.Map
+	if a, ok := arguments.(*datamodel.Map); ok {
+		argsMap = a
+	} else {
+		err := argsMap.UnmarshalCBOR(bytes.NewReader(args.Raw))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var metaMap *datamodel.Map
+	if cfg.meta != nil {
+		if m, ok := (*cfg.meta).(*datamodel.Map); ok {
+			metaMap = m
+		} else {
+			err := metaMap.UnmarshalCBOR(bytes.NewReader(meta.Raw))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return &Invocation{
 		sig:   sig,
 		model: &model,
-		args:  arguments,
-		meta:  cfg.meta,
+		args:  argsMap,
+		meta:  metaMap,
 	}, nil
 }
