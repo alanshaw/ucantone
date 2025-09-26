@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
-	"slices"
+	"sort"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
@@ -89,7 +89,17 @@ func (m *Map) MarshalCBOR(w io.Writer) error {
 
 	keys := make([]string, len(m.keys))
 	copy(keys, m.keys)
-	slices.Sort(keys)
+	sort.Slice(keys, func(i, j int) bool {
+		fi := keys[i]
+		fj := keys[j]
+		if len(fi) < len(fj) {
+			return true
+		}
+		if len(fi) > len(fj) {
+			return false
+		}
+		return fi < fj
+	})
 
 	for _, k := range keys {
 		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(k))); err != nil {
