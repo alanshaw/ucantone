@@ -12,7 +12,6 @@ import (
 	"github.com/alanshaw/ucantone/ucan/container/datamodel"
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/invocation"
-	"github.com/alanshaw/ucantone/ucan/receipt"
 	"github.com/ipfs/go-cid"
 )
 
@@ -144,7 +143,7 @@ func Encode(codec byte, container ucan.Container) ([]byte, error) {
 	case Base64url, Base64urlGzip:
 		out = []byte(base64.RawURLEncoding.EncodeToString(out))
 	default:
-		return nil, fmt.Errorf("unknown codec: %d", codec)
+		return nil, fmt.Errorf("unknown codec: 0x%02x", codec)
 	}
 
 	return append([]byte{codec}, out...), nil
@@ -172,7 +171,7 @@ func Decode(input []byte) (*Container, error) {
 		}
 		compressed = r
 	default:
-		return nil, fmt.Errorf("unknown codec: %d", codec)
+		return nil, fmt.Errorf("unknown codec: 0x%02x", codec)
 	}
 
 	var raw []byte
@@ -202,14 +201,15 @@ func Decode(input []byte) (*Container, error) {
 			invs = append(invs, inv)
 			continue
 		}
-		if rcpt, err := receipt.Decode(b); err != nil {
-			rcpts = append(rcpts, rcpt)
-			continue
-		}
-		if dlg, err := delegation.Decode(b); err != nil {
-			dlgs = append(dlgs, dlg)
-			continue
-		}
+		// TODO: reinstate when implemented
+		// if rcpt, err := receipt.Decode(b); err != nil {
+		// 	rcpts = append(rcpts, rcpt)
+		// 	continue
+		// }
+		// if dlg, err := delegation.Decode(b); err != nil {
+		// 	dlgs = append(dlgs, dlg)
+		// 	continue
+		// }
 	}
 
 	return New(WithInvocations(invs...), WithDelegations(dlgs...), WithReceipts(rcpts...)), nil
