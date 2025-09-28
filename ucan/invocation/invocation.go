@@ -208,6 +208,9 @@ func Decode(data []byte) (*Invocation, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unmarshaling invocation envelope CBOR: %w", err)
 	}
+	if model.SigPayload.TokenPayload1_0_0_rc1 == nil {
+		return nil, errors.New("invalid or unsupported invocation token payload")
+	}
 	header, err := varsig.Decode(model.SigPayload.Header)
 	if err != nil {
 		return nil, fmt.Errorf("decoding varsig header: %w", err)
@@ -308,7 +311,7 @@ func Invoke(
 
 	tokenPayload := &idm.TokenPayloadModel1_0_0_rc1{
 		Iss:   issuer.DID(),
-		Sub:   subject,
+		Sub:   subject.DID(),
 		Aud:   cfg.aud,
 		Cmd:   cmd,
 		Args:  args,

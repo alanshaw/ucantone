@@ -7,13 +7,15 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
+const Tag = "ucan/dlg@1.0.0-rc.1"
+
 type TokenPayloadModel1_0_0_rc1 struct {
 	// Issuer DID (sender).
 	Iss did.DID `cborgen:"iss"`
 	// The DID of the intended Executor if different from the Subject.
 	Aud did.DID `cborgen:"aud"`
 	// The principal the chain is about.
-	Sub ucan.Subject `cborgen:"sub"`
+	Sub did.DID `cborgen:"sub"`
 	// The command to eventually invoke.
 	Cmd ucan.Command `cborgen:"cmd"`
 	// TODO

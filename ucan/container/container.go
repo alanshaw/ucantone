@@ -7,11 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/container/datamodel"
+	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/ipfs/go-cid"
+	"github.com/multiformats/go-multihash"
 )
 
 const (
@@ -46,13 +49,10 @@ func FormatCodec(codec byte) string {
 }
 
 type Container struct {
+	model *datamodel.ContainerModel
 	invs  []ucan.Invocation
 	rcpts []ucan.Receipt
 	dlgs  []ucan.Delegation
-}
-
-func (c *Container) Invocations() []ucan.Invocation {
-	return c.invs
 }
 
 func (c *Container) Delegations() []ucan.Delegation {
@@ -60,7 +60,25 @@ func (c *Container) Delegations() []ucan.Delegation {
 }
 
 func (c *Container) Delegation(root cid.Cid) (ucan.Delegation, error) {
-	panic("not implemented")
+	for _, b := range c.model.Ctn1 {
+		digest, err := multihash.Sum(b, multihash.SHA2_256, -1)
+		if err != nil {
+			return nil, err
+		}
+		if bytes.Equal(root.Hash(), digest) {
+			return delegation.Decode(b)
+		}
+	}
+	return nil, ErrNotFound
+}
+
+func (c *Container) Invocations() []ucan.Invocation {
+	return c.invs
+}
+
+// The datamodel this container is built from.
+func (c *Container) Model() *datamodel.ContainerModel {
+	return c.model
 }
 
 func (c *Container) Receipts() []ucan.Receipt {
@@ -98,13 +116,38 @@ func WithReceipts(receipts ...ucan.Receipt) Option {
 	}
 }
 
-// TODO: create and store model on container and add accessor (`Model()`)
-func New(options ...Option) *Container {
+func New(options ...Option) (*Container, error) {
 	ct := Container{}
 	for _, opt := range options {
 		opt(&ct)
 	}
-	return &ct
+
+	var tokens [][]byte
+	for _, inv := range ct.invs {
+		b, err := invocation.Encode(inv)
+		if err != nil {
+			return nil, fmt.Errorf("encoding invocation: %w", err)
+		}
+		tokens = append(tokens, b)
+	}
+	for _, dlg := range ct.dlgs {
+		b, err := delegation.Encode(dlg)
+		if err != nil {
+			return nil, fmt.Errorf("encoding delegation: %w", err)
+		}
+		tokens = append(tokens, b)
+	}
+	slices.SortFunc(tokens, bytes.Compare)
+
+	model := datamodel.ContainerModel{Ctn1: tokens}
+	var buf bytes.Buffer
+	err := model.MarshalCBOR(&buf)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling container to CBOR: %w", err)
+	}
+	ct.model = &model
+
+	return &ct, nil
 }
 
 func Encode(codec byte, container ucan.Container) ([]byte, error) {
@@ -116,13 +159,13 @@ func Encode(codec byte, container ucan.Container) ([]byte, error) {
 		}
 		tokens = append(tokens, b)
 	}
-	// for _, dlg := range container.Delegations() {
-	// 	b, err := delegation.Encode(dlg)
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("encoding delegation: %w", err)
-	// 	}
-	// 	tokens = append(tokens, b)
-	// }
+	for _, dlg := range container.Delegations() {
+		b, err := delegation.Encode(dlg)
+		if err != nil {
+			return nil, fmt.Errorf("encoding delegation: %w", err)
+		}
+		tokens = append(tokens, b)
+	}
 	// for _, rcpt := range container.Receipts() {
 	// 	b, err := receipt.Encode(rcpt)
 	// 	if err != nil {
@@ -130,6 +173,8 @@ func Encode(codec byte, container ucan.Container) ([]byte, error) {
 	// 	}
 	// 	tokens = append(tokens, b)
 	// }
+	slices.SortFunc(tokens, bytes.Compare)
+
 	model := datamodel.ContainerModel{Ctn1: tokens}
 	var buf bytes.Buffer
 	err := model.MarshalCBOR(&buf)
@@ -213,10 +258,14 @@ func Decode(input []byte) (*Container, error) {
 		return nil, fmt.Errorf("unmarshalling container from CBOR: %w", err)
 	}
 
+	var dlgs []ucan.Delegation
 	var invs []ucan.Invocation
 	var rcpts []ucan.Receipt
-	var dlgs []ucan.Delegation
 	for _, b := range model.Ctn1 {
+		if dlg, err := delegation.Decode(b); err == nil {
+			dlgs = append(dlgs, dlg)
+			continue
+		}
 		if inv, err := invocation.Decode(b); err == nil {
 			invs = append(invs, inv)
 			continue
@@ -226,11 +275,12 @@ func Decode(input []byte) (*Container, error) {
 		// 	rcpts = append(rcpts, rcpt)
 		// 	continue
 		// }
-		// if dlg, err := delegation.Decode(b); err != nil {
-		// 	dlgs = append(dlgs, dlg)
-		// 	continue
-		// }
 	}
 
-	return New(WithInvocations(invs...), WithDelegations(dlgs...), WithReceipts(rcpts...)), nil
+	return &Container{
+		model: model,
+		invs:  invs,
+		dlgs:  dlgs,
+		rcpts: rcpts,
+	}, nil
 }

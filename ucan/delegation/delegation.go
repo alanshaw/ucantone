@@ -94,7 +94,7 @@ func (d *Delegation) Signature() ucan.Signature {
 // https://github.com/ucan-wg/delegation/blob/main/README.md#subject
 func (d *Delegation) Subject() ucan.Principal {
 	sub := d.model.SigPayload.TokenPayload1_0_0_rc1.Sub
-	if sub == (ucan.Subject{}) {
+	if sub == (did.DID{}) {
 		return nil
 	}
 	return sub
@@ -158,6 +158,9 @@ func Decode(data []byte) (*Delegation, error) {
 	err := model.UnmarshalCBOR(bytes.NewReader(data))
 	if err != nil {
 		return nil, fmt.Errorf("unmarshaling delegation envelope CBOR: %w", err)
+	}
+	if model.SigPayload.TokenPayload1_0_0_rc1 == nil {
+		return nil, errors.New("invalid or unsupported delegation token payload")
 	}
 	header, err := varsig.Decode(model.SigPayload.Header)
 	if err != nil {

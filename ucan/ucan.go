@@ -16,7 +16,7 @@ import (
 // the Agent that a capability is for. A Subject MUST be referenced by DID.
 //
 // https://github.com/ucan-wg/spec/blob/main/README.md#subject
-type Subject = did.DID
+type Subject = Principal
 
 // Commands are concrete messages ("verbs") that MUST be unambiguously
 // interpretable by the Subject of a UCAN.
