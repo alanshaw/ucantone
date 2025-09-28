@@ -1,19 +1,19 @@
 package main
 
 import (
-	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
+	ddm "github.com/alanshaw/ucantone/ucan/delegation/datamodel"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 func main() {
 	if err := cbg.WriteTupleEncodersToFile("../cbor_gen.tuples.go", "datamodel",
-		idm.EnvelopeModel{},
+		ddm.EnvelopeModel{},
 	); err != nil {
 		panic(err)
 	}
 	if err := cbg.WriteMapEncodersToFile("../cbor_gen.maps.go", "datamodel",
-		idm.TokenPayloadModel1_0_0_rc1{},
-		idm.SigPayloadModel{},
+		ddm.TokenPayloadModel1_0_0_rc1{},
+		ddm.SigPayloadModel{},
 	); err != nil {
 		panic(err)
 	}

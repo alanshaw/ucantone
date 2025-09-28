@@ -98,6 +98,7 @@ func WithReceipts(receipts ...ucan.Receipt) Option {
 	}
 }
 
+// TODO: create and store model on container and add accessor (`Model()`)
 func New(options ...Option) *Container {
 	ct := Container{}
 	for _, opt := range options {

@@ -8,7 +8,7 @@ import (
 )
 
 // Option is an option configuring a UCAN invocation.
-type Option func(cfg *invocationConfig) error
+type Option func(cfg *invocationConfig)
 
 type invocationConfig struct {
 	aud   *did.DID
@@ -16,27 +16,26 @@ type invocationConfig struct {
 	noexp bool
 	nnc   []byte
 	nonnc bool
-	meta  *ipld.Map[string, any]
+	meta  ipld.Map[string, any]
 	prf   []cid.Cid
 	cause *cid.Cid
 }
 
 // WithAudience configures the DID of the intended Executor if different from
 // the Subject.
-func WithAudience(aud did.DID) Option {
-	return func(cfg *invocationConfig) error {
-		cfg.aud = &aud
-		return nil
+func WithAudience(aud ucan.Principal) Option {
+	return func(cfg *invocationConfig) {
+		did := aud.DID()
+		cfg.aud = &did
 	}
 }
 
 // WithExpiration configures the expiration time in UTC seconds since Unix
 // epoch.
 func WithExpiration(exp ucan.UTCUnixTimestamp) Option {
-	return func(cfg *invocationConfig) error {
+	return func(cfg *invocationConfig) {
 		cfg.exp = &exp
 		cfg.noexp = false
-		return nil
 	}
 }
 
@@ -44,34 +43,30 @@ func WithExpiration(exp ucan.UTCUnixTimestamp) Option {
 //
 // WARNING: this will cause the delegation to be valid FOREVER, unless revoked.
 func WithNoExpiration() Option {
-	return func(cfg *invocationConfig) error {
+	return func(cfg *invocationConfig) {
 		cfg.exp = nil
 		cfg.noexp = true
-		return nil
 	}
 }
 
 // WithNonce configures the nonce value for the UCAN.
 func WithNonce(nnc ucan.Nonce) Option {
-	return func(cfg *invocationConfig) error {
+	return func(cfg *invocationConfig) {
 		cfg.nnc = nnc
-		return nil
 	}
 }
 
 // WithNoNonce configures an empty nonce value for the UCAN.
 func WithNoNonce() Option {
-	return func(cfg *invocationConfig) error {
+	return func(cfg *invocationConfig) {
 		cfg.nonnc = true
-		return nil
 	}
 }
 
 // WithMetadata configures the arbitrary metadata for the UCAN.
 func WithMetadata(meta ipld.Map[string, any]) Option {
-	return func(cfg *invocationConfig) error {
-		cfg.meta = &meta
-		return nil
+	return func(cfg *invocationConfig) {
+		cfg.meta = meta
 	}
 }
 
@@ -80,16 +75,14 @@ func WithMetadata(meta ipld.Map[string, any]) Option {
 // capabilities, the `proofs` must contain valid `Proof`s containing
 // delegations to the `issuer`.
 func WithProofs(prf ...ucan.Link) Option {
-	return func(cfg *invocationConfig) error {
+	return func(cfg *invocationConfig) {
 		cfg.prf = prf
-		return nil
 	}
 }
 
 // WithCause configures the CID of the receipt that enqueued the task.
 func WithCause(cause ucan.Link) Option {
-	return func(cfg *invocationConfig) error {
+	return func(cfg *invocationConfig) {
 		cfg.cause = &cause
-		return nil
 	}
 }

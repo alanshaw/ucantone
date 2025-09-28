@@ -67,6 +67,10 @@ func (d *DID) UnmarshalJSON(b []byte) error {
 }
 
 func (d DID) MarshalCBOR(w io.Writer) error {
+	if d.str == "" {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
 	b, err := Encode(d)
 	if err != nil {
 		return err
@@ -75,15 +79,25 @@ func (d DID) MarshalCBOR(w io.Writer) error {
 }
 
 func (d *DID) UnmarshalCBOR(r io.Reader) error {
-	b, err := cbg.ReadByteArray(r, 2048)
+	cr := cbg.NewCborReader(r)
+	b, err := cr.ReadByte()
 	if err != nil {
 		return err
 	}
-	decoded, err := Decode(b)
-	if err != nil {
-		return err
+	if b != cbg.CborNull[0] {
+		if err := cr.UnreadByte(); err != nil {
+			return err
+		}
+		b, err := cbg.ReadByteArray(cr, 2048)
+		if err != nil {
+			return err
+		}
+		decoded, err := Decode(b)
+		if err != nil {
+			return err
+		}
+		*d = decoded
 	}
-	*d = decoded
 	return nil
 }
 

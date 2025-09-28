@@ -68,11 +68,11 @@ type UCAN interface {
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#issuer--audience
 	Issuer() Principal
-	// The Subject being invoked.
+	// The subject being invoked.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#subject
 	Subject() Principal
-	// The DID of the intended Executor if different from the Subject.
+	// Audience can be conceptualized as the receiver of a postal letter.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#issuer--audience
 	Audience() Principal

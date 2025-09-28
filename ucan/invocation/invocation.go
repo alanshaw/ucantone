@@ -273,7 +273,7 @@ func Invoke(
 
 	var meta *cbg.Deferred
 	if cfg.meta != nil {
-		if cmmeta, ok := (*cfg.meta).(dagcbor.CBORMarshaler); ok {
+		if cmmeta, ok := cfg.meta.(dagcbor.CBORMarshaler); ok {
 			var buf bytes.Buffer
 			err := cmmeta.MarshalCBOR(&buf)
 			if err != nil {
@@ -351,7 +351,7 @@ func Invoke(
 
 	var metaMap *datamodel.Map
 	if cfg.meta != nil {
-		if m, ok := (*cfg.meta).(*datamodel.Map); ok {
+		if m, ok := cfg.meta.(*datamodel.Map); ok {
 			metaMap = m
 		} else {
 			err := metaMap.UnmarshalCBOR(bytes.NewReader(meta.Raw))

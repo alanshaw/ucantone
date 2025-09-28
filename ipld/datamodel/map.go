@@ -2,10 +2,14 @@ package datamodel
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"iter"
+	"slices"
 	"sort"
+	"strings"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
@@ -167,6 +171,66 @@ func (m *Map) UnmarshalCBOR(r io.Reader) (err error) {
 	}
 
 	return nil
+}
+
+func (m *Map) MarshalJSON() ([]byte, error) {
+	var b strings.Builder
+	_, err := b.WriteString("{")
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, len(m.keys))
+	copy(keys, m.keys)
+	slices.Sort(keys)
+	for i, k := range keys {
+		kBytes, err := json.Marshal(k)
+		if err != nil {
+			return nil, err
+		}
+		_, err = b.WriteString(fmt.Sprintf("%s:", string(kBytes)))
+		if err != nil {
+			return nil, err
+		}
+
+		a := &Any{}
+		err = a.UnmarshalCBOR(bytes.NewReader(m.values[k].Raw))
+		if err != nil {
+			return nil, err
+		}
+
+		switch v := a.Value.(type) {
+		case []byte:
+			_, err = b.WriteString(formatDAGJSONBytes(v))
+			if err != nil {
+				return nil, err
+			}
+		default:
+			vBytes, err := json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+			_, err = b.Write(vBytes)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if i < len(keys)-1 {
+			_, err = b.WriteString(",")
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	_, err = b.WriteString("}")
+	if err != nil {
+		return nil, err
+	}
+	return []byte(b.String()), nil
+}
+
+func formatDAGJSONBytes(bytes []byte) string {
+	return fmt.Sprintf(`{"/":{"bytes":"%s"}}`, base64.StdEncoding.EncodeToString(bytes))
 }
 
 var _ ipld.Map[string, any] = (*Map)(nil)

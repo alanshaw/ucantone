@@ -2,6 +2,7 @@ package datamodel
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -185,6 +186,10 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 	}
 
 	return fmt.Errorf("unsupported CBOR type: %d", maj)
+}
+
+func (a *Any) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.Value)
 }
 
 func peekCborHeader(r io.Reader) (byte, uint64, io.Reader, error) {
