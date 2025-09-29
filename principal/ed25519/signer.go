@@ -16,27 +16,27 @@ const Code = 0x1300
 
 const SignatureCode = verifier.SignatureCode
 
-var privateTagSize = varint.UvarintSize(Code)
-var publicTagSize = varint.UvarintSize(verifier.Code)
+var tagSize = varint.UvarintSize(Code)
 
-const keySize = 32
+// Go ed25519 private key size is private + public. Go refers to the private key
+// bytes as the "seed".
+const keySize = ed25519.SeedSize
 
-var size = privateTagSize + keySize + publicTagSize + keySize
-var pubKeyOffset = privateTagSize + keySize
+var size = tagSize + keySize
 
 func Generate() (Ed25519Signer, error) {
-	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("generating Ed25519 key: %w", err)
 	}
 	s := make(Ed25519Signer, size)
 	varint.PutUvarint(s, Code)
-	copy(s[privateTagSize:], priv)
-	varint.PutUvarint(s[pubKeyOffset:], verifier.Code)
-	copy(s[pubKeyOffset+publicTagSize:], pub)
+	copy(s[tagSize:], priv)
 	return s, nil
 }
 
+// Parse parses a multibase encoded string containing a ed25519 signer
+// multiformat varint (0x1300) + 32 byte ed25519 private key
 func Parse(str string) (Ed25519Signer, error) {
 	_, bytes, err := multibase.Decode(str)
 	if err != nil {
@@ -45,34 +45,19 @@ func Parse(str string) (Ed25519Signer, error) {
 	return Decode(bytes)
 }
 
-func Format(signer principal.Signer) (string, error) {
-	return multibase.Encode(multibase.Base64pad, signer.Bytes())
-}
-
+// Decode decodes a buffer of an ed25519 signer multiformat varint (0x1300) + 32
+// byte ed25519 private key.
 func Decode(b []byte) (Ed25519Signer, error) {
 	if len(b) != size {
 		return nil, fmt.Errorf("invalid length: %d wanted: %d", len(b), size)
 	}
 
-	prc, _, err := varint.FromUvarint(b)
+	skc, _, err := varint.FromUvarint(b)
 	if err != nil {
 		return nil, fmt.Errorf("reading private key uvarint: %w", err)
 	}
-	if prc != Code {
-		return nil, fmt.Errorf("invalid private key codec: 0x%02x, expected: 0x%02x", prc, Code)
-	}
-
-	puc, _, err := varint.FromUvarint(b[pubKeyOffset:])
-	if err != nil {
-		return nil, fmt.Errorf("reading public key uvarint: %w", err)
-	}
-	if puc != verifier.Code {
-		return nil, fmt.Errorf("invalid public key codec: 0x%02x, expected: 0x%02x", puc, Code)
-	}
-
-	_, err = verifier.Decode(b[pubKeyOffset:])
-	if err != nil {
-		return nil, fmt.Errorf("decoding public key: %w", err)
+	if skc != Code {
+		return nil, fmt.Errorf("invalid private key codec: 0x%02x, expected: 0x%02x", skc, Code)
 	}
 
 	s := make(Ed25519Signer, size)
@@ -81,17 +66,15 @@ func Decode(b []byte) (Ed25519Signer, error) {
 	return s, nil
 }
 
-// FromRaw takes raw ed25519 private key bytes and tags with the ed25519 signer
-// and verifier multiformat codes, returning an ed25519 signer.
-func FromRaw(b []byte) (principal.Signer, error) {
-	if len(b) != ed25519.PrivateKeySize {
-		return nil, fmt.Errorf("invalid length: %d wanted: %d", len(b), ed25519.PrivateKeySize)
+// FromRaw takes raw 32 byte ed25519 private key bytes and tags with the ed25519
+// signer multiformat code, returning an ed25519 signer.
+func FromRaw(b []byte) (Ed25519Signer, error) {
+	if len(b) != ed25519.SeedSize {
+		return nil, fmt.Errorf("invalid length: %d wanted: %d", len(b), ed25519.SeedSize)
 	}
 	s := make(Ed25519Signer, size)
 	varint.PutUvarint(s, Code)
-	copy(s[privateTagSize:privateTagSize+keySize], b[:ed25519.PrivateKeySize-ed25519.PublicKeySize])
-	varint.PutUvarint(s[pubKeyOffset:], verifier.Code)
-	copy(s[pubKeyOffset+publicTagSize:], b[ed25519.PrivateKeySize-ed25519.PublicKeySize:ed25519.PrivateKeySize])
+	copy(s[tagSize:size], b[:ed25519.SeedSize])
 	return s, nil
 }
 
@@ -108,12 +91,13 @@ func (s Ed25519Signer) SignatureCode() uint64 {
 }
 
 func (s Ed25519Signer) Verifier() principal.Verifier {
-	return verifier.Ed25519Verifier(s[pubKeyOffset:])
+	sk := ed25519.NewKeyFromSeed(s[tagSize:])
+	v, _ := verifier.FromRaw(sk.Public().(ed25519.PublicKey))
+	return v
 }
 
 func (s Ed25519Signer) DID() did.DID {
-	id, _ := did.Decode(s[pubKeyOffset:])
-	return id
+	return s.Verifier().DID()
 }
 
 // Bytes returns the private key bytes with multiformat prefix varint.
@@ -121,14 +105,14 @@ func (s Ed25519Signer) Bytes() []byte {
 	return s
 }
 
-// Raw encodes the bytes of the public key without multiformats tags.
+// Raw encodes the bytes of the private key without multiformats tags.
 func (s Ed25519Signer) Raw() []byte {
-	pk := make(ed25519.PrivateKey, ed25519.PrivateKeySize)
-	copy(pk[0:ed25519.PublicKeySize], s[privateTagSize:pubKeyOffset])
-	copy(pk[ed25519.PrivateKeySize-ed25519.PublicKeySize:ed25519.PrivateKeySize], s[pubKeyOffset+publicTagSize:pubKeyOffset+publicTagSize+keySize])
+	pk := make([]byte, keySize)
+	copy(pk, s[tagSize:size])
 	return pk
 }
 
 func (s Ed25519Signer) Sign(msg []byte) []byte {
-	return ed25519.Sign(s.Raw(), msg)
+	sk := ed25519.NewKeyFromSeed(s[tagSize:])
+	return ed25519.Sign(sk, msg)
 }

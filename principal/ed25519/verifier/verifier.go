@@ -2,12 +2,15 @@ package verifier
 
 import (
 	"crypto/ed25519"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/principal/multiformat"
 	vsed "github.com/alanshaw/ucantone/varsig/algorithm/ed25519"
+	"github.com/multiformats/go-multibase"
 	"github.com/multiformats/go-varint"
 )
 
@@ -16,20 +19,22 @@ const SignatureCode = vsed.Code
 
 var publicTagSize = varint.UvarintSize(Code)
 
-const keySize = 32
+const keySize = ed25519.PublicKeySize
 
 var size = publicTagSize + keySize
 
 func Parse(str string) (Ed25519Verifier, error) {
-	d, err := did.Parse(str)
-	if err != nil {
-		return nil, fmt.Errorf("parsing DID: %w", err)
+	if !strings.HasPrefix(str, did.KeyPrefix) {
+		return nil, fmt.Errorf("must start with '%s'", did.KeyPrefix)
 	}
-	b, err := did.Encode(d)
+	code, bytes, err := multibase.Decode(str[len(did.KeyPrefix):])
 	if err != nil {
-		return nil, fmt.Errorf("encoding DID: %w", err)
+		return nil, err
 	}
-	return Decode(b)
+	if code != multibase.Base58BTC {
+		return nil, errors.New("not Base58BTC encoded")
+	}
+	return Decode(bytes)
 }
 
 func Decode(b []byte) (Ed25519Verifier, error) {
@@ -70,7 +75,8 @@ func (v Ed25519Verifier) Verify(msg []byte, sig []byte) bool {
 }
 
 func (v Ed25519Verifier) DID() did.DID {
-	id, _ := did.Decode(v)
+	b58key, _ := multibase.Encode(multibase.Base58BTC, v)
+	id, _ := did.Parse(did.KeyPrefix + b58key)
 	return id
 }
 

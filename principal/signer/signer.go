@@ -7,6 +7,7 @@ import (
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/principal/verifier"
+	"github.com/multiformats/go-multibase"
 )
 
 type Unwrapper interface {
@@ -63,4 +64,8 @@ func Wrap(key principal.Signer, id did.DID) (*WrappedSigner, error) {
 		return nil, err
 	}
 	return &WrappedSigner{key, vrf}, nil
+}
+
+func Format(signer principal.Signer) (string, error) {
+	return multibase.Encode(multibase.Base64pad, signer.Bytes())
 }

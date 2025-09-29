@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	ed "github.com/alanshaw/ucantone/principal/ed25519"
+	"github.com/alanshaw/ucantone/principal/signer"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,7 +38,7 @@ func TestGenerateFormatParse(t *testing.T) {
 
 	fmt.Println(s0.DID().String())
 
-	str, err := ed.Format(s0)
+	str, err := signer.Format(s0)
 	if err != nil {
 		t.Fatalf("formatting Ed25519 key: %v", err)
 	}
@@ -77,7 +78,8 @@ func TestSignerRaw(t *testing.T) {
 
 	msg := []byte{1, 2, 3}
 	raw := s.Raw()
-	sig := ed25519.Sign(raw, msg)
+	sk := ed25519.NewKeyFromSeed(raw)
+	sig := ed25519.Sign(sk, msg)
 
 	require.Equal(t, s.Sign(msg), sig)
 }
@@ -87,10 +89,10 @@ func TestFromRaw(t *testing.T) {
 		_, priv, err := ed25519.GenerateKey(nil)
 		require.NoError(t, err)
 
-		s, err := ed.FromRaw(priv)
+		s, err := ed.FromRaw(priv[:ed25519.SeedSize])
 		require.NoError(t, err)
 
-		require.Equal(t, priv, ed25519.PrivateKey(s.Raw()))
+		require.Equal(t, []byte(priv[:ed25519.SeedSize]), s.Raw())
 	})
 
 	t.Run("invalid length", func(t *testing.T) {

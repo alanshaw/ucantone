@@ -24,30 +24,6 @@ func TestParse(t *testing.T) {
 	})
 }
 
-func TestEncodeDecode(t *testing.T) {
-	t.Run("did:key", func(t *testing.T) {
-		str := "did:key:z6Mkod5Jr3yd5SC7UDueqK4dAAw5xYJYjksy722tA9Boxc4z"
-		d0, err := did.Parse(str)
-		require.NoError(t, err)
-		bytes, err := did.Encode(d0)
-		require.NoError(t, err)
-		d1, err := did.Decode(bytes)
-		require.NoError(t, err)
-		require.Equal(t, str, d1.String())
-	})
-
-	t.Run("did:web", func(t *testing.T) {
-		str := "did:web:up.storacha.network"
-		d0, err := did.Parse(str)
-		require.NoError(t, err)
-		bytes, err := did.Encode(d0)
-		require.NoError(t, err)
-		d1, err := did.Decode(bytes)
-		require.NoError(t, err)
-		require.Equal(t, str, d1.String())
-	})
-}
-
 func TestEquivalence(t *testing.T) {
 	d0, err := did.Parse("did:key:z6Mkod5Jr3yd5SC7UDueqK4dAAw5xYJYjksy722tA9Boxc4z")
 	require.NoError(t, err)

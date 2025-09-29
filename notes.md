@@ -17,3 +17,4 @@
     * No RSA principal implementation.
     * Signer moved from `principal/<type>/signer` to `principal/<type>` for ease of use.
     * Renamed `Encode()` method on `Signer` and `Verifier` to `Bytes()`, since it just returns the (multibase prefixed) bytes.
+    * Ed25519 signer byte representation is now just the multiformats tagged private key bytes. Go internally uses 64 bytes for the private key which redundantly includes the public key.

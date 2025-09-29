@@ -71,11 +71,12 @@ func (d DID) MarshalCBOR(w io.Writer) error {
 		_, err := w.Write(cbg.CborNull)
 		return err
 	}
-	b, err := Encode(d)
-	if err != nil {
+	cw := cbg.NewCborWriter(w)
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(d.str))); err != nil {
 		return err
 	}
-	return cbg.WriteByteArray(w, b)
+	_, err := cw.WriteString(d.str)
+	return err
 }
 
 func (d *DID) UnmarshalCBOR(r io.Reader) error {
@@ -88,57 +89,17 @@ func (d *DID) UnmarshalCBOR(r io.Reader) error {
 		if err := cr.UnreadByte(); err != nil {
 			return err
 		}
-		b, err := cbg.ReadByteArray(cr, 2048)
+		str, err := cbg.ReadStringWithMax(cr, 2048)
 		if err != nil {
 			return err
 		}
-		decoded, err := Decode(b)
+		parsed, err := Parse(str)
 		if err != nil {
 			return err
 		}
-		*d = decoded
+		*d = parsed
 	}
 	return nil
-}
-
-func Encode(d DID) ([]byte, error) {
-	str := d.str
-	if !strings.HasPrefix(str, Prefix) {
-		fmt.Println("Encode", d.str)
-		return nil, fmt.Errorf("must start with 'did:'")
-	}
-
-	if strings.HasPrefix(str, KeyPrefix) {
-		code, bytes, err := mbase.Decode(str[len(KeyPrefix):])
-		if err != nil {
-			return nil, err
-		}
-		if code != mbase.Base58BTC {
-			return nil, fmt.Errorf("not Base58BTC encoded")
-		}
-		return bytes, nil
-	}
-
-	buf := make([]byte, MethodOffset)
-	varint.PutUvarint(buf, DIDCore)
-	suffix, _ := strings.CutPrefix(str, Prefix)
-	buf = append(buf, suffix...)
-	return buf, nil
-}
-
-func Decode(bytes []byte) (DID, error) {
-	code, n, err := varint.FromUvarint(bytes)
-	if err != nil {
-		return DID{}, err
-	}
-	switch code {
-	case Ed25519, RSA:
-		b58key, _ := mbase.Encode(mbase.Base58BTC, bytes)
-		return DID{KeyPrefix + b58key}, nil
-	case DIDCore:
-		return DID{Prefix + string(bytes[n:])}, nil
-	}
-	return DID{}, fmt.Errorf("unsupported DID encoding: 0x%x", code)
 }
 
 func Parse(str string) (DID, error) {
@@ -155,4 +116,8 @@ func Parse(str string) (DID, error) {
 		}
 	}
 	return DID{str}, nil
+}
+
+func Format(d DID) (string, error) {
+	return d.str, nil
 }
