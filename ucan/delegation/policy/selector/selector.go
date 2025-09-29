@@ -2,13 +2,12 @@ package selector
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/ipld/go-ipld-prime"
-	"github.com/ipld/go-ipld-prime/datamodel"
-	"github.com/ipld/go-ipld-prime/schema"
+	"github.com/alanshaw/ucantone/ipld"
 )
 
 // Selector describes a UCAN policy selector, as specified here:
@@ -180,37 +179,26 @@ func MustParse(sel string) Selector {
 	return s
 }
 
-// Select uses a selector to extract an IPLD node or set of nodes from the
-// passed subject node.
-func Select(sel Selector, subject ipld.Node) (ipld.Node, []ipld.Node, error) {
+// Select uses a selector to extract a value from the passed subject.
+func Select(sel Selector, subject any) (any, []any, error) {
 	return resolve(sel, subject, nil)
 }
 
-func resolve(sel Selector, subject ipld.Node, at []string) (ipld.Node, []ipld.Node, error) {
+func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 	cur := subject
 	for i, seg := range sel {
 		if seg.Identity {
 			continue
 		} else if seg.Iterator {
-			if cur != nil && cur.Kind() == datamodel.Kind_List {
-				var many []ipld.Node
-				it := cur.ListIterator()
-				for {
-					if it.Done() {
-						break
-					}
-
-					k, v, err := it.Next()
-					if err != nil {
-						return nil, nil, err
-					}
-
+			if reflect.TypeOf(cur).Kind() == reflect.Slice {
+				var many []any
+				v := reflect.ValueOf(cur)
+				for k := range v.Len() {
 					key := fmt.Sprintf("%d", k)
-					o, m, err := resolve(sel[i+1:], v, append(at[:], key))
+					o, m, err := resolve(sel[i+1:], v.Index(k).Interface(), append(at[:], key))
 					if err != nil {
 						return nil, nil, err
 					}
-
 					if m != nil {
 						many = append(many, m...)
 					} else {
@@ -218,21 +206,11 @@ func resolve(sel Selector, subject ipld.Node, at []string) (ipld.Node, []ipld.No
 					}
 				}
 				return nil, many, nil
-			} else if cur != nil && cur.Kind() == datamodel.Kind_Map {
-				var many []ipld.Node
-				it := cur.MapIterator()
-				for {
-					if it.Done() {
-						break
-					}
-
-					k, v, err := it.Next()
-					if err != nil {
-						return nil, nil, err
-					}
-
-					key, _ := k.AsString()
-					o, m, err := resolve(sel[i+1:], v, append(at[:], key))
+			} else if m, ok := cur.(ipld.Map[string, any]); ok {
+				var many []any
+				for k := range m.Keys() {
+					v, _ := m.Value(k)
+					o, m, err := resolve(sel[i+1:], v, append(at[:], k))
 					if err != nil {
 						return nil, nil, err
 					}
@@ -247,85 +225,52 @@ func resolve(sel Selector, subject ipld.Node, at []string) (ipld.Node, []ipld.No
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, nil, NewResolutionError(fmt.Sprintf("can not iterate over kind: %s", kindString(cur)), at)
+				return nil, nil, NewResolutionError(fmt.Sprintf("can not iterate over type: %s", reflect.TypeOf(cur)), at)
 			}
 
 		} else if seg.Field != "" {
 			at = append(at, seg.Field)
-			if cur != nil && cur.Kind() == datamodel.Kind_Map {
-				n, err := cur.LookupByString(seg.Field)
-				if err != nil {
-					if isMissing(err) {
-						if seg.Optional {
-							cur = nil
-						} else {
-							return nil, nil, NewResolutionError(fmt.Sprintf("object has no field named: %s", seg.Field), at)
-						}
-					} else {
-						return nil, nil, err
-					}
+			if m, ok := cur.(ipld.Map[string, any]); ok {
+				v, ok := m.Value(seg.Field)
+				if !ok && !seg.Optional {
+					return nil, nil, NewResolutionError(fmt.Sprintf("object has no field named: %s", seg.Field), at)
 				}
-				cur = n
+				cur = v
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, nil, NewResolutionError(fmt.Sprintf("can not access field: %s on kind: %s", seg.Field, kindString(cur)), at)
+				return nil, nil, NewResolutionError(fmt.Sprintf("can not access field: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
 			}
 		} else if seg.Slice != nil {
-			if cur != nil && cur.Kind() == datamodel.Kind_List {
-				return nil, nil, NewResolutionError("list slice selection not yet implemented", at)
-			} else if cur != nil && cur.Kind() == datamodel.Kind_Bytes {
-				return nil, nil, NewResolutionError("bytes slice selection not yet implemented", at)
+			if reflect.TypeOf(cur).Kind() == reflect.Slice {
+				return nil, nil, NewResolutionError("slice selection not yet implemented", at)
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, nil, NewResolutionError(fmt.Sprintf("can not index: %s on kind: %s", seg.Field, kindString(cur)), at)
+				return nil, nil, NewResolutionError(fmt.Sprintf("can not index: %s on kind: %s", seg.Field, reflect.TypeOf(cur)), at)
 			}
 		} else {
 			at = append(at, fmt.Sprintf("%d", seg.Index))
-			if cur != nil && cur.Kind() == datamodel.Kind_List {
-				n, err := cur.LookupByIndex(int64(seg.Index))
-				if err != nil {
-					if isMissing(err) {
-						if seg.Optional {
-							cur = nil
-						} else {
-							return nil, nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", seg.Index), at)
-						}
+			if reflect.TypeOf(cur).Kind() == reflect.Slice {
+				v := reflect.ValueOf(cur)
+				if seg.Index < 0 || seg.Index >= v.Len() {
+					if seg.Optional {
+						cur = nil
 					} else {
-						return nil, nil, err
+						return nil, nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", seg.Index), at)
 					}
+				} else {
+					cur = v.Index(seg.Index).Interface()
 				}
-				cur = n
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, nil, NewResolutionError(fmt.Sprintf("can not access field: %s on kind: %s", seg.Field, kindString(cur)), at)
+				return nil, nil, NewResolutionError(fmt.Sprintf("can not access field: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
 			}
 		}
 	}
 
 	return cur, nil, nil
-}
-
-func kindString(n datamodel.Node) string {
-	if n == nil {
-		return "null"
-	}
-	return n.Kind().String()
-}
-
-func isMissing(err error) bool {
-	if _, ok := err.(datamodel.ErrNotExists); ok {
-		return true
-	}
-	if _, ok := err.(schema.ErrNoSuchField); ok {
-		return true
-	}
-	if _, ok := err.(schema.ErrInvalidKey); ok {
-		return true
-	}
-	return false
 }
 
 type ResolutionError struct {
