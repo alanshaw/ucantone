@@ -1,11 +1,11 @@
 package selector
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
+	"github.com/alanshaw/ucantone/testing/helpers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -176,7 +176,7 @@ func TestParse(t *testing.T) {
 		str := `.foo.["bar"].[138]?.baz[1:]`
 		sel, err := Parse(str)
 		require.NoError(t, err)
-		printSegments(sel)
+		printSegments(t, sel)
 		require.Equal(t, str, sel.String())
 		require.Equal(t, 7, len(sel))
 		require.False(t, sel[0].Identity)
@@ -226,48 +226,52 @@ func TestParse(t *testing.T) {
 	t.Run("non dotted", func(t *testing.T) {
 		_, err := Parse("foo")
 		require.NotNil(t, err)
-		fmt.Println(err)
+		t.Log(err)
 	})
 
 	t.Run("non quoted", func(t *testing.T) {
 		_, err := Parse(".[foo]")
 		require.NotNil(t, err)
-		fmt.Println(err)
+		t.Log(err)
 	})
 }
 
-func printSegments(s Selector) {
+func printSegments(t *testing.T, s Selector) {
 	for i, seg := range s {
-		fmt.Printf("%d: %s\n", i, seg.String())
+		t.Logf("%d: %s", i, seg.String())
 	}
 }
 
 func TestSelect(t *testing.T) {
+	var MustMap = func(m map[string]any) *datamodel.Map {
+		return helpers.Must(datamodel.NewMap(datamodel.WithValues(m)))(t)
+	}
 	var Name = func(first string, middle *string, last string) *datamodel.Map {
-		n := datamodel.NewMap()
-		n.SetValue("first", first)
-		if middle != nil {
-			n.SetValue("middle", *middle)
+		m := map[string]any{
+			"first": first,
+			"last":  last,
 		}
-		n.SetValue("last", last)
-		return n
+		if middle != nil {
+			m["middle"] = *middle
+		}
+		return MustMap(m)
 	}
 
 	var Interest = func(name string, outdoor bool, experience int) *datamodel.Map {
-		i := datamodel.NewMap()
-		i.SetValue("name", name)
-		i.SetValue("outdoor", outdoor)
-		i.SetValue("experience", experience)
-		return i
+		return MustMap(map[string]any{
+			"name":       name,
+			"outdoor":    outdoor,
+			"experience": experience,
+		})
 	}
 
 	var User = func(name *datamodel.Map, age int, nationalities []string, interests []*datamodel.Map) *datamodel.Map {
-		u := datamodel.NewMap()
-		u.SetValue("name", name)
-		u.SetValue("age", age)
-		u.SetValue("nationalities", nationalities)
-		u.SetValue("interests", interests)
-		return u
+		return MustMap(map[string]any{
+			"name":          name,
+			"age":           age,
+			"nationalities": nationalities,
+			"interests":     nationalities,
+		})
 	}
 
 	am := "Joan"

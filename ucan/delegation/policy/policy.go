@@ -3,21 +3,21 @@ package policy
 import (
 	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 	"github.com/gobwas/glob"
-	"github.com/ipld/go-ipld-prime"
 )
 
 const (
-	Kind_Equal              = "=="
-	Kind_GreaterThan        = ">"
-	Kind_GreaterThanOrEqual = ">="
-	Kind_LessThan           = "<"
-	Kind_LessThanOrEqual    = "<="
-	Kind_Not                = "not"
-	Kind_And                = "and"
-	Kind_Or                 = "or"
-	Kind_Like               = "like"
-	Kind_All                = "all"
-	Kind_Any                = "any"
+	KindEqual              = "=="   // implemented by EqualityStatement
+	KindNotEqual           = "!="   // implemented by EqualityStatement
+	KindGreaterThan        = ">"    // implemented by EqualityStatement
+	KindGreaterThanOrEqual = ">="   // implemented by EqualityStatement
+	KindLessThan           = "<"    // implemented by EqualityStatement
+	KindLessThanOrEqual    = "<="   // implemented by EqualityStatement
+	KindAnd                = "and"  // implemented by ConjunctionStatement
+	KindOr                 = "or"   // implemented by DisjunctionStatement
+	KindNot                = "not"  // implemented by NegationStatement
+	KindLike               = "like" // implemented by WildcardStatement
+	KindAll                = "all"  // implemented by QuantifierStatement
+	KindAny                = "any"  // implemented by QuantifierStatement
 )
 
 type Policy = []Statement
@@ -26,178 +26,99 @@ type Statement interface {
 	Kind() string
 }
 
-type EqualityStatement interface {
-	Statement
-	Selector() selector.Selector
-	Value() ipld.Node
-}
-
-type InequalityStatement interface {
-	Statement
-	Selector() selector.Selector
-	Value() ipld.Node
-}
-
-type WildcardStatement interface {
-	Statement
-	Selector() selector.Selector
-	Value() glob.Glob
-}
-
-type ConnectiveStatement interface {
-	Statement
-}
-
-type NegationStatement interface {
-	ConnectiveStatement
-	Value() Statement
-}
-
-type ConjunctionStatement interface {
-	ConnectiveStatement
-	Value() []Statement
-}
-
-type DisjunctionStatement interface {
-	ConnectiveStatement
-	Value() []Statement
-}
-
-type QuantifierStatement interface {
-	Statement
-	Selector() selector.Selector
-	Value() Policy
-}
-
-type equality struct {
+type EqualityStatement struct {
 	kind     string
-	selector selector.Selector
-	value    ipld.Node
+	Selector selector.Selector
+	Value    any
 }
 
-func (e equality) Kind() string {
-	return e.kind
+func (es EqualityStatement) Kind() string {
+	return es.kind
 }
 
-func (e equality) Value() ipld.Node {
-	return e.value
+type ConjunctionStatement struct {
+	Statements []Statement
 }
 
-func (e equality) Selector() selector.Selector {
-	return e.selector
+func (ConjunctionStatement) Kind() string {
+	return KindAnd
 }
 
-func Equal(selector selector.Selector, value ipld.Node) EqualityStatement {
-	return equality{Kind_Equal, selector, value}
+type DisjunctionStatement struct {
+	Statements []Statement
 }
 
-func GreaterThan(selector selector.Selector, value ipld.Node) InequalityStatement {
-	return equality{Kind_GreaterThan, selector, value}
+func (DisjunctionStatement) Kind() string {
+	return KindOr
 }
 
-func GreaterThanOrEqual(selector selector.Selector, value ipld.Node) InequalityStatement {
-	return equality{Kind_GreaterThanOrEqual, selector, value}
+type NegationStatement struct {
+	Statement Statement
 }
 
-func LessThan(selector selector.Selector, value ipld.Node) InequalityStatement {
-	return equality{Kind_LessThan, selector, value}
+func (NegationStatement) Kind() string {
+	return KindNot
 }
 
-func LessThanOrEqual(selector selector.Selector, value ipld.Node) InequalityStatement {
-	return equality{Kind_LessThanOrEqual, selector, value}
+type WildcardStatement struct {
+	Selector selector.Selector
+	Glob     glob.Glob
 }
 
-type negation struct {
-	statement Statement
+func (WildcardStatement) Kind() string {
+	return KindLike
 }
 
-func (n negation) Kind() string {
-	return Kind_Not
+type QuantifierStatement struct {
+	kind       string
+	Selector   selector.Selector
+	Statements []Statement
 }
 
-func (n negation) Value() Statement {
-	return n.statement
+func (qs QuantifierStatement) Kind() string {
+	return qs.kind
+}
+
+func Equal(selector selector.Selector, value any) EqualityStatement {
+	return EqualityStatement{KindEqual, selector, value}
+}
+
+func GreaterThan(selector selector.Selector, value any) EqualityStatement {
+	return EqualityStatement{KindGreaterThan, selector, value}
+}
+
+func GreaterThanOrEqual(selector selector.Selector, value any) EqualityStatement {
+	return EqualityStatement{KindGreaterThanOrEqual, selector, value}
+}
+
+func LessThan(selector selector.Selector, value any) EqualityStatement {
+	return EqualityStatement{KindLessThan, selector, value}
+}
+
+func LessThanOrEqual(selector selector.Selector, value any) EqualityStatement {
+	return EqualityStatement{KindLessThanOrEqual, selector, value}
 }
 
 func Not(stmt Statement) NegationStatement {
-	return negation{stmt}
-}
-
-type conjunction struct {
-	statements []Statement
-}
-
-func (n conjunction) Kind() string {
-	return Kind_And
-}
-
-func (n conjunction) Value() []Statement {
-	return n.statements
+	return NegationStatement{stmt}
 }
 
 func And(stmts ...Statement) ConjunctionStatement {
-	return conjunction{stmts}
-}
-
-type disjunction struct {
-	statements []Statement
-}
-
-func (n disjunction) Kind() string {
-	return Kind_Or
-}
-
-func (n disjunction) Value() []Statement {
-	return n.statements
+	return ConjunctionStatement{stmts}
 }
 
 func Or(stmts ...Statement) DisjunctionStatement {
-	return disjunction{stmts}
-}
-
-type wildcard struct {
-	selector selector.Selector
-	glob     glob.Glob
-}
-
-func (n wildcard) Kind() string {
-	return Kind_Like
-}
-
-func (n wildcard) Selector() selector.Selector {
-	return n.selector
-}
-
-func (n wildcard) Value() glob.Glob {
-	return n.glob
+	return DisjunctionStatement{stmts}
 }
 
 func Like(selector selector.Selector, glob glob.Glob) WildcardStatement {
-	return wildcard{selector, glob}
+	return WildcardStatement{selector, glob}
 }
 
-type quantifier struct {
-	kind     string
-	selector selector.Selector
-	policy   Policy
+func All(selector selector.Selector, stmts ...Statement) QuantifierStatement {
+	return QuantifierStatement{KindAll, selector, stmts}
 }
 
-func (n quantifier) Kind() string {
-	return n.kind
-}
-
-func (n quantifier) Selector() selector.Selector {
-	return n.selector
-}
-
-func (n quantifier) Value() Policy {
-	return n.policy
-}
-
-func All(selector selector.Selector, policy ...Statement) QuantifierStatement {
-	return quantifier{Kind_All, selector, policy}
-}
-
-func Any(selector selector.Selector, policy ...Statement) QuantifierStatement {
-	return quantifier{Kind_Any, selector, policy}
+func Any(selector selector.Selector, stmts ...Statement) QuantifierStatement {
+	return QuantifierStatement{KindAny, selector, stmts}
 }

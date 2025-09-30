@@ -283,7 +283,7 @@ func (r ResolutionError) Name() string {
 }
 
 func (r ResolutionError) Error() string {
-	return fmt.Sprintf("can not resolve path: .%s", strings.Join(r.At, "."))
+	return fmt.Sprintf(`can not resolve path ".%s": %s`, strings.Join(r.At, "."), r.msg)
 }
 
 func NewResolutionError(message string, at []string) ResolutionError {

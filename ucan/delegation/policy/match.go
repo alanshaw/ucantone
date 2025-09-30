@@ -3,17 +3,15 @@ package policy
 import (
 	"cmp"
 	"fmt"
+	"reflect"
 
 	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
-	"github.com/ipld/go-ipld-prime"
-	"github.com/ipld/go-ipld-prime/datamodel"
-	"github.com/ipld/go-ipld-prime/must"
 )
 
-// Match determines if the IPLD node matches the policy document.
-func Match(policy Policy, node ipld.Node) bool {
+// Match determines if the value matches the policy document.
+func Match(policy Policy, value any) bool {
 	for _, stmt := range policy {
-		ok := matchStatement(stmt, node)
+		ok := MatchStatement(stmt, value)
 		if !ok {
 			return false
 		}
@@ -21,109 +19,108 @@ func Match(policy Policy, node ipld.Node) bool {
 	return true
 }
 
-func matchStatement(statement Statement, node ipld.Node) bool {
+func MatchStatement(statement Statement, value any) bool {
 	switch statement.Kind() {
-	case Kind_Equal:
+	case KindEqual:
 		if s, ok := statement.(EqualityStatement); ok {
-			one, _, err := selector.Select(s.Selector(), node)
+			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
-			return datamodel.DeepEqual(s.Value(), one)
+			return reflect.DeepEqual(s.Value, one)
 		}
-	case Kind_GreaterThan:
-		if s, ok := statement.(InequalityStatement); ok {
-			one, _, err := selector.Select(s.Selector(), node)
+	case KindGreaterThan:
+		if s, ok := statement.(EqualityStatement); ok {
+			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
-			return isOrdered(s.Value(), one, gt)
+			return isOrdered(one, s.Value, gt)
 		}
-	case Kind_GreaterThanOrEqual:
-		if s, ok := statement.(InequalityStatement); ok {
-			one, _, err := selector.Select(s.Selector(), node)
+	case KindGreaterThanOrEqual:
+		if s, ok := statement.(EqualityStatement); ok {
+			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
-			return isOrdered(s.Value(), one, gte)
+			return isOrdered(one, s.Value, gte)
 		}
-	case Kind_LessThan:
-		if s, ok := statement.(InequalityStatement); ok {
-			one, _, err := selector.Select(s.Selector(), node)
+	case KindLessThan:
+		if s, ok := statement.(EqualityStatement); ok {
+			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
-			return isOrdered(s.Value(), one, lt)
+			return isOrdered(one, s.Value, lt)
 		}
-	case Kind_LessThanOrEqual:
-		if s, ok := statement.(InequalityStatement); ok {
-			one, _, err := selector.Select(s.Selector(), node)
+	case KindLessThanOrEqual:
+		if s, ok := statement.(EqualityStatement); ok {
+			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
-			return isOrdered(s.Value(), one, lte)
+			return isOrdered(one, s.Value, lte)
 		}
-	case Kind_Not:
+	case KindNot:
 		if s, ok := statement.(NegationStatement); ok {
-			return !matchStatement(s.Value(), node)
+			return !MatchStatement(s.Statement, value)
 		}
-	case Kind_And:
+	case KindAnd:
 		if s, ok := statement.(ConjunctionStatement); ok {
-			for _, cs := range s.Value() {
-				r := matchStatement(cs, node)
+			for _, cs := range s.Statements {
+				r := MatchStatement(cs, value)
 				if !r {
 					return false
 				}
 			}
 			return true
 		}
-	case Kind_Or:
+	case KindOr:
 		if s, ok := statement.(DisjunctionStatement); ok {
-			if len(s.Value()) == 0 {
+			if len(s.Statements) == 0 {
 				return true
 			}
-			for _, cs := range s.Value() {
-				r := matchStatement(cs, node)
+			for _, cs := range s.Statements {
+				r := MatchStatement(cs, value)
 				if r {
 					return true
 				}
 			}
 			return false
 		}
-	case Kind_Like:
+	case KindLike:
 		if s, ok := statement.(WildcardStatement); ok {
-			one, _, err := selector.Select(s.Selector(), node)
+			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
-			v, err := one.AsString()
-			if err != nil {
-				return false
+			if v, ok := one.(string); ok {
+				return s.Glob.Match(v)
 			}
-			return s.Value().Match(v)
+			return false
 		}
-	case Kind_All:
+	case KindAll:
 		if s, ok := statement.(QuantifierStatement); ok {
-			_, many, err := selector.Select(s.Selector(), node)
+			_, many, err := selector.Select(s.Selector, value)
 			if err != nil || many == nil {
 				return false
 			}
 			for _, n := range many {
-				ok := Match(s.Value(), n)
+				ok := Match(s.Statements, n)
 				if !ok {
 					return false
 				}
 			}
 			return true
 		}
-	case Kind_Any:
+	case KindAny:
 		if s, ok := statement.(QuantifierStatement); ok {
-			_, many, err := selector.Select(s.Selector(), node)
+			_, many, err := selector.Select(s.Selector, value)
 			if err != nil || many == nil {
 				return false
 			}
 			for _, n := range many {
-				ok := Match(s.Value(), n)
+				ok := Match(s.Statements, n)
 				if ok {
 					return true
 				}
@@ -134,25 +131,19 @@ func matchStatement(statement Statement, node ipld.Node) bool {
 	panic(fmt.Errorf("unimplemented statement kind: %s", statement.Kind()))
 }
 
-func isOrdered(expected ipld.Node, actual ipld.Node, satisfies func(order int) bool) bool {
-	if expected.Kind() == ipld.Kind_Int && actual.Kind() == ipld.Kind_Int {
-		a := must.Int(actual)
-		b := must.Int(expected)
-		return satisfies(cmp.Compare(a, b))
+func isOrdered(a any, b any, satisfies func(order int) bool) bool {
+	if aint, ok := a.(int); ok {
+		a = int64(aint)
 	}
-
-	if expected.Kind() == ipld.Kind_Float && actual.Kind() == ipld.Kind_Float {
-		a, err := actual.AsFloat()
-		if err != nil {
-			panic(fmt.Errorf("extracting node float: %w", err))
-		}
-		b, err := expected.AsFloat()
-		if err != nil {
-			panic(fmt.Errorf("extracting selector float: %w", err))
-		}
-		return satisfies(cmp.Compare(a, b))
+	if bint, ok := b.(int); ok {
+		b = int64(bint)
 	}
-
+	if aint64, ok := a.(int64); ok {
+		if bint64, ok := b.(int64); ok {
+			return satisfies(cmp.Compare(aint64, bint64))
+		}
+	}
+	// TODO: support float
 	return false
 }
 

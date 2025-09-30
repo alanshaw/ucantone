@@ -24,8 +24,39 @@ type Map struct {
 	values map[string]cbg.Deferred
 }
 
-func NewMap() *Map {
-	return &Map{values: map[string]cbg.Deferred{}}
+type MapOption func(m *Map) error
+
+// WithValue adds the passed value to the new map. The value may be any of the
+// types supported by [Any].
+func WithValue(key string, value any) MapOption {
+	return func(m *Map) error {
+		return m.SetValue(key, value)
+	}
+}
+
+// WithValues adds the passed values to the new map. The values may be any of
+// the types supported by [Any].
+func WithValues(values map[string]any) MapOption {
+	return func(m *Map) error {
+		for k, v := range values {
+			err := m.SetValue(k, v)
+			if err != nil {
+				return fmt.Errorf("setting value for key %s: %w", k, err)
+			}
+		}
+		return nil
+	}
+}
+
+func NewMap(options ...MapOption) (*Map, error) {
+	m := Map{values: map[string]cbg.Deferred{}}
+	for _, opt := range options {
+		err := opt(&m)
+		if err != nil {
+
+		}
+	}
+	return &m, nil
 }
 
 // NewMapFromCBORMarshaler creates a new [ipld.Map] from the passed CBOR
