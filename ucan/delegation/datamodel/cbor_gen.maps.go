@@ -143,7 +143,7 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 
 	}
 
-	// t.Pol ([]string) (slice)
+	// t.Pol (policy.Policy) (struct)
 	if len("pol") > 8192 {
 		return xerrors.Errorf("Value in field \"pol\" was too long")
 	}
@@ -155,25 +155,8 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if len(t.Pol) > 8192 {
-		return xerrors.Errorf("Slice value in field t.Pol was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Pol))); err != nil {
+	if err := t.Pol.MarshalCBOR(cw); err != nil {
 		return err
-	}
-	for _, v := range t.Pol {
-		if len(v) > 8192 {
-			return xerrors.Errorf("Value in field v was too long")
-		}
-
-		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(v))); err != nil {
-			return err
-		}
-		if _, err := cw.WriteString(string(v)); err != nil {
-			return err
-		}
-
 	}
 
 	// t.Sub (did.DID) (struct)
@@ -360,45 +343,15 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.Pol ([]string) (slice)
+			// t.Pol (policy.Policy) (struct)
 		case "pol":
 
-			maj, extra, err = cr.ReadHeader()
-			if err != nil {
-				return err
-			}
+			{
 
-			if extra > 8192 {
-				return fmt.Errorf("t.Pol: array too large (%d)", extra)
-			}
-
-			if maj != cbg.MajArray {
-				return fmt.Errorf("expected cbor array")
-			}
-
-			if extra > 0 {
-				t.Pol = make([]string, extra)
-			}
-
-			for i := 0; i < int(extra); i++ {
-				{
-					var maj byte
-					var extra uint64
-					var err error
-					_ = maj
-					_ = extra
-					_ = err
-
-					{
-						sval, err := cbg.ReadStringWithMax(cr, 8192)
-						if err != nil {
-							return err
-						}
-
-						t.Pol[i] = string(sval)
-					}
-
+				if err := t.Pol.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Pol: %w", err)
 				}
+
 			}
 			// t.Sub (did.DID) (struct)
 		case "sub":

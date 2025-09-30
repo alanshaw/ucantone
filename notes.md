@@ -3,8 +3,9 @@
 ## General
 
 * Switched to more Go idiomatic style where we accept interfaces and return concrete types.
-* No IPLD prime - CBOR gen is adequete and significantly less complicated. The `cid.Cid` type is actually useful, despite it being a bit heavy. We _have_ to use it anyways, since it's the only thing that implements `datamodel.Link`. Also `Link` is just such a nothing interface.
-* Fewer generics. Generic types in Go is not super powerful and can easily get in the way. We use generics more sparingly in this version.
+* No IPLD prime - [CBOR gen](https://github.com/whyrusleeping/cbor-gen) is adequete and significantly less complicated. It's a shame to not have IPLD schemas, but the inflexibility and boilerplate it introduces is prohibitive.
+* Consequently, no `ipld.Link` usage. The `cid.Cid` type is actually useful, despite it being a bit heavy. We _have_ to use it anyways, since it's the only thing that implements `ipld.Link`. Also `Link` is just such a nothing interface.
+* Fewer generics. Generic types in Go are not super powerful and can easily get in the way. We use generics more sparingly in this version.
 
 ## Specifics
 

@@ -10,7 +10,7 @@ import (
 
 // Match determines if the value matches the policy document.
 func Match(policy Policy, value any) bool {
-	for _, stmt := range policy {
+	for _, stmt := range policy.Statements {
 		ok := MatchStatement(stmt, value)
 		if !ok {
 			return false
@@ -20,52 +20,52 @@ func Match(policy Policy, value any) bool {
 }
 
 func MatchStatement(statement Statement, value any) bool {
-	switch statement.Kind() {
-	case KindEqual:
-		if s, ok := statement.(EqualityStatement); ok {
+	switch statement.Operation() {
+	case OpEqual:
+		if s, ok := statement.(ComparisonStatement); ok {
 			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
 			return reflect.DeepEqual(s.Value, one)
 		}
-	case KindGreaterThan:
-		if s, ok := statement.(EqualityStatement); ok {
+	case OpGreaterThan:
+		if s, ok := statement.(ComparisonStatement); ok {
 			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
 			return isOrdered(one, s.Value, gt)
 		}
-	case KindGreaterThanOrEqual:
-		if s, ok := statement.(EqualityStatement); ok {
+	case OpGreaterThanOrEqual:
+		if s, ok := statement.(ComparisonStatement); ok {
 			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
 			return isOrdered(one, s.Value, gte)
 		}
-	case KindLessThan:
-		if s, ok := statement.(EqualityStatement); ok {
+	case OpLessThan:
+		if s, ok := statement.(ComparisonStatement); ok {
 			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
 			return isOrdered(one, s.Value, lt)
 		}
-	case KindLessThanOrEqual:
-		if s, ok := statement.(EqualityStatement); ok {
+	case OpLessThanOrEqual:
+		if s, ok := statement.(ComparisonStatement); ok {
 			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
 				return false
 			}
 			return isOrdered(one, s.Value, lte)
 		}
-	case KindNot:
+	case OpNot:
 		if s, ok := statement.(NegationStatement); ok {
 			return !MatchStatement(s.Statement, value)
 		}
-	case KindAnd:
+	case OpAnd:
 		if s, ok := statement.(ConjunctionStatement); ok {
 			for _, cs := range s.Statements {
 				r := MatchStatement(cs, value)
@@ -75,7 +75,7 @@ func MatchStatement(statement Statement, value any) bool {
 			}
 			return true
 		}
-	case KindOr:
+	case OpOr:
 		if s, ok := statement.(DisjunctionStatement); ok {
 			if len(s.Statements) == 0 {
 				return true
@@ -88,7 +88,7 @@ func MatchStatement(statement Statement, value any) bool {
 			}
 			return false
 		}
-	case KindLike:
+	case OpLike:
 		if s, ok := statement.(WildcardStatement); ok {
 			one, _, err := selector.Select(s.Selector, value)
 			if err != nil || one == nil {
@@ -99,28 +99,28 @@ func MatchStatement(statement Statement, value any) bool {
 			}
 			return false
 		}
-	case KindAll:
-		if s, ok := statement.(QuantifierStatement); ok {
+	case OpAll:
+		if s, ok := statement.(QuantificationStatement); ok {
 			_, many, err := selector.Select(s.Selector, value)
 			if err != nil || many == nil {
 				return false
 			}
 			for _, n := range many {
-				ok := Match(s.Statements, n)
+				ok := Match(Policy{s.Statements}, n)
 				if !ok {
 					return false
 				}
 			}
 			return true
 		}
-	case KindAny:
-		if s, ok := statement.(QuantifierStatement); ok {
+	case OpAny:
+		if s, ok := statement.(QuantificationStatement); ok {
 			_, many, err := selector.Select(s.Selector, value)
 			if err != nil || many == nil {
 				return false
 			}
 			for _, n := range many {
-				ok := Match(s.Statements, n)
+				ok := Match(Policy{s.Statements}, n)
 				if ok {
 					return true
 				}
@@ -128,7 +128,7 @@ func MatchStatement(statement Statement, value any) bool {
 			return false
 		}
 	}
-	panic(fmt.Errorf("unimplemented statement kind: %s", statement.Kind()))
+	panic(fmt.Errorf("unknown statement operation: %s", statement.Operation()))
 }
 
 func isOrdered(a any, b any, satisfies func(order int) bool) bool {

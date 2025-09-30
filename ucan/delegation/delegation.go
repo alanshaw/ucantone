@@ -78,7 +78,7 @@ func (d *Delegation) NotBefore() *ucan.UTCUnixTimestamp {
 	return d.model.SigPayload.TokenPayload1_0_0_rc1.Nbf
 }
 
-func (d *Delegation) Policy() []string {
+func (d *Delegation) Policy() ucan.Policy {
 	return d.model.SigPayload.TokenPayload1_0_0_rc1.Pol
 }
 

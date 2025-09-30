@@ -8,6 +8,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/crypto"
 	"github.com/alanshaw/ucantone/ucan/crypto/signature"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/varsig"
 	"github.com/ipfs/go-cid"
 )
@@ -49,6 +50,8 @@ type Signer interface {
 	SignatureCode() uint64
 }
 
+// Signature encapsulates the bytes that comprise the signature as well as the
+// details of the signing algorithm and payload encoding.
 type Signature interface {
 	Header() varsig.VarsigHeader[varsig.SignatureAlgorithm, varsig.PayloadEncoding]
 	Bytes() []byte
@@ -96,6 +99,13 @@ type UCAN interface {
 	Signature() Signature
 }
 
+// UCAN Delegation uses predicate logic statements extended with jq-inspired
+// selectors as a policy language. Policies are syntactically driven, and
+// constrain the args field of an eventual Invocation.
+//
+// https://github.com/ucan-wg/delegation/blob/main/README.md#policy
+type Policy = policy.Policy
+
 // A capability is the semantically-relevant claim of a delegation.
 //
 // https://github.com/ucan-wg/delegation/blob/main/README.md#capability
@@ -112,7 +122,7 @@ type Capability interface {
 	// UCAN Policy Language.
 	//
 	// https://github.com/ucan-wg/delegation/blob/main/README.md#policy
-	Policy() []string // TODO define properly
+	Policy() Policy
 }
 
 // UCAN Delegation is a delegable certificate capability system with

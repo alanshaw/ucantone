@@ -1,4 +1,4 @@
-package selector
+package selector_test
 
 import (
 	"testing"
@@ -6,12 +6,13 @@ import (
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/testing/helpers"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 	"github.com/stretchr/testify/require"
 )
 
 func TestParse(t *testing.T) {
 	t.Run("identity", func(t *testing.T) {
-		sel, err := Parse(".")
+		sel, err := selector.Parse(".")
 		require.NoError(t, err)
 		require.Equal(t, 1, len(sel))
 		require.True(t, sel[0].Identity)
@@ -23,7 +24,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("field", func(t *testing.T) {
-		sel, err := Parse(".foo")
+		sel, err := selector.Parse(".foo")
 		require.NoError(t, err)
 		require.Equal(t, 1, len(sel))
 		require.False(t, sel[0].Identity)
@@ -35,7 +36,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("explicit field", func(t *testing.T) {
-		sel, err := Parse(`.["foo"]`)
+		sel, err := selector.Parse(`.["foo"]`)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(sel))
 		require.True(t, sel[0].Identity)
@@ -53,7 +54,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("index", func(t *testing.T) {
-		sel, err := Parse(".[138]")
+		sel, err := selector.Parse(".[138]")
 		require.NoError(t, err)
 		require.Equal(t, 2, len(sel))
 		require.True(t, sel[0].Identity)
@@ -71,7 +72,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("negative index", func(t *testing.T) {
-		sel, err := Parse(".[-138]")
+		sel, err := selector.Parse(".[-138]")
 		require.NoError(t, err)
 		require.Equal(t, 2, len(sel))
 		require.True(t, sel[0].Identity)
@@ -89,7 +90,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("iterator", func(t *testing.T) {
-		sel, err := Parse(".[]")
+		sel, err := selector.Parse(".[]")
 		require.NoError(t, err)
 		require.Equal(t, 2, len(sel))
 		require.True(t, sel[0].Identity)
@@ -107,7 +108,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("optional field", func(t *testing.T) {
-		sel, err := Parse(".foo?")
+		sel, err := selector.Parse(".foo?")
 		require.NoError(t, err)
 		require.Equal(t, 1, len(sel))
 		require.False(t, sel[0].Identity)
@@ -119,7 +120,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("optional explicit field", func(t *testing.T) {
-		sel, err := Parse(`.["foo"]?`)
+		sel, err := selector.Parse(`.["foo"]?`)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(sel))
 		require.True(t, sel[0].Identity)
@@ -137,7 +138,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("optional index", func(t *testing.T) {
-		sel, err := Parse(".[138]?")
+		sel, err := selector.Parse(".[138]?")
 		require.NoError(t, err)
 		require.Equal(t, 2, len(sel))
 		require.True(t, sel[0].Identity)
@@ -155,7 +156,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("optional iterator", func(t *testing.T) {
-		sel, err := Parse(".[]?")
+		sel, err := selector.Parse(".[]?")
 		require.NoError(t, err)
 		require.Equal(t, 2, len(sel))
 		require.True(t, sel[0].Identity)
@@ -174,7 +175,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("nesting", func(t *testing.T) {
 		str := `.foo.["bar"].[138]?.baz[1:]`
-		sel, err := Parse(str)
+		sel, err := selector.Parse(str)
 		require.NoError(t, err)
 		printSegments(t, sel)
 		require.Equal(t, str, sel.String())
@@ -224,19 +225,19 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("non dotted", func(t *testing.T) {
-		_, err := Parse("foo")
+		_, err := selector.Parse("foo")
 		require.NotNil(t, err)
 		t.Log(err)
 	})
 
 	t.Run("non quoted", func(t *testing.T) {
-		_, err := Parse(".[foo]")
+		_, err := selector.Parse(".[foo]")
 		require.NotNil(t, err)
 		t.Log(err)
 	})
 }
 
-func printSegments(t *testing.T, s Selector) {
+func printSegments(t *testing.T, s selector.Selector) {
 	for i, seg := range s {
 		t.Logf("%d: %s", i, seg.String())
 	}
@@ -296,10 +297,10 @@ func TestSelect(t *testing.T) {
 	)
 
 	t.Run("identity", func(t *testing.T) {
-		sel, err := Parse(".")
+		sel, err := selector.Parse(".")
 		require.NoError(t, err)
 
-		one, many, err := Select(sel, alice)
+		one, many, err := selector.Select(sel, alice)
 		require.NoError(t, err)
 		require.NotEmpty(t, one)
 		require.Empty(t, many)
@@ -310,10 +311,10 @@ func TestSelect(t *testing.T) {
 	})
 
 	t.Run("nested property", func(t *testing.T) {
-		sel, err := Parse(".name.first")
+		sel, err := selector.Parse(".name.first")
 		require.NoError(t, err)
 
-		one, many, err := Select(sel, alice)
+		one, many, err := selector.Select(sel, alice)
 		require.NoError(t, err)
 		require.NotEmpty(t, one)
 		require.Empty(t, many)
@@ -322,7 +323,7 @@ func TestSelect(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, "Alice", name)
 
-		one, many, err = Select(sel, bob)
+		one, many, err = selector.Select(sel, bob)
 		require.NoError(t, err)
 		require.NotEmpty(t, one)
 		require.Empty(t, many)

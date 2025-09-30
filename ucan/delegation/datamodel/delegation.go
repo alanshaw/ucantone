@@ -18,8 +18,9 @@ type TokenPayloadModel1_0_0_rc1 struct {
 	Sub did.DID `cborgen:"sub"`
 	// The command to eventually invoke.
 	Cmd ucan.Command `cborgen:"cmd"`
-	// TODO
-	Pol []string `cborgen:"pol"`
+	// Additional constraints on eventual invocation arguments, expressed in the
+	// UCAN Policy Language.
+	Pol ucan.Policy `cborgen:"pol"`
 	// A unique, random nonce.
 	Nonce ucan.Nonce `cborgen:"nonce"`
 	// Arbitrary metadata.

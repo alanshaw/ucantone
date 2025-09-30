@@ -10,16 +10,18 @@ import (
 	"github.com/alanshaw/ucantone/ipld"
 )
 
-// Selector describes a UCAN policy selector, as specified here:
-// https://github.com/ucan-wg/delegation/blob/4094d5878b58f5d35055a3b93fccda0b8329ebae/README.md#selectors
+// Selector syntax is closely based on jq's "filters". They operate on an
+// Invocation's args object.
+//
+// https://github.com/ucan-wg/delegation/blob/main/README.md#selectors
 type Selector []Segment
 
 func (s Selector) String() string {
-	var str string
+	var b strings.Builder
 	for _, seg := range s {
-		str += seg.String()
+		b.WriteString(seg.String())
 	}
-	return str
+	return b.String()
 }
 
 var Identity = Segment{".", true, false, false, nil, "", 0}
