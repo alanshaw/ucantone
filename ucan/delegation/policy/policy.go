@@ -2,6 +2,7 @@ package policy
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -118,6 +119,10 @@ func (cs *ComparisonStatement) UnmarshalCBOR(r io.Reader) error {
 	return nil
 }
 
+func (cs ComparisonStatement) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]any{cs.op, cs.Selector, cs.Value})
+}
+
 // https://github.com/ucan-wg/delegation/blob/main/README.md#connectives
 type ConjunctionStatement struct {
 	Statements []Statement
@@ -155,6 +160,10 @@ func (cs *ConjunctionStatement) UnmarshalCBOR(r io.Reader) error {
 	}
 	cs.Statements = policy.Statements
 	return nil
+}
+
+func (cs ConjunctionStatement) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]any{OpAnd, cs.Statements})
 }
 
 // https://github.com/ucan-wg/delegation/blob/main/README.md#connectives
@@ -196,6 +205,10 @@ func (ds *DisjunctionStatement) UnmarshalCBOR(r io.Reader) error {
 	return nil
 }
 
+func (ds DisjunctionStatement) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]any{OpOr, ds.Statements})
+}
+
 // https://github.com/ucan-wg/delegation/blob/main/README.md#connectives
 type NegationStatement struct {
 	Statement Statement
@@ -230,6 +243,10 @@ func (ns *NegationStatement) UnmarshalCBOR(r io.Reader) error {
 	}
 	ns.Statement = stmt
 	return nil
+}
+
+func (ns NegationStatement) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]any{OpNot, ns.Statement})
 }
 
 // https://github.com/ucan-wg/delegation/blob/main/README.md#glob-matching
@@ -274,6 +291,10 @@ func (ws *WildcardStatement) UnmarshalCBOR(r io.Reader) error {
 	ws.Pattern = model.Pattern
 	ws.Glob = glb
 	return nil
+}
+
+func (ws WildcardStatement) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]any{OpLike, ws.Selector, ws.Pattern})
 }
 
 // https://github.com/ucan-wg/delegation/blob/main/README.md#quantification
@@ -321,9 +342,14 @@ func (qs *QuantificationStatement) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	qs.op = model.Op
 	qs.Selector = sel
 	qs.Statements = policy.Statements
 	return nil
+}
+
+func (qs QuantificationStatement) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]any{qs.op, qs.Selector, qs.Statements})
 }
 
 func Equal(selector selector.Selector, value any) ComparisonStatement {
@@ -358,8 +384,8 @@ func Or(stmts ...Statement) DisjunctionStatement {
 	return DisjunctionStatement{stmts}
 }
 
-func Like(selector selector.Selector, pattern string, glob glob.Glob) WildcardStatement {
-	return WildcardStatement{selector, pattern, glob}
+func Like(selector selector.Selector, pattern string) WildcardStatement {
+	return WildcardStatement{selector, pattern, glob.MustCompile(pattern)}
 }
 
 func All(selector selector.Selector, stmts ...Statement) QuantificationStatement {

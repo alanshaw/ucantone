@@ -53,7 +53,7 @@ func NewMap(options ...MapOption) (*Map, error) {
 	for _, opt := range options {
 		err := opt(&m)
 		if err != nil {
-
+			return nil, err
 		}
 	}
 	return &m, nil

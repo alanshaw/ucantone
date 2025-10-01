@@ -4,6 +4,7 @@ import (
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ucan"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 )
 
 // Option is an option configuring a UCAN invocation.
@@ -75,8 +76,8 @@ func WithMetadata(meta ipld.Map[string, any]) Option {
 	}
 }
 
-func WithPolicy(pol ucan.Policy) Option {
+func WithPolicy(statements ...policy.Statement) Option {
 	return func(cfg *delegationConfig) {
-		cfg.pol = pol
+		cfg.pol = ucan.Policy{Statements: statements}
 	}
 }

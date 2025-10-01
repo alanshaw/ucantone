@@ -258,7 +258,7 @@ func TestSelect(t *testing.T) {
 		return MustMap(m)
 	}
 
-	var Interest = func(name string, outdoor bool, experience int) *datamodel.Map {
+	var Interest = func(name string, outdoor bool, experience int64) *datamodel.Map {
 		return MustMap(map[string]any{
 			"name":       name,
 			"outdoor":    outdoor,
@@ -266,7 +266,7 @@ func TestSelect(t *testing.T) {
 		})
 	}
 
-	var User = func(name *datamodel.Map, age int, nationalities []string, interests []*datamodel.Map) *datamodel.Map {
+	var User = func(name *datamodel.Map, age int64, nationalities []string, interests []*datamodel.Map) *datamodel.Map {
 		return MustMap(map[string]any{
 			"name":          name,
 			"age":           age,

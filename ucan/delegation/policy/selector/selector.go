@@ -1,6 +1,7 @@
 package selector
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -22,6 +23,30 @@ func (s Selector) String() string {
 		b.WriteString(seg.String())
 	}
 	return b.String()
+}
+
+func (s Selector) MarshalJSON() ([]byte, error) {
+	if len(s) == 0 {
+		return json.Marshal(nil)
+	}
+	return json.Marshal(s.String())
+}
+
+func (s *Selector) UnmarshalJSON(b []byte) error {
+	var str string
+	err := json.Unmarshal(b, &str)
+	if err != nil {
+		return fmt.Errorf("parsing string: %w", err)
+	}
+	if str == "" {
+		return nil
+	}
+	parsed, err := Parse(str)
+	if err != nil {
+		return fmt.Errorf("parsing selector: %w", err)
+	}
+	*s = parsed
+	return nil
 }
 
 var Identity = Segment{".", true, false, false, nil, "", 0}
@@ -171,14 +196,6 @@ func (p ParseError) Error() string {
 
 func NewParseError(message string, source string, column int, token string) ParseError {
 	return ParseError{message, source, column, token}
-}
-
-func MustParse(sel string) Selector {
-	s, err := Parse(sel)
-	if err != nil {
-		panic(err)
-	}
-	return s
 }
 
 // Select uses a selector to extract a value from the passed subject.
