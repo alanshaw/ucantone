@@ -1,11 +1,11 @@
 package selector_test
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
-	"github.com/alanshaw/ucantone/testing/helpers"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 	"github.com/stretchr/testify/require"
 )
@@ -244,8 +244,8 @@ func printSegments(t *testing.T, s selector.Selector) {
 }
 
 func TestSelect(t *testing.T) {
-	var MustMap = func(m map[string]any) *datamodel.Map {
-		return helpers.Must(datamodel.NewMap(datamodel.WithValues(m)))(t)
+	var ToMap = func(m map[string]any) *datamodel.Map {
+		return datamodel.NewMap(datamodel.WithEntries(maps.All(m)))
 	}
 	var Name = func(first string, middle *string, last string) *datamodel.Map {
 		m := map[string]any{
@@ -255,11 +255,11 @@ func TestSelect(t *testing.T) {
 		if middle != nil {
 			m["middle"] = *middle
 		}
-		return MustMap(m)
+		return ToMap(m)
 	}
 
 	var Interest = func(name string, outdoor bool, experience int64) *datamodel.Map {
-		return MustMap(map[string]any{
+		return ToMap(map[string]any{
 			"name":       name,
 			"outdoor":    outdoor,
 			"experience": experience,
@@ -267,7 +267,7 @@ func TestSelect(t *testing.T) {
 	}
 
 	var User = func(name *datamodel.Map, age int64, nationalities []string, interests []*datamodel.Map) *datamodel.Map {
-		return MustMap(map[string]any{
+		return ToMap(map[string]any{
 			"name":          name,
 			"age":           age,
 			"nationalities": nationalities,

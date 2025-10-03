@@ -8,7 +8,7 @@ import (
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 )
 
-// Bind binds the passed map to the passed Go struct.
+// Bind binds the passed IPLD map to the passed Go struct.
 func Bind(m ipld.Map[string, any], ptr dagcbor.CBORUnmarshaler) error {
 	cm, ok := m.(dagcbor.CBORMarshaler)
 	if !ok {

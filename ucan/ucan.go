@@ -5,6 +5,7 @@ import (
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ipld"
+	"github.com/alanshaw/ucantone/result"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/crypto"
 	"github.com/alanshaw/ucantone/ucan/crypto/signature"
@@ -188,8 +189,25 @@ type Invocation interface {
 	Cause() *Link
 }
 
+// UCAN Invocation Receipt is a signed assertion of the executor state
+// describing the result and effects of the invocation.
 type Receipt interface {
-	Invocation // TODO
+	UCAN
+	// Ran is the CID of the executed task the receipt is for.
+	Ran() cid.Cid
+	// Out is the attested result of the execution of the task.
+	Out() result.Result[any, any]
+	// A unique, random nonce. It ensures that multiple (non-idempotent)
+	// invocations are unique. The nonce SHOULD be empty (0x) for commands that
+	// are idempotent (such as deterministic Wasm modules or standards-abiding
+	// HTTP PUT requests).
+	//
+	// https://github.com/ucan-wg/invocation/blob/main/README.md#nonce
+	Nonce() Nonce
+	// Delegations that prove the chain of authority.
+	Proofs() []Link
+	// The timestamp at which the receipt was created.
+	IssuedAt() *UTCUnixTimestamp
 }
 
 // Container is a format for transmitting one or more UCAN tokens as bytes,

@@ -86,9 +86,7 @@ func TestMatch(t *testing.T) {
 		})
 
 		t.Run("string in map", func(t *testing.T) {
-			val := helpers.Must(datamodel.NewMap(
-				datamodel.WithValues(map[string]any{"foo": "bar"}),
-			))(t)
+			val := datamodel.NewMap(datamodel.WithEntry("foo", "bar"))
 
 			sel := helpers.Must(selector.Parse(".foo"))(t)
 			pol := policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "bar")}}

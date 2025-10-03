@@ -228,7 +228,7 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 			} else if m, ok := cur.(ipld.Map[string, any]); ok {
 				var many []any
 				for k := range m.Keys() {
-					v, _ := m.Value(k)
+					v, _ := m.Get(k)
 					o, m, err := resolve(sel[i+1:], v, append(at[:], k))
 					if err != nil {
 						return nil, nil, err
@@ -250,7 +250,7 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 		} else if seg.Field != "" {
 			at = append(at, seg.Field)
 			if m, ok := cur.(ipld.Map[string, any]); ok {
-				v, ok := m.Value(seg.Field)
+				v, ok := m.Get(seg.Field)
 				if !ok && !seg.Optional {
 					return nil, nil, NewResolutionError(fmt.Sprintf("object has no field named: %s", seg.Field), at)
 				}

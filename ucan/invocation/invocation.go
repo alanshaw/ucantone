@@ -22,15 +22,7 @@ import (
 )
 
 // NoArguments can be used to issue an invocation with no arguments.
-var NoArguments ipld.Map[string, any]
-
-func init() {
-	empty, err := datamodel.NewMap()
-	if err != nil {
-		panic(err)
-	}
-	NoArguments = empty
-}
+var NoArguments ipld.Map[string, any] = datamodel.NewMap()
 
 // UCAN Invocation defines a format for expressing the intention to execute
 // delegated UCAN capabilities, and the attested receipts from an execution.

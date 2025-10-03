@@ -24,7 +24,7 @@ func TestMap(t *testing.T) {
 		err = decoded.UnmarshalCBOR(&buf)
 		require.NoError(t, err)
 
-		value, ok := decoded.Value("bytes")
+		value, ok := decoded.Get("bytes")
 		require.True(t, ok)
 		require.Equal(t, obj.Bytes, value)
 	})

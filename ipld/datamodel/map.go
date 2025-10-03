@@ -21,42 +21,35 @@ import (
 // values may be any of the types supported by [Any].
 type Map struct {
 	keys   []string
-	values map[string]cbg.Deferred
+	values map[string]*Any
 }
 
-type MapOption func(m *Map) error
+type MapOption func(m *Map)
 
-// WithValue adds the passed value to the new map. The value may be any of the
-// types supported by [Any].
-func WithValue(key string, value any) MapOption {
-	return func(m *Map) error {
-		return m.SetValue(key, value)
+// WithEntry adds the passed key/value pair to the new map. The value may be any
+// of the types supported by [Any].
+func WithEntry(key string, value any) MapOption {
+	return func(m *Map) {
+		m.Set(key, value)
 	}
 }
 
-// WithValues adds the passed values to the new map. The values may be any of
-// the types supported by [Any].
-func WithValues(values map[string]any) MapOption {
-	return func(m *Map) error {
-		for k, v := range values {
-			err := m.SetValue(k, v)
-			if err != nil {
-				return fmt.Errorf("setting value for key %s: %w", k, err)
-			}
+// WithEntries adds the passed key/value pairs to the new map. The values may be
+// any of the types supported by [Any].
+func WithEntries(entries iter.Seq2[string, any]) MapOption {
+	return func(m *Map) {
+		for k, v := range entries {
+			m.Set(k, v)
 		}
-		return nil
 	}
 }
 
-func NewMap(options ...MapOption) (*Map, error) {
-	m := Map{values: map[string]cbg.Deferred{}}
+func NewMap(options ...MapOption) *Map {
+	m := Map{values: map[string]*Any{}}
 	for _, opt := range options {
-		err := opt(&m)
-		if err != nil {
-			return nil, err
-		}
+		opt(&m)
 	}
-	return &m, nil
+	return &m
 }
 
 // NewMapFromCBORMarshaler creates a new [ipld.Map] from the passed CBOR
@@ -66,12 +59,12 @@ func NewMapFromCBORMarshaler(data dagcbor.CBORMarshaler) (*Map, error) {
 	var buf bytes.Buffer
 	err := data.MarshalCBOR(&buf)
 	if err != nil {
-		return nil, fmt.Errorf("marshalling CBOR: %w", err)
+		return nil, fmt.Errorf("marshaling CBOR: %w", err)
 	}
 	var m Map
 	err = m.UnmarshalCBOR(&buf)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshalling CBOR: %w", err)
+		return nil, fmt.Errorf("unmarshaling CBOR: %w", err)
 	}
 	return &m, nil
 }
@@ -86,28 +79,21 @@ func (m *Map) Keys() iter.Seq[string] {
 	}
 }
 
-func (m *Map) Value(k string) (any, bool) {
+func (m *Map) Get(k string) (any, bool) {
 	v, ok := m.values[k]
 	if !ok {
 		return nil, false
 	}
-	a := &Any{}
-	a.UnmarshalCBOR(bytes.NewReader(v.Raw))
-	return a.Value, true
+	return v.Value, true
 }
 
-func (m *Map) SetValue(k string, v any) error {
+func (m *Map) Set(k string, v any) {
 	a := Any{Value: v}
-	var buf bytes.Buffer
-	if err := a.MarshalCBOR(&buf); err != nil {
-		return err
-	}
 	_, ok := m.values[k]
-	m.values[k] = cbg.Deferred{Raw: buf.Bytes()}
+	m.values[k] = &a
 	if !ok {
 		m.keys = append(m.keys, k)
 	}
-	return nil
 }
 
 func (m *Map) MarshalCBOR(w io.Writer) error {
@@ -146,7 +132,7 @@ func (m *Map) MarshalCBOR(w io.Writer) error {
 
 		v := m.values[k]
 		if err := v.MarshalCBOR(w); err != nil {
-			return fmt.Errorf("marshalling map value for key: %s: %w", k, err)
+			return fmt.Errorf(`marshaling map value for key "%s": %w`, k, err)
 		}
 	}
 
@@ -154,7 +140,7 @@ func (m *Map) MarshalCBOR(w io.Writer) error {
 }
 
 func (m *Map) UnmarshalCBOR(r io.Reader) (err error) {
-	*m = Map{values: map[string]cbg.Deferred{}}
+	*m = Map{values: map[string]*Any{}}
 
 	cr := cbg.NewCborReader(r)
 
@@ -194,11 +180,11 @@ func (m *Map) UnmarshalCBOR(r io.Reader) (err error) {
 		name := string(nameBuf[:nameLen])
 		m.keys = append(m.keys, name)
 
-		d := cbg.Deferred{}
-		if err := d.UnmarshalCBOR(cr); err != nil {
-			return fmt.Errorf("failed to read deferred field %s: %w", name, err)
+		var a Any
+		if err := a.UnmarshalCBOR(cr); err != nil {
+			return fmt.Errorf(`unmarshaling map value for key "%s": %w`, name, err)
 		}
-		m.values[name] = d
+		m.values[name] = &a
 	}
 
 	return nil
@@ -223,13 +209,7 @@ func (m *Map) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 
-		a := &Any{}
-		err = a.UnmarshalCBOR(bytes.NewReader(m.values[k].Raw))
-		if err != nil {
-			return nil, err
-		}
-
-		switch v := a.Value.(type) {
+		switch v := m.values[k].Value.(type) {
 		case []byte:
 			_, err = b.WriteString(formatDAGJSONBytes(v))
 			if err != nil {
