@@ -175,6 +175,11 @@ type Task interface {
 type Invocation interface {
 	Task
 	UCAN
+	// Task returns the CID of the fields that comprise the task for the
+	// invocation.
+	//
+	// https://github.com/ucan-wg/invocation/blob/main/README.md#task
+	Task() cid.Cid
 	// Delegations that prove the chain of authority.
 	//
 	// https://github.com/ucan-wg/invocation/blob/main/README.md#proofs

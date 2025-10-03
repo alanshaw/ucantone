@@ -10,6 +10,13 @@ import (
 
 const Tag = "ucan/inv@1.0.0-rc.1"
 
+type TaskModel struct {
+	Sub   did.DID      `cborgen:"sub"`
+	Cmd   ucan.Command `cborgen:"cmd"`
+	Args  cbg.Deferred `cborgen:"args"`
+	Nonce ucan.Nonce   `cborgen:"nonce"`
+}
+
 type TokenPayloadModel1_0_0_rc1 struct {
 	// Issuer DID (sender).
 	Iss did.DID `cborgen:"iss"`

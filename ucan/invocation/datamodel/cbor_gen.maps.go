@@ -20,6 +20,204 @@ var _ = cid.Undef
 var _ = math.E
 var _ = sort.Sort
 
+func (t *TaskModel) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{164}); err != nil {
+		return err
+	}
+
+	// t.Cmd (command.Command) (string)
+	if len("cmd") > 8192 {
+		return xerrors.Errorf("Value in field \"cmd\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("cmd"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("cmd")); err != nil {
+		return err
+	}
+
+	if len(t.Cmd) > 8192 {
+		return xerrors.Errorf("Value in field t.Cmd was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.Cmd))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string(t.Cmd)); err != nil {
+		return err
+	}
+
+	// t.Sub (did.DID) (struct)
+	if len("sub") > 8192 {
+		return xerrors.Errorf("Value in field \"sub\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("sub"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("sub")); err != nil {
+		return err
+	}
+
+	if err := t.Sub.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Args (typegen.Deferred) (struct)
+	if len("args") > 8192 {
+		return xerrors.Errorf("Value in field \"args\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("args"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("args")); err != nil {
+		return err
+	}
+
+	if err := t.Args.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Nonce ([]uint8) (slice)
+	if len("nonce") > 8192 {
+		return xerrors.Errorf("Value in field \"nonce\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("nonce"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("nonce")); err != nil {
+		return err
+	}
+
+	if len(t.Nonce) > 2097152 {
+		return xerrors.Errorf("Byte array in field t.Nonce was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Nonce))); err != nil {
+		return err
+	}
+
+	if _, err := cw.Write(t.Nonce); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *TaskModel) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = TaskModel{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("TaskModel: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 5)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Cmd (command.Command) (string)
+		case "cmd":
+
+			{
+				sval, err := cbg.ReadStringWithMax(cr, 8192)
+				if err != nil {
+					return err
+				}
+
+				t.Cmd = command.Command(sval)
+			}
+			// t.Sub (did.DID) (struct)
+		case "sub":
+
+			{
+
+				if err := t.Sub.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Sub: %w", err)
+				}
+
+			}
+			// t.Args (typegen.Deferred) (struct)
+		case "args":
+
+			{
+
+				if err := t.Args.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("failed to read deferred field: %w", err)
+				}
+			}
+			// t.Nonce ([]uint8) (slice)
+		case "nonce":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 2097152 {
+				return fmt.Errorf("t.Nonce: byte array too large (%d)", extra)
+			}
+			if maj != cbg.MajByteString {
+				return fmt.Errorf("expected byte array")
+			}
+
+			if extra > 0 {
+				t.Nonce = make([]uint8, extra)
+			}
+
+			if _, err := io.ReadFull(cr, t.Nonce); err != nil {
+				return err
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
 func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)

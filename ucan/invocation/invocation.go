@@ -18,6 +18,7 @@ import (
 	"github.com/alanshaw/ucantone/varsig/algorithm/ed25519"
 	"github.com/alanshaw/ucantone/varsig/common"
 	cid "github.com/ipfs/go-cid"
+	multihash "github.com/multiformats/go-multihash/core"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
@@ -33,6 +34,7 @@ type Invocation struct {
 	model *idm.EnvelopeModel
 	args  *datamodel.Map
 	meta  *datamodel.Map
+	task  cid.Cid
 }
 
 // Parameters expected by the command.
@@ -134,6 +136,13 @@ func (inv *Invocation) Subject() ucan.Principal {
 	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Sub
 }
 
+// Task returns the CID of the fields that comprise the task for the invocation.
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md#task
+func (inv *Invocation) Task() cid.Cid {
+	return inv.task
+}
+
 var _ ucan.Invocation = (*Invocation)(nil)
 
 func Encode(inv ucan.Invocation) ([]byte, error) {
@@ -229,11 +238,30 @@ func Decode(data []byte) (*Invocation, error) {
 			return nil, fmt.Errorf("unmarshaling metadata CBOR: %w", err)
 		}
 	}
+	taskModel := idm.TaskModel{
+		Sub:   model.SigPayload.TokenPayload1_0_0_rc1.Sub,
+		Cmd:   model.SigPayload.TokenPayload1_0_0_rc1.Cmd,
+		Args:  model.SigPayload.TokenPayload1_0_0_rc1.Args,
+		Nonce: model.SigPayload.TokenPayload1_0_0_rc1.Nonce,
+	}
+	var taskBuf bytes.Buffer
+	err = taskModel.MarshalCBOR(&taskBuf)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling task CBOR: %w", err)
+	}
+	task, err := cid.V1Builder{
+		Codec:  dagcbor.Code,
+		MhType: multihash.SHA2_256,
+	}.Sum(taskBuf.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("hashing task bytes: %w", err)
+	}
 	return &Invocation{
 		sig:   sig,
 		model: &model,
 		args:  &args,
 		meta:  meta,
+		task:  task,
 	}, nil
 }
 
@@ -364,10 +392,30 @@ func Invoke(
 		}
 	}
 
+	taskModel := idm.TaskModel{
+		Sub:   model.SigPayload.TokenPayload1_0_0_rc1.Sub,
+		Cmd:   model.SigPayload.TokenPayload1_0_0_rc1.Cmd,
+		Args:  model.SigPayload.TokenPayload1_0_0_rc1.Args,
+		Nonce: model.SigPayload.TokenPayload1_0_0_rc1.Nonce,
+	}
+	var taskBuf bytes.Buffer
+	err = taskModel.MarshalCBOR(&taskBuf)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling task CBOR: %w", err)
+	}
+	task, err := cid.V1Builder{
+		Codec:  dagcbor.Code,
+		MhType: multihash.SHA2_256,
+	}.Sum(taskBuf.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("hashing task bytes: %w", err)
+	}
+
 	return &Invocation{
 		sig:   sig,
 		model: &model,
 		args:  argsMap,
 		meta:  metaMap,
+		task:  task,
 	}, nil
 }

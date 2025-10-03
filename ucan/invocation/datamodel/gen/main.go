@@ -12,6 +12,7 @@ func main() {
 		panic(err)
 	}
 	if err := cbg.WriteMapEncodersToFile("../cbor_gen.maps.go", "datamodel",
+		idm.TaskModel{},
 		idm.TokenPayloadModel1_0_0_rc1{},
 		idm.SigPayloadModel{},
 	); err != nil {

@@ -13,6 +13,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/container/datamodel"
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/invocation"
+	"github.com/alanshaw/ucantone/ucan/receipt"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multihash"
 )
@@ -85,10 +86,10 @@ func (c *Container) Receipts() []ucan.Receipt {
 	return c.rcpts
 }
 
-func (c *Container) Receipt(about cid.Cid) (ucan.Receipt, error) {
-	for _, inv := range c.invs {
-		if inv.Command() == "/ucan/assert" {
-			// TODO: inspect inv.Args to see if `about` field matches
+func (c *Container) Receipt(task cid.Cid) (ucan.Receipt, error) {
+	for _, rcpt := range c.rcpts {
+		if rcpt.Ran() == task {
+			return rcpt, nil
 		}
 	}
 	return nil, ErrNotFound
@@ -166,13 +167,13 @@ func Encode(codec byte, container ucan.Container) ([]byte, error) {
 		}
 		tokens = append(tokens, b)
 	}
-	// for _, rcpt := range container.Receipts() {
-	// 	b, err := receipt.Encode(rcpt)
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("encoding receipt: %w", err)
-	// 	}
-	// 	tokens = append(tokens, b)
-	// }
+	for _, rcpt := range container.Receipts() {
+		b, err := receipt.Encode(rcpt)
+		if err != nil {
+			return nil, fmt.Errorf("encoding receipt: %w", err)
+		}
+		tokens = append(tokens, b)
+	}
 	slices.SortFunc(tokens, bytes.Compare)
 
 	model := datamodel.ContainerModel{Ctn1: tokens}
@@ -270,11 +271,10 @@ func Decode(input []byte) (*Container, error) {
 			invs = append(invs, inv)
 			continue
 		}
-		// TODO: reinstate when implemented
-		// if rcpt, err := receipt.Decode(b); err != nil {
-		// 	rcpts = append(rcpts, rcpt)
-		// 	continue
-		// }
+		if rcpt, err := receipt.Decode(b); err == nil {
+			rcpts = append(rcpts, rcpt)
+			continue
+		}
 	}
 
 	return &Container{
