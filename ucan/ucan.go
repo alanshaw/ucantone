@@ -87,7 +87,7 @@ type UCAN interface {
 	// Arbitrary metadata.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#metadata
-	Metadata() ipld.Map[string, any]
+	Metadata() ipld.Map[string, ipld.Any]
 	// A unique, random nonce.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#nonce
@@ -158,7 +158,7 @@ type Task interface {
 	// Parameters expected by the command.
 	//
 	// https://github.com/ucan-wg/invocation/blob/main/README.md#arguments
-	Arguments() ipld.Map[string, any]
+	Arguments() ipld.Map[string, ipld.Any]
 	// A unique, random nonce. It ensures that multiple (non-idempotent)
 	// invocations are unique. The nonce SHOULD be empty (0x) for commands that
 	// are idempotent (such as deterministic Wasm modules or standards-abiding
@@ -201,7 +201,7 @@ type Receipt interface {
 	// Ran is the CID of the executed task the receipt is for.
 	Ran() cid.Cid
 	// Out is the attested result of the execution of the task.
-	Out() result.Result[any, any]
+	Out() result.Result[ipld.Any, ipld.Any]
 	// A unique, random nonce. It ensures that multiple (non-idempotent)
 	// invocations are unique. The nonce SHOULD be empty (0x) for commands that
 	// are idempotent (such as deterministic Wasm modules or standards-abiding

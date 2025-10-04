@@ -18,7 +18,7 @@ import (
 )
 
 // Map is a CBOR backed implementation of [ipld.Map]. Keys are strings and
-// values may be any of the types supported by [Any].
+// values may be any of the types supported by [ipld.Any].
 type Map struct {
 	keys   []string
 	values map[string]*Any
@@ -27,16 +27,16 @@ type Map struct {
 type MapOption func(m *Map)
 
 // WithEntry adds the passed key/value pair to the new map. The value may be any
-// of the types supported by [Any].
-func WithEntry(key string, value any) MapOption {
+// of the types supported by [ipld.Any].
+func WithEntry(key string, value ipld.Any) MapOption {
 	return func(m *Map) {
 		m.Set(key, value)
 	}
 }
 
 // WithEntries adds the passed key/value pairs to the new map. The values may be
-// any of the types supported by [Any].
-func WithEntries(entries iter.Seq2[string, any]) MapOption {
+// any of the types supported by [ipld.Any].
+func WithEntries(entries iter.Seq2[string, ipld.Any]) MapOption {
 	return func(m *Map) {
 		for k, v := range entries {
 			m.Set(k, v)
@@ -54,7 +54,7 @@ func NewMap(options ...MapOption) *Map {
 
 // NewMapFromCBORMarshaler creates a new [ipld.Map] from the passed CBOR
 // marshaler object. The object MUST marshal to a CBOR map type. It's values may
-// be any of the types supported by [Any].
+// be any of the types supported by [ipld.Any].
 func NewMapFromCBORMarshaler(data dagcbor.CBORMarshaler) (*Map, error) {
 	var buf bytes.Buffer
 	err := data.MarshalCBOR(&buf)
@@ -79,7 +79,7 @@ func (m *Map) Keys() iter.Seq[string] {
 	}
 }
 
-func (m *Map) Get(k string) (any, bool) {
+func (m *Map) Get(k string) (ipld.Any, bool) {
 	v, ok := m.values[k]
 	if !ok {
 		return nil, false
@@ -87,7 +87,7 @@ func (m *Map) Get(k string) (any, bool) {
 	return v.Value, true
 }
 
-func (m *Map) Set(k string, v any) {
+func (m *Map) Set(k string, v ipld.Any) {
 	a := Any{Value: v}
 	_, ok := m.values[k]
 	m.values[k] = &a
@@ -244,4 +244,4 @@ func formatDAGJSONBytes(bytes []byte) string {
 	return fmt.Sprintf(`{"/":{"bytes":"%s"}}`, base64.StdEncoding.EncodeToString(bytes))
 }
 
-var _ ipld.Map[string, any] = (*Map)(nil)
+var _ ipld.Map[string, ipld.Any] = (*Map)(nil)

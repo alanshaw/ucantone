@@ -23,7 +23,7 @@ import (
 )
 
 // NoArguments can be used to issue an invocation with no arguments.
-var NoArguments ipld.Map[string, any] = datamodel.NewMap()
+var NoArguments ipld.Map[string, ipld.Any] = datamodel.NewMap()
 
 // UCAN Invocation defines a format for expressing the intention to execute
 // delegated UCAN capabilities, and the attested receipts from an execution.
@@ -40,7 +40,7 @@ type Invocation struct {
 // Parameters expected by the command.
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#arguments
-func (inv *Invocation) Arguments() ipld.Map[string, any] {
+func (inv *Invocation) Arguments() ipld.Map[string, ipld.Any] {
 	return inv.args
 }
 
@@ -94,7 +94,7 @@ func (inv *Invocation) Issuer() ucan.Principal {
 // Arbitrary metadata or extensible fields.
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#metadata
-func (inv *Invocation) Metadata() ipld.Map[string, any] {
+func (inv *Invocation) Metadata() ipld.Map[string, ipld.Any] {
 	if inv.meta == nil {
 		return nil
 	}
@@ -269,7 +269,7 @@ func Invoke(
 	issuer ucan.Signer,
 	subject ucan.Subject,
 	command ucan.Command,
-	arguments ipld.Map[string, any],
+	arguments ipld.Map[string, ipld.Any],
 	options ...Option,
 ) (*Invocation, error) {
 	cfg := invocationConfig{}

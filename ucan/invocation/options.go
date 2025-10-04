@@ -16,7 +16,7 @@ type invocationConfig struct {
 	noexp bool
 	nnc   []byte
 	nonnc bool
-	meta  ipld.Map[string, any]
+	meta  ipld.Map[string, ipld.Any]
 	prf   []cid.Cid
 	cause *cid.Cid
 }
@@ -64,7 +64,7 @@ func WithNoNonce() Option {
 }
 
 // WithMetadata configures the arbitrary metadata for the UCAN.
-func WithMetadata(meta ipld.Map[string, any]) Option {
+func WithMetadata(meta ipld.Map[string, ipld.Any]) Option {
 	return func(cfg *invocationConfig) {
 		cfg.meta = meta
 	}

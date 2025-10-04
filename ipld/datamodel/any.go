@@ -7,6 +7,7 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/alanshaw/ucantone/ipld"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
@@ -16,7 +17,7 @@ import (
 //
 //   - Null (nil)
 //   - Boolean (bool)
-//   - Integer (int64)
+//   - Integer (int64, int)
 //   - String (string)
 //   - Bytes ([]byte)
 //   - List (slice)
@@ -33,13 +34,17 @@ type Any struct {
 //
 //   - nil
 //   - bool
+//   - int
 //   - int64
 //   - string
 //   - []byte
 //   - slice
 //   - [Map]
 //   - [cid.Cid]
-func NewAny(data any) *Any {
+//
+// Using a value other than the above types will result in an error when the
+// value is serialized to CBOR.
+func NewAny(data ipld.Any) *Any {
 	return &Any{Value: data}
 }
 
@@ -52,6 +57,8 @@ func (a *Any) MarshalCBOR(w io.Writer) error {
 	case *Map:
 		return v.MarshalCBOR(w)
 	case int64:
+		return cbg.CborInt(v).MarshalCBOR(w)
+	case int:
 		return cbg.CborInt(v).MarshalCBOR(w)
 	case bool:
 		return cbg.CborBool(v).MarshalCBOR(w)

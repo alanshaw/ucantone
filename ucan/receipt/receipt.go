@@ -27,7 +27,7 @@ const Command = command.Command("/ucan/assert/receipt")
 type Receipt struct {
 	sig   *signature.Signature
 	model *rdm.EnvelopeModel
-	out   result.Result[any, any]
+	out   result.Result[ipld.Any, ipld.Any]
 	meta  *datamodel.Map
 }
 
@@ -37,7 +37,7 @@ func (rcpt *Receipt) Ran() cid.Cid {
 }
 
 // Out is the attested result of the execution of the task.
-func (rcpt *Receipt) Out() result.Result[any, any] {
+func (rcpt *Receipt) Out() result.Result[ipld.Any, ipld.Any] {
 	return rcpt.out
 }
 
@@ -217,7 +217,7 @@ func Decode(data []byte) (*Receipt, error) {
 	}, nil
 }
 
-func Issue[O, X any](
+func Issue[O, X ipld.Any](
 	executor ucan.Signer,
 	ran cid.Cid,
 	out result.Result[O, X],

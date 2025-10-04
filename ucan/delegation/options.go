@@ -17,7 +17,7 @@ type delegationConfig struct {
 	noexp bool
 	nnc   []byte
 	nonnc bool
-	meta  ipld.Map[string, any]
+	meta  ipld.Map[string, ipld.Any]
 	pol   ucan.Policy
 }
 
@@ -70,7 +70,7 @@ func WithNotBefore(nbf ucan.UTCUnixTimestamp) Option {
 }
 
 // WithMetadata configures the arbitrary metadata for the UCAN.
-func WithMetadata(meta ipld.Map[string, any]) Option {
+func WithMetadata(meta ipld.Map[string, ipld.Any]) Option {
 	return func(cfg *delegationConfig) {
 		cfg.meta = meta
 	}

@@ -57,7 +57,7 @@ func (d *Delegation) Issuer() ucan.Principal {
 // A map of arbitrary metadata, facts, and proofs of knowledge.
 //
 // https://github.com/ucan-wg/spec/blob/main/README.md#metadata
-func (d *Delegation) Metadata() ipld.Map[string, any] {
+func (d *Delegation) Metadata() ipld.Map[string, ipld.Any] {
 	if d.meta == nil {
 		return nil
 	}
