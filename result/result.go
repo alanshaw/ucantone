@@ -1,14 +1,14 @@
 package result
 
 // Result is a golang compatible generic result type
-type Result[O any, X any] interface {
+type Result[O, X any] interface {
 	isResult(ok O, err X)
 }
 
-type okResult[O any, X any] struct {
+type okResult[O, X any] struct {
 	value O
 }
-type errResult[O any, X any] struct {
+type errResult[O, X any] struct {
 	value X
 }
 
@@ -16,7 +16,7 @@ func (o *okResult[O, X]) isResult(ok O, err X)  {}
 func (e *errResult[O, X]) isResult(ok O, err X) {}
 
 // MatchResultR3 handles a result with functions returning 3 values
-func MatchResultR3[O any, X any, R0, R1, R2 any](
+func MatchResultR3[O, X, R0, R1, R2 any](
 	result Result[O, X],
 	onOk func(ok O) (R0, R1, R2),
 	onError func(err X) (R0, R1, R2),
@@ -32,7 +32,7 @@ func MatchResultR3[O any, X any, R0, R1, R2 any](
 }
 
 // MatchResultR2 handles a result with functions returning two values
-func MatchResultR2[O any, X any, R0, R1 any](
+func MatchResultR2[O, X, R0, R1 any](
 	result Result[O, X],
 	onOk func(ok O) (R0, R1),
 	onError func(err X) (R0, R1),
@@ -48,7 +48,7 @@ func MatchResultR2[O any, X any, R0, R1 any](
 }
 
 // MatchResultR1 handles a result with functions returning one value
-func MatchResultR1[O any, X any, T0 any](
+func MatchResultR1[O, X, T0 any](
 	result Result[O, X],
 	onOk func(ok O) T0,
 	onError func(err X) T0,
@@ -64,7 +64,7 @@ func MatchResultR1[O any, X any, T0 any](
 }
 
 // MatchResultR1 handles a result with a functions that has no return value
-func MatchResultR0[O any, X any](
+func MatchResultR0[O, X any](
 	result Result[O, X],
 	onOk func(ok O),
 	onError func(err X),
@@ -165,7 +165,7 @@ func Wrap[O any, X comparable](inner func() (O, X)) Result[O, X] {
 	return Ok[O, X](o)
 }
 
-func Unwrap[O any, X any](result Result[O, X]) (O, X) {
+func Unwrap[O, X any](result Result[O, X]) (O, X) {
 	return MatchResultR2(result, func(ok O) (O, X) {
 		var err X
 		return ok, err
