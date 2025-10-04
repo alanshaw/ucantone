@@ -31,16 +31,6 @@ type Receipt struct {
 	meta  *datamodel.Map
 }
 
-// Ran is the CID of the executed task this receipt is for.
-func (rcpt *Receipt) Ran() cid.Cid {
-	return rcpt.model.SigPayload.TokenPayload1_0_0_rc1.Args.Ran
-}
-
-// Out is the attested result of the execution of the task.
-func (rcpt *Receipt) Out() result.Result[ipld.Any, ipld.Any] {
-	return rcpt.out
-}
-
 func (rcpt *Receipt) Audience() ucan.Principal {
 	return rcpt.model.SigPayload.TokenPayload1_0_0_rc1.Aud
 }
@@ -61,7 +51,7 @@ func (rcpt *Receipt) Issuer() ucan.Principal {
 	return rcpt.model.SigPayload.TokenPayload1_0_0_rc1.Iss
 }
 
-func (rcpt *Receipt) Metadata() ipld.Map[string, any] {
+func (rcpt *Receipt) Metadata() ipld.Map[string, ipld.Any] {
 	if rcpt.meta == nil {
 		return nil
 	}
@@ -77,8 +67,18 @@ func (rcpt *Receipt) Nonce() ucan.Nonce {
 	return rcpt.model.SigPayload.TokenPayload1_0_0_rc1.Nonce
 }
 
+// Out is the attested result of the execution of the task.
+func (rcpt *Receipt) Out() result.Result[ipld.Any, ipld.Any] {
+	return rcpt.out
+}
+
 func (rcpt *Receipt) Proofs() []cid.Cid {
 	return rcpt.model.SigPayload.TokenPayload1_0_0_rc1.Prf
+}
+
+// Ran is the CID of the executed task this receipt is for.
+func (rcpt *Receipt) Ran() cid.Cid {
+	return rcpt.model.SigPayload.TokenPayload1_0_0_rc1.Args.Ran
 }
 
 func (rcpt *Receipt) Signature() ucan.Signature {
