@@ -123,6 +123,8 @@ func Issue[O, X ipld.Any](
 		return nil, err
 	}
 
+	options = append(options, invocation.WithAudience(executor))
+
 	inv, err := invocation.Invoke(executor, executor.DID(), Command, &args, options...)
 	if err != nil {
 		return nil, err

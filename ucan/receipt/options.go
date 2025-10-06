@@ -5,7 +5,6 @@ import "github.com/alanshaw/ucantone/ucan/invocation"
 type Option = invocation.Option
 
 var (
-	WithAudience     = invocation.WithAudience
 	WithExpiration   = invocation.WithExpiration
 	WithNoExpiration = invocation.WithNoExpiration
 	WithNonce        = invocation.WithNonce
