@@ -68,6 +68,7 @@ type Verifier interface {
 type Link = cid.Cid
 
 type UCAN interface {
+	ipld.Block
 	// Issuer DID (sender).
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#issuer--audience
@@ -198,21 +199,11 @@ type Invocation interface {
 // describing the result and effects of the invocation.
 type Receipt interface {
 	UCAN
+	Invocation
 	// Ran is the CID of the executed task the receipt is for.
 	Ran() cid.Cid
 	// Out is the attested result of the execution of the task.
 	Out() result.Result[ipld.Any, ipld.Any]
-	// A unique, random nonce. It ensures that multiple (non-idempotent)
-	// invocations are unique. The nonce SHOULD be empty (0x) for commands that
-	// are idempotent (such as deterministic Wasm modules or standards-abiding
-	// HTTP PUT requests).
-	//
-	// https://github.com/ucan-wg/invocation/blob/main/README.md#nonce
-	Nonce() Nonce
-	// Delegations that prove the chain of authority.
-	Proofs() []Link
-	// The timestamp at which the receipt was created.
-	IssuedAt() *UTCUnixTimestamp
 }
 
 // Container is a format for transmitting one or more UCAN tokens as bytes,
@@ -231,6 +222,24 @@ type Container interface {
 	// Receipt retrieves a receipt from the container by the CID of a [Task] that
 	// was executed.
 	Receipt(Link) (Receipt, error)
+}
+
+// IsExpired checks if a UCAN is expired.
+func IsExpired(ucan UCAN) bool {
+	exp := ucan.Expiration()
+	if exp == nil {
+		return false
+	}
+	return *exp <= Now()
+}
+
+// IsTooEarly checks if a delegation is not active yet.
+func IsTooEarly(delegation Delegation) bool {
+	nbf := delegation.NotBefore()
+	if nbf == nil {
+		return false
+	}
+	return *nbf != 0 && Now() <= *nbf
 }
 
 // Now returns a UTC Unix timestamp for comparing it against time window of the

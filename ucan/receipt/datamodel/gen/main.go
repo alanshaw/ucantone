@@ -6,15 +6,8 @@ import (
 )
 
 func main() {
-	if err := cbg.WriteTupleEncodersToFile("../cbor_gen.tuples.go", "datamodel",
-		rdm.EnvelopeModel{},
-	); err != nil {
-		panic(err)
-	}
-	if err := cbg.WriteMapEncodersToFile("../cbor_gen.maps.go", "datamodel",
+	if err := cbg.WriteMapEncodersToFile("../cbor_gen.go", "datamodel",
 		rdm.ArgsModel{},
-		rdm.TokenPayloadModel1_0_0_rc1{},
-		rdm.SigPayloadModel{},
 	); err != nil {
 		panic(err)
 	}

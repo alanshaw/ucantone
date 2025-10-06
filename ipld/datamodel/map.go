@@ -1,7 +1,6 @@
 package datamodel
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -12,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/alanshaw/ucantone/ipld"
-	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
@@ -50,23 +48,6 @@ func NewMap(options ...MapOption) *Map {
 		opt(&m)
 	}
 	return &m
-}
-
-// NewMapFromCBORMarshaler creates a new [ipld.Map] from the passed CBOR
-// marshaler object. The object MUST marshal to a CBOR map type. It's values may
-// be any of the types supported by [ipld.Any].
-func NewMapFromCBORMarshaler(data dagcbor.CBORMarshaler) (*Map, error) {
-	var buf bytes.Buffer
-	err := data.MarshalCBOR(&buf)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling CBOR: %w", err)
-	}
-	var m Map
-	err = m.UnmarshalCBOR(&buf)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshaling CBOR: %w", err)
-	}
-	return &m, nil
 }
 
 func (m *Map) Keys() iter.Seq[string] {
@@ -245,3 +226,4 @@ func formatDAGJSONBytes(bytes []byte) string {
 }
 
 var _ ipld.Map[string, ipld.Any] = (*Map)(nil)
+var _ ipld.MutableMap[string, ipld.Any] = (*Map)(nil)

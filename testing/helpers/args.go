@@ -35,19 +35,18 @@ func RandomArgs(t *testing.T) ipld.Map[string, any] {
 	for range RandomBytes(t, 1)[0] {
 		list = append(list, RandomCID(t).String())
 	}
-	m, err := datamodel.NewMapFromCBORMarshaler(
-		&TestArgs{
-			ID:    RandomDID(t),
-			Link:  RandomCID(t),
-			Str:   RandomCID(t).String(),
-			Num:   int64(RandomBytes(t, 1)[0]),
+	var m datamodel.Map
+	err := datamodel.Rebind(&TestArgs{
+		ID:    RandomDID(t),
+		Link:  RandomCID(t),
+		Str:   RandomCID(t).String(),
+		Num:   int64(RandomBytes(t, 1)[0]),
+		Bytes: RandomBytes(t, 32),
+		Obj: TestObject{
 			Bytes: RandomBytes(t, 32),
-			Obj: TestObject{
-				Bytes: RandomBytes(t, 32),
-			},
-			List: list,
 		},
-	)
+		List: list,
+	}, &m)
 	require.NoError(t, err)
-	return m
+	return &m
 }

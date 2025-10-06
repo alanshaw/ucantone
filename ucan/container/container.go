@@ -267,12 +267,12 @@ func Decode(input []byte) (*Container, error) {
 			dlgs = append(dlgs, dlg)
 			continue
 		}
-		if inv, err := invocation.Decode(b); err == nil {
-			invs = append(invs, inv)
-			continue
-		}
 		if rcpt, err := receipt.Decode(b); err == nil {
 			rcpts = append(rcpts, rcpt)
+			continue
+		}
+		if inv, err := invocation.Decode(b); err == nil {
+			invs = append(invs, inv)
 			continue
 		}
 	}

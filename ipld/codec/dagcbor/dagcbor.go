@@ -8,3 +8,8 @@ const Code = 0x71
 
 type CBORMarshaler = cbg.CBORMarshaler
 type CBORUnmarshaler = cbg.CBORUnmarshaler
+
+type CBORMarshalable interface {
+	CBORMarshaler
+	CBORUnmarshaler
+}

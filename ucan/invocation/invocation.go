@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
@@ -30,6 +29,8 @@ var NoArguments ipld.Map[string, ipld.Any] = datamodel.NewMap()
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md
 type Invocation struct {
+	link  cid.Cid
+	bytes []byte
 	sig   *signature.Signature
 	model *idm.EnvelopeModel
 	args  *datamodel.Map
@@ -54,6 +55,11 @@ func (inv *Invocation) Audience() ucan.Principal {
 		return nil
 	}
 	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Aud
+}
+
+// Bytes returns the dag-cbor encoded bytes of this invocation.
+func (inv *Invocation) Bytes() []byte {
+	return inv.bytes
 }
 
 // A provenance claim describing which receipt requested it.
@@ -89,6 +95,12 @@ func (inv *Invocation) IssuedAt() *ucan.UTCUnixTimestamp {
 // https://github.com/ucan-wg/spec/blob/main/README.md#issuer--audience
 func (inv *Invocation) Issuer() ucan.Principal {
 	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Iss
+}
+
+// Link returns the IPLD link that corresponds to the encoded bytes of this
+// invocation.
+func (inv *Invocation) Link() cid.Cid {
+	return inv.link
 }
 
 // Arbitrary metadata or extensible fields.
@@ -146,69 +158,7 @@ func (inv *Invocation) Task() cid.Cid {
 var _ ucan.Invocation = (*Invocation)(nil)
 
 func Encode(inv ucan.Invocation) ([]byte, error) {
-	sigHeader, err := varsig.Encode(inv.Signature().Header())
-	if err != nil {
-		return nil, fmt.Errorf("encoding varsig header: %w", err)
-	}
-
-	var aud *did.DID
-	if inv.Audience() != nil {
-		a := inv.Audience().DID()
-		aud = &a
-	}
-
-	var args cbg.Deferred
-	if cmargs, ok := inv.Arguments().(dagcbor.CBORMarshaler); ok {
-		var buf bytes.Buffer
-		err := cmargs.MarshalCBOR(&buf)
-		if err != nil {
-			return nil, fmt.Errorf("marshaling arguments CBOR: %w", err)
-		}
-		args.Raw = buf.Bytes()
-	} else {
-		return nil, errors.New("arguments are not CBOR marshaler")
-	}
-
-	var meta *cbg.Deferred
-	if inv.Metadata() != nil {
-		if cmmeta, ok := inv.Metadata().(dagcbor.CBORMarshaler); ok {
-			var buf bytes.Buffer
-			err := cmmeta.MarshalCBOR(&buf)
-			if err != nil {
-				return nil, fmt.Errorf("marshaling metadata CBOR: %w", err)
-			}
-			meta = &cbg.Deferred{Raw: buf.Bytes()}
-		} else {
-			return nil, errors.New("metadata is not CBOR marshaler")
-		}
-	}
-
-	model := &idm.EnvelopeModel{
-		Signature: inv.Signature().Bytes(),
-		SigPayload: idm.SigPayloadModel{
-			Header: sigHeader,
-			TokenPayload1_0_0_rc1: &idm.TokenPayloadModel1_0_0_rc1{
-				Iss:   inv.Issuer().DID(),
-				Sub:   inv.Subject().DID(),
-				Aud:   aud,
-				Cmd:   inv.Command(),
-				Args:  args,
-				Prf:   inv.Proofs(),
-				Meta:  meta,
-				Nonce: inv.Nonce(),
-				Exp:   inv.Expiration(),
-				Iat:   inv.IssuedAt(),
-				Cause: inv.Cause(),
-			},
-		},
-	}
-
-	buf := bytes.NewBuffer([]byte{})
-	err = model.MarshalCBOR(buf)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return inv.Bytes(), nil
 }
 
 func Decode(data []byte) (*Invocation, error) {
@@ -256,7 +206,16 @@ func Decode(data []byte) (*Invocation, error) {
 	if err != nil {
 		return nil, fmt.Errorf("hashing task bytes: %w", err)
 	}
+	root, err := cid.V1Builder{
+		Codec:  dagcbor.Code,
+		MhType: multihash.SHA2_256,
+	}.Sum(data)
+	if err != nil {
+		return nil, fmt.Errorf("hashing invocation bytes: %w", err)
+	}
 	return &Invocation{
+		link:  root,
+		bytes: data,
 		sig:   sig,
 		model: &model,
 		args:  &args,
@@ -302,6 +261,16 @@ func Invoke(
 		return nil, errors.New("arguments are not CBOR marshaler")
 	}
 
+	var argsMap *datamodel.Map
+	if a, ok := arguments.(*datamodel.Map); ok {
+		argsMap = a
+	} else {
+		err := argsMap.UnmarshalCBOR(bytes.NewReader(args.Raw))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var meta *cbg.Deferred
 	if cfg.meta != nil {
 		if cmmeta, ok := cfg.meta.(dagcbor.CBORMarshaler); ok {
@@ -313,6 +282,18 @@ func Invoke(
 			meta = &cbg.Deferred{Raw: buf.Bytes()}
 		} else {
 			return nil, errors.New("metadata is not CBOR marshaler")
+		}
+	}
+
+	var metaMap *datamodel.Map
+	if cfg.meta != nil {
+		if m, ok := cfg.meta.(*datamodel.Map); ok {
+			metaMap = m
+		} else {
+			err := metaMap.UnmarshalCBOR(bytes.NewReader(meta.Raw))
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -356,40 +337,18 @@ func Invoke(
 		TokenPayload1_0_0_rc1: tokenPayload,
 	}
 
-	var buf bytes.Buffer
-	err = sigPayload.MarshalCBOR(&buf)
+	var sigBuf bytes.Buffer
+	err = sigPayload.MarshalCBOR(&sigBuf)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling token payload: %w", err)
 	}
 
-	sigBytes := issuer.Sign(buf.Bytes())
+	sigBytes := issuer.Sign(sigBuf.Bytes())
 	sig := signature.NewSignature(common.Ed25519DagCbor, sigBytes)
 
 	model := idm.EnvelopeModel{
 		Signature:  sigBytes,
 		SigPayload: sigPayload,
-	}
-
-	var argsMap *datamodel.Map
-	if a, ok := arguments.(*datamodel.Map); ok {
-		argsMap = a
-	} else {
-		err := argsMap.UnmarshalCBOR(bytes.NewReader(args.Raw))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var metaMap *datamodel.Map
-	if cfg.meta != nil {
-		if m, ok := cfg.meta.(*datamodel.Map); ok {
-			metaMap = m
-		} else {
-			err := metaMap.UnmarshalCBOR(bytes.NewReader(meta.Raw))
-			if err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	taskModel := idm.TaskModel{
@@ -411,7 +370,22 @@ func Invoke(
 		return nil, fmt.Errorf("hashing task bytes: %w", err)
 	}
 
+	var envBuf bytes.Buffer
+	err = model.MarshalCBOR(&envBuf)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling delegation CBOR: %w", err)
+	}
+	root, err := cid.V1Builder{
+		Codec:  dagcbor.Code,
+		MhType: multihash.SHA2_256,
+	}.Sum(envBuf.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("hashing delegation bytes: %w", err)
+	}
+
 	return &Invocation{
+		link:  root,
+		bytes: envBuf.Bytes(),
 		sig:   sig,
 		model: &model,
 		args:  argsMap,

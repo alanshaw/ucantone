@@ -20,8 +20,11 @@ func TestAny(t *testing.T) {
 		"test",
 		[]byte{1, 2, 3},
 		[]string{"one", "two", "three"},
-		helpers.Must(datamodel.NewMapFromCBORMarshaler(&helpers.TestObject{Bytes: []byte{1}}))(t),
-		helpers.Must(datamodel.NewMapFromCBORMarshaler(&helpers.TestObject2{Str: "X", Bytes: []byte{2}}))(t),
+		datamodel.NewMap(datamodel.WithEntry("bytes", []byte{1})),
+		datamodel.NewMap(
+			datamodel.WithEntry("str", "X"),
+			datamodel.WithEntry("bytes", []byte{2}),
+		),
 	}
 
 	for _, v := range values {
