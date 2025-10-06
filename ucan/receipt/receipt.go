@@ -89,7 +89,7 @@ func Issue[O, X ipld.Any](
 	executor ucan.Signer,
 	ran cid.Cid,
 	out result.Result[O, X],
-	options ...invocation.Option,
+	options ...Option,
 ) (*Receipt, error) {
 	outModel, err := result.MatchResultR2(
 		out,

@@ -93,6 +93,10 @@ func (d *Delegation) NotBefore() *ucan.UTCUnixTimestamp {
 	return d.model.SigPayload.TokenPayload1_0_0_rc1.Nbf
 }
 
+// Additional constraints on eventual invocation arguments, expressed in the
+// UCAN Policy Language.
+//
+// https://github.com/ucan-wg/delegation/blob/main/README.md#policy
 func (d *Delegation) Policy() ucan.Policy {
 	return d.model.SigPayload.TokenPayload1_0_0_rc1.Pol
 }
