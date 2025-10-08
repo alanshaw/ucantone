@@ -179,25 +179,6 @@ func tokenize(str string) []string {
 	return toks
 }
 
-type ParseError struct {
-	msg    string
-	Source string
-	Column int
-	Token  string
-}
-
-func (p ParseError) Name() string {
-	return "ParseError"
-}
-
-func (p ParseError) Error() string {
-	return p.msg
-}
-
-func NewParseError(message string, source string, column int, token string) ParseError {
-	return ParseError{message, source, column, token}
-}
-
 // Select uses a selector to extract a value from the passed subject.
 func Select(sel Selector, subject any) (any, []any, error) {
 	return resolve(sel, subject, nil)
@@ -266,7 +247,7 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, nil, NewResolutionError(fmt.Sprintf("can not index: %s on kind: %s", seg.Field, reflect.TypeOf(cur)), at)
+				return nil, nil, NewResolutionError(fmt.Sprintf("can not index: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
 			}
 		} else {
 			at = append(at, fmt.Sprintf("%d", seg.Index))
@@ -290,21 +271,4 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 	}
 
 	return cur, nil, nil
-}
-
-type ResolutionError struct {
-	msg string
-	At  []string
-}
-
-func (r ResolutionError) Name() string {
-	return "ResolutionError"
-}
-
-func (r ResolutionError) Error() string {
-	return fmt.Sprintf(`can not resolve path ".%s": %s`, strings.Join(r.At, "."), r.msg)
-}
-
-func NewResolutionError(message string, at []string) ResolutionError {
-	return ResolutionError{message, at}
 }

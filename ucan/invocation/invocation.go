@@ -352,10 +352,10 @@ func Invoke(
 	}
 
 	taskModel := idm.TaskModel{
-		Sub:   model.SigPayload.TokenPayload1_0_0_rc1.Sub,
-		Cmd:   model.SigPayload.TokenPayload1_0_0_rc1.Cmd,
-		Args:  model.SigPayload.TokenPayload1_0_0_rc1.Args,
-		Nonce: model.SigPayload.TokenPayload1_0_0_rc1.Nonce,
+		Sub:   tokenPayload.Sub,
+		Cmd:   tokenPayload.Cmd,
+		Args:  tokenPayload.Args,
+		Nonce: tokenPayload.Nonce,
 	}
 	var taskBuf bytes.Buffer
 	err = taskModel.MarshalCBOR(&taskBuf)

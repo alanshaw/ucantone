@@ -85,6 +85,8 @@ func Decode(data []byte) (*Receipt, error) {
 	return &Receipt{Invocation: *inv, ran: receiptArgs.Ran, out: out}, nil
 }
 
+// Issue creates a new receipt: an attestation that a task was run and it
+// resulted in the passed output.
 func Issue[O, X ipld.Any](
 	executor ucan.Signer,
 	ran cid.Cid,
