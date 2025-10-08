@@ -148,6 +148,7 @@ type Delegation interface {
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#task
 type Task interface {
+	ipld.Block
 	// A concrete, dispatchable message that can be sent to the Executor.
 	//
 	// https://github.com/ucan-wg/invocation/blob/main/README.md#command
@@ -176,11 +177,11 @@ type Task interface {
 type Invocation interface {
 	Task
 	UCAN
-	// Task returns the CID of the fields that comprise the task for the
-	// invocation.
+	// Task returns an object containing just the fields that comprise the task
+	// for the invocation.
 	//
 	// https://github.com/ucan-wg/invocation/blob/main/README.md#task
-	Task() cid.Cid
+	Task() Task
 	// Delegations that prove the chain of authority.
 	//
 	// https://github.com/ucan-wg/invocation/blob/main/README.md#proofs

@@ -35,7 +35,7 @@ type Invocation struct {
 	model *idm.EnvelopeModel
 	args  *datamodel.Map
 	meta  *datamodel.Map
-	task  cid.Cid
+	task  *Task
 }
 
 // Parameters expected by the command.
@@ -151,7 +151,7 @@ func (inv *Invocation) Subject() ucan.Principal {
 // Task returns the CID of the fields that comprise the task for the invocation.
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#task
-func (inv *Invocation) Task() cid.Cid {
+func (inv *Invocation) Task() ucan.Task {
 	return inv.task
 }
 
@@ -188,23 +188,14 @@ func Decode(data []byte) (*Invocation, error) {
 			return nil, fmt.Errorf("unmarshaling metadata CBOR: %w", err)
 		}
 	}
-	taskModel := idm.TaskModel{
-		Sub:   model.SigPayload.TokenPayload1_0_0_rc1.Sub,
-		Cmd:   model.SigPayload.TokenPayload1_0_0_rc1.Cmd,
-		Args:  model.SigPayload.TokenPayload1_0_0_rc1.Args,
-		Nonce: model.SigPayload.TokenPayload1_0_0_rc1.Nonce,
-	}
-	var taskBuf bytes.Buffer
-	err = taskModel.MarshalCBOR(&taskBuf)
+	task, err := NewTask(
+		model.SigPayload.TokenPayload1_0_0_rc1.Sub,
+		model.SigPayload.TokenPayload1_0_0_rc1.Cmd,
+		&args,
+		model.SigPayload.TokenPayload1_0_0_rc1.Nonce,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("marshaling task CBOR: %w", err)
-	}
-	task, err := cid.V1Builder{
-		Codec:  dagcbor.Code,
-		MhType: multihash.SHA2_256,
-	}.Sum(taskBuf.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("hashing task bytes: %w", err)
+		return nil, fmt.Errorf("creating new task: %w", err)
 	}
 	root, err := cid.V1Builder{
 		Codec:  dagcbor.Code,
@@ -351,23 +342,14 @@ func Invoke(
 		SigPayload: sigPayload,
 	}
 
-	taskModel := idm.TaskModel{
-		Sub:   tokenPayload.Sub,
-		Cmd:   tokenPayload.Cmd,
-		Args:  tokenPayload.Args,
-		Nonce: tokenPayload.Nonce,
-	}
-	var taskBuf bytes.Buffer
-	err = taskModel.MarshalCBOR(&taskBuf)
+	task, err := NewTask(
+		tokenPayload.Sub,
+		tokenPayload.Cmd,
+		arguments,
+		tokenPayload.Nonce,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("marshaling task CBOR: %w", err)
-	}
-	task, err := cid.V1Builder{
-		Codec:  dagcbor.Code,
-		MhType: multihash.SHA2_256,
-	}.Sum(taskBuf.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("hashing task bytes: %w", err)
+		return nil, fmt.Errorf("creating task: %w", err)
 	}
 
 	var envBuf bytes.Buffer
