@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/alanshaw/ucantone/did"
+	"github.com/alanshaw/ucantone/principal"
+	"github.com/alanshaw/ucantone/principal/verifier"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/ipfs/go-cid"
 )
@@ -40,6 +43,10 @@ type ValidateAuthorizationFunc func(ctx context.Context, auth Authorization[Argu
 // UCAN validator in order to augment it with additional DID methods support.
 type DIDResolverFunc func(ctx context.Context, nonDIDKey did.DID) ([]did.DID, error)
 
+// PrincipalParserFunc provides verifier instances that can validate UCANs
+// issued by a given principal.
+type PrincipalParserFunc func(str string) (principal.Verifier, error)
+
 // ValidationContext is the contextual information required by the validator in
 // order to validate the delegation chain of an invocation.
 type ValidationContext struct {
@@ -56,6 +63,9 @@ type ValidationContext struct {
 	// given principal or whether it needs to be delegated to the issuer. By
 	// default, the validator will permit self signed invocations/delegations.
 	CanIssue CanIssueFunc
+	// ParsePrincipal provides verifier instances that can validate UCANs issued
+	// by a given principal.
+	ParsePrincipal PrincipalParserFunc
 	// ResolveProof finds a delegation corresponding to a proof link.
 	ResolveProof ProofResolverFunc
 	// ResolveDIDKey is a function that resolves the key of a principal that is
@@ -70,6 +80,7 @@ type ValidationContext struct {
 
 type validationConfig struct {
 	canIssue              CanIssueFunc
+	parsePrincipal        PrincipalParserFunc
 	resolveProof          ProofResolverFunc
 	resolveDIDKey         DIDResolverFunc
 	validateAuthorization ValidateAuthorizationFunc
@@ -83,6 +94,30 @@ type Option func(*validationConfig)
 func WithCanIssue(canIssue CanIssueFunc) Option {
 	return func(vc *validationConfig) {
 		vc.canIssue = canIssue
+	}
+}
+
+func WithPrincipalParser(parsePrincipal PrincipalParserFunc) Option {
+	return func(vc *validationConfig) {
+		vc.parsePrincipal = parsePrincipal
+	}
+}
+
+func WithProofResolver(resolveProof ProofResolverFunc) Option {
+	return func(vc *validationConfig) {
+		vc.resolveProof = resolveProof
+	}
+}
+
+func WithDIDResolver(resolveDIDKey DIDResolverFunc) Option {
+	return func(vc *validationConfig) {
+		vc.resolveDIDKey = resolveDIDKey
+	}
+}
+
+func WithAuthorizationValidator(validateAuthorization ValidateAuthorizationFunc) Option {
+	return func(vc *validationConfig) {
+		vc.validateAuthorization = validateAuthorization
 	}
 }
 
@@ -119,6 +154,11 @@ func Access[A Arguments](
 		return Authorization[A]{}, err
 	}
 
+	err = Validate(ctx, invocation, proofs)
+	if err != nil {
+		return Authorization[A]{}, err
+	}
+
 	match, err := capability.Match(invocation, proofs)
 	if err != nil {
 		return Authorization[A]{}, err
@@ -132,7 +172,7 @@ func Access[A Arguments](
 }
 
 func ResolveProofs(ctx context.Context, resolve ProofResolverFunc, links []ucan.Link) (map[cid.Cid]ucan.Delegation, error) {
-	var proofs map[cid.Cid]ucan.Delegation
+	proofs := map[cid.Cid]ucan.Delegation{}
 	for _, link := range links {
 		prf, err := resolve(ctx, link)
 		if err != nil {
@@ -143,16 +183,114 @@ func ResolveProofs(ctx context.Context, resolve ProofResolverFunc, links []ucan.
 	return proofs, nil
 }
 
-// Validate an invocation to check it is within the time bound and that it is
+// Validate an invocation to check it is within the time bounds and that it is
 // authorized by the issuer.
-func ValidateTimeBounds(ctx context.Context, token ucan.UCAN) InvalidProof {
+func Validate(ctx context.Context, invocation ucan.Invocation, proofs map[cid.Cid]ucan.Delegation) error {
+	err := ValidateNotExpired(invocation)
+	if err != nil {
+		return err
+	}
+
+	for _, p := range proofs {
+		err := ValidateNotExpired(p)
+		if err != nil {
+			return err
+		}
+		err = ValidateNotTooEarly(p)
+		if err != nil {
+			return err
+		}
+	}
+
+	return VerifyAuthorization()
+}
+
+func ValidateNotExpired(token ucan.Token) error {
 	if ucan.IsExpired(token) {
 		return NewExpiredError(token)
 	}
-	if dlg, ok := token.(ucan.Delegation); ok {
-		if ucan.IsTooEarly(dlg) {
-			return NewNotValidBeforeError(token)
+	return nil
+}
+
+func ValidateNotTooEarly(dlg ucan.Delegation) error {
+	if ucan.IsTooEarly(dlg) {
+		return NewTooEarlyError(dlg)
+	}
+	return nil
+}
+
+// VerifyAuthorization verifies that the invocation has been authorized by the
+// issuer. If issued by the did:key principal it checks that the signature is
+// valid. If issued by the root authority it checks that the signature is valid.
+// If issued by the principal identified by other DID method attempts to resolve
+// a valid `ucan/attest` attestation from the authority, if attestation is not
+// found falls back to resolving did:key for the issuer and verifying its
+// signature.
+func VerifyAuthorization(
+	ctx context.Context,
+	authority ucan.Verifier,
+	parsePrincipal PrincipalParserFunc,
+	resolveDIDKey DIDResolverFunc,
+	inv ucan.Invocation,
+	prfs map[cid.Cid]ucan.Delegation,
+) error {
+	issuer := inv.Issuer().DID()
+	// If the issuer is a did:key we just verify a signature
+	if strings.HasPrefix(issuer.String(), "did:key:") {
+		verifier, err := parsePrincipal(issuer.String())
+		if err != nil {
+			return NewUnverifiableSignatureError(inv, err)
 		}
+		return VerifySignature(inv, verifier)
+	}
+
+	if inv.Issuer().DID() == authority.DID() {
+		return VerifySignature(inv, authority)
+	}
+
+	// TODO: verify attestations?
+
+	// Otherwise we try to resolve did:key from the DID instead
+	// and use that to verify the signature
+	ids, err := resolveDIDKey(ctx, issuer)
+	if err != nil {
+		return err
+	}
+
+	var verifyErr error
+	for _, id := range ids {
+		vfr, err := parsePrincipal(id.String())
+		if err != nil {
+			verifyErr = err
+			continue
+		}
+
+		wvfr, err := verifier.Wrap(vfr, issuer)
+		if err != nil {
+			verifyErr = err
+			continue
+		}
+
+		err = VerifySignature(inv, wvfr)
+		if err != nil {
+			verifyErr = err
+			continue
+		}
+		break
+	}
+
+	if verifyErr != nil {
+		return NewUnverifiableSignatureError(inv, verifyErr)
+	}
+
+	return nil
+}
+
+// VerifySignature verifies the token was signed by the passed verifier.
+func VerifySignature(token ucan.Token, verifier ucan.Verifier) error {
+	ok := ucan.VerifySignature(token, verifier)
+	if !ok {
+		return NewInvalidSignatureError(token, verifier)
 	}
 	return nil
 }
@@ -174,6 +312,6 @@ func FailDIDKeyResolution(ctx context.Context, d did.DID) ([]did.DID, error) {
 
 // NopValidateAuthorization is a [ValidateAuthorizationFunc] that does no
 // validation and returns nil.
-func NopValidateAuthorization(ctx context.Context, auth Authorization) error {
+func NopValidateAuthorization(ctx context.Context, auth Authorization[Arguments]) error {
 	return nil
 }

@@ -67,7 +67,7 @@ type Verifier interface {
 // Link is an IPLD link to a UCAN token.
 type Link = cid.Cid
 
-type UCAN interface {
+type Token interface {
 	ipld.Block
 	// Issuer DID (sender).
 	//
@@ -135,7 +135,7 @@ type Capability interface {
 // https://github.com/ucan-wg/delegation/blob/main/README.md
 type Delegation interface {
 	Capability
-	UCAN
+	Token
 	// NotBefore is the time in seconds since the Unix epoch that the UCAN
 	// becomes valid.
 	//
@@ -176,7 +176,7 @@ type Task interface {
 // https://github.com/ucan-wg/invocation/blob/main/README.md
 type Invocation interface {
 	Task
-	UCAN
+	Token
 	// Task returns an object containing just the fields that comprise the task
 	// for the invocation.
 	//
@@ -199,7 +199,7 @@ type Invocation interface {
 // UCAN Invocation Receipt is a signed assertion of the executor state
 // describing the result and effects of the invocation.
 type Receipt interface {
-	UCAN
+	Token
 	Invocation
 	// Ran is the CID of the executed task the receipt is for.
 	Ran() cid.Cid
@@ -226,7 +226,7 @@ type Container interface {
 }
 
 // IsExpired checks if a UCAN is expired.
-func IsExpired(ucan UCAN) bool {
+func IsExpired(ucan Token) bool {
 	exp := ucan.Expiration()
 	if exp == nil {
 		return false
@@ -247,4 +247,8 @@ func IsTooEarly(delegation Delegation) bool {
 // UCAN.
 func Now() UTCUnixTimestamp {
 	return UTCUnixTimestamp(time.Now().Unix())
+}
+
+func VerifySignature(token Token, verifier Verifier) bool {
+	return token.Issuer().DID() == verifier.DID() && verifier.Verify(token.Bytes(), token.Signature().Bytes())
 }
