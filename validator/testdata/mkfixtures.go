@@ -209,13 +209,13 @@ func makeValidMultipleProofsFixture(alice, bob, carol ucan.Signer) ValidModel {
 		cmd,
 		args,
 		invocation.WithNoExpiration(),
-		invocation.WithProofs(dlg1.Link(), dlg0.Link()),
+		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
 	))
 
 	return ValidModel{
 		Name:       "invocation with multiple proofs",
 		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg1))}, {must(delegation.Encode(dlg0))}},
+		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
 	}
 }
 
@@ -264,15 +264,15 @@ func makeValidPowerlineFixture(alice, bob, carol ucan.Signer) ValidModel {
 		carol,
 		bob,
 		cmd,
+		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
-		delegation.WithPowerline(true),
 	))
 
 	dlg1 := must(delegation.Delegate(
 		bob,
 		alice,
 		cmd,
-		delegation.WithSubject(carol),
+		delegation.WithPowerline(true),
 		delegation.WithNoExpiration(),
 	))
 
