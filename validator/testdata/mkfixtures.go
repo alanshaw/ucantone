@@ -88,11 +88,19 @@ type FixturesModel struct {
 	Invalid    []InvalidModel        `json:"invalid"`
 }
 
-func main() {
-	alice := must(ed25519.Decode(must(base64.RawStdEncoding.DecodeString(Alice))))
-	bob := must(ed25519.Decode(must(base64.RawStdEncoding.DecodeString(Bob))))
-	carol := must(ed25519.Decode(must(base64.RawStdEncoding.DecodeString(Carol))))
+var (
+	alice = must(ed25519.Decode(must(base64.RawStdEncoding.DecodeString(Alice))))
+	bob   = must(ed25519.Decode(must(base64.RawStdEncoding.DecodeString(Bob))))
+	carol = must(ed25519.Decode(must(base64.RawStdEncoding.DecodeString(Carol))))
+)
 
+var nonce = [][]byte{
+	[]byte{1, 2, 3},
+	[]byte{4, 5, 6},
+	[]byte{7, 8, 9},
+}
+
+func main() {
 	fixtures := FixturesModel{
 		Version:  "1.0.0-rc.1",
 		Comments: "Encoded as dag-json. Principals are ed25519 private key bytes with varint(0x1300) prefix.",
@@ -102,28 +110,28 @@ func main() {
 			"carol": BytesModel{Value: carol.Bytes()},
 		},
 		Valid: []ValidModel{
-			makeValidSelfSignedFixture(alice, bob, carol),
-			makeValidSingleNonTimeBoundedProofFixture(alice, bob, carol),
-			makeValidSingleActiveProofFixture(alice, bob, carol),
-			makeValidMultipleProofsFixture(alice, bob, carol),
-			makeValidMultipleActiveProofsFixture(alice, bob, carol),
-			makeValidPowerlineFixture(alice, bob, carol),
+			makeValidSelfSignedFixture(),
+			makeValidSingleNonTimeBoundedProofFixture(),
+			makeValidSingleActiveProofFixture(),
+			makeValidMultipleProofsFixture(),
+			makeValidMultipleActiveProofsFixture(),
+			makeValidPowerlineFixture(),
 		},
 		Invalid: []InvalidModel{
-			makeInvalidMissingProofFixture(alice, bob, carol),
-			makeInvalidExpiredProofFixture(alice, bob, carol),
-			makeInvalidExpiredInvocationFixture(alice, bob, carol),
-			makeInvalidInactiveProofFixture(alice, bob, carol),
+			makeInvalidMissingProofFixture(),
+			makeInvalidExpiredProofFixture(),
+			makeInvalidInactiveProofFixture(),
+			makeInvalidExpiredInvocationFixture(),
 		},
 	}
 
 	fmt.Println(string(must(json.MarshalIndent(fixtures, "", "  "))))
 }
 
-func makeValidSelfSignedFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidSelfSignedFixture() ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 	args := datamodel.NewMap()
-	inv := must(invocation.Invoke(alice, alice, cmd, args, invocation.WithNoExpiration()))
+	inv := must(invocation.Invoke(alice, alice, cmd, args, invocation.WithNoExpiration(), invocation.WithNonce(nonce[0])))
 
 	return ValidModel{
 		Name:       "self signed",
@@ -132,7 +140,7 @@ func makeValidSelfSignedFixture(alice, bob, carol ucan.Signer) ValidModel {
 	}
 }
 
-func makeValidSingleNonTimeBoundedProofFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidSingleNonTimeBoundedProofFixture() ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 	dlg0 := must(delegation.Delegate(
 		bob,
@@ -140,16 +148,17 @@ func makeValidSingleNonTimeBoundedProofFixture(alice, bob, carol ucan.Signer) Va
 		cmd,
 		delegation.WithSubject(bob),
 		delegation.WithNoExpiration(),
+		delegation.WithNonce(nonce[0]),
 	))
 
-	args := datamodel.NewMap()
 	inv := must(invocation.Invoke(
 		alice,
 		bob,
 		cmd,
-		args,
+		invocation.NoArguments{},
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link()),
+		invocation.WithNonce(nonce[1]),
 	))
 
 	return ValidModel{
@@ -159,7 +168,7 @@ func makeValidSingleNonTimeBoundedProofFixture(alice, bob, carol ucan.Signer) Va
 	}
 }
 
-func makeValidSingleActiveProofFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidSingleActiveProofFixture() ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 	nbf := ucan.UTCUnixTimestamp(must(time.Parse(time.RFC3339, "2025-10-20T11:08:35Z")).Unix())
 	dlg0 := must(delegation.Delegate(
@@ -169,16 +178,17 @@ func makeValidSingleActiveProofFixture(alice, bob, carol ucan.Signer) ValidModel
 		delegation.WithSubject(bob),
 		delegation.WithNotBefore(nbf),
 		delegation.WithNoExpiration(),
+		delegation.WithNonce(nonce[0]),
 	))
 
-	args := datamodel.NewMap()
 	inv := must(invocation.Invoke(
 		alice,
 		bob,
 		cmd,
-		args,
+		invocation.NoArguments{},
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link()),
+		invocation.WithNonce(nonce[1]),
 	))
 
 	return ValidModel{
@@ -188,7 +198,7 @@ func makeValidSingleActiveProofFixture(alice, bob, carol ucan.Signer) ValidModel
 	}
 }
 
-func makeValidMultipleProofsFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidMultipleProofsFixture() ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 	dlg0 := must(delegation.Delegate(
 		carol,
@@ -196,6 +206,7 @@ func makeValidMultipleProofsFixture(alice, bob, carol ucan.Signer) ValidModel {
 		cmd,
 		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
+		delegation.WithNonce(nonce[0]),
 	))
 
 	dlg1 := must(delegation.Delegate(
@@ -204,16 +215,17 @@ func makeValidMultipleProofsFixture(alice, bob, carol ucan.Signer) ValidModel {
 		cmd,
 		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
+		delegation.WithNonce(nonce[1]),
 	))
 
-	args := datamodel.NewMap()
 	inv := must(invocation.Invoke(
 		alice,
 		carol,
 		cmd,
-		args,
+		invocation.NoArguments{},
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithNonce(nonce[2]),
 	))
 
 	return ValidModel{
@@ -223,7 +235,7 @@ func makeValidMultipleProofsFixture(alice, bob, carol ucan.Signer) ValidModel {
 	}
 }
 
-func makeValidMultipleActiveProofsFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidMultipleActiveProofsFixture() ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 
 	dlg0 := must(delegation.Delegate(
@@ -232,6 +244,7 @@ func makeValidMultipleActiveProofsFixture(alice, bob, carol ucan.Signer) ValidMo
 		cmd,
 		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
+		delegation.WithNonce(nonce[0]),
 	))
 
 	nbf := ucan.UTCUnixTimestamp(must(time.Parse(time.RFC3339, "2025-10-20T11:08:35Z")).Unix())
@@ -242,16 +255,17 @@ func makeValidMultipleActiveProofsFixture(alice, bob, carol ucan.Signer) ValidMo
 		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
 		delegation.WithNotBefore(nbf),
+		delegation.WithNonce(nonce[1]),
 	))
 
-	args := datamodel.NewMap()
 	inv := must(invocation.Invoke(
 		alice,
 		carol,
 		cmd,
-		args,
+		invocation.NoArguments{},
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithNonce(nonce[2]),
 	))
 
 	return ValidModel{
@@ -261,7 +275,7 @@ func makeValidMultipleActiveProofsFixture(alice, bob, carol ucan.Signer) ValidMo
 	}
 }
 
-func makeValidPowerlineFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidPowerlineFixture() ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 
 	dlg0 := must(delegation.Delegate(
@@ -270,6 +284,7 @@ func makeValidPowerlineFixture(alice, bob, carol ucan.Signer) ValidModel {
 		cmd,
 		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
+		delegation.WithNonce(nonce[0]),
 	))
 
 	dlg1 := must(delegation.Delegate(
@@ -278,16 +293,17 @@ func makeValidPowerlineFixture(alice, bob, carol ucan.Signer) ValidModel {
 		cmd,
 		delegation.WithPowerline(true),
 		delegation.WithNoExpiration(),
+		delegation.WithNonce(nonce[1]),
 	))
 
-	args := datamodel.NewMap()
 	inv := must(invocation.Invoke(
 		alice,
 		carol,
 		cmd,
-		args,
+		invocation.NoArguments{},
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithNonce(nonce[2]),
 	))
 
 	return ValidModel{
@@ -297,7 +313,7 @@ func makeValidPowerlineFixture(alice, bob, carol ucan.Signer) ValidModel {
 	}
 }
 
-func makeInvalidMissingProofFixture(alice, bob, carol ucan.Signer) InvalidModel {
+func makeInvalidMissingProofFixture() InvalidModel {
 	cmd := must(command.Parse("/msg/send"))
 
 	dlg0 := must(delegation.Delegate(
@@ -306,16 +322,17 @@ func makeInvalidMissingProofFixture(alice, bob, carol ucan.Signer) InvalidModel 
 		cmd,
 		delegation.WithSubject(bob),
 		delegation.WithNoExpiration(),
+		delegation.WithNonce(nonce[0]),
 	))
 
-	args := datamodel.NewMap()
 	inv := must(invocation.Invoke(
 		alice,
 		carol,
 		cmd,
-		args,
+		invocation.NoArguments{},
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link()),
+		invocation.WithNonce(nonce[1]),
 	))
 
 	return InvalidModel{
@@ -328,7 +345,7 @@ func makeInvalidMissingProofFixture(alice, bob, carol ucan.Signer) InvalidModel 
 	}
 }
 
-func makeInvalidExpiredProofFixture(alice, bob, carol ucan.Signer) InvalidModel {
+func makeInvalidExpiredProofFixture() InvalidModel {
 	cmd := must(command.Parse("/msg/send"))
 
 	exp := ucan.UTCUnixTimestamp(must(time.Parse(time.RFC3339, "2025-10-20T11:08:35Z")).Unix())
@@ -338,16 +355,17 @@ func makeInvalidExpiredProofFixture(alice, bob, carol ucan.Signer) InvalidModel 
 		cmd,
 		delegation.WithSubject(bob),
 		delegation.WithExpiration(exp),
+		delegation.WithNonce(nonce[0]),
 	))
 
-	args := datamodel.NewMap()
 	inv := must(invocation.Invoke(
 		alice,
 		carol,
 		cmd,
-		args,
+		invocation.NoArguments{},
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link()),
+		invocation.WithNonce(nonce[1]),
 	))
 
 	return InvalidModel{
@@ -360,7 +378,7 @@ func makeInvalidExpiredProofFixture(alice, bob, carol ucan.Signer) InvalidModel 
 	}
 }
 
-func makeInvalidInactiveProofFixture(alice, bob, carol ucan.Signer) InvalidModel {
+func makeInvalidInactiveProofFixture() InvalidModel {
 	cmd := must(command.Parse("/msg/send"))
 
 	nbf := ucan.UTCUnixTimestamp(must(time.Parse(time.RFC3339, "9999-12-31T23:59:59Z")).Unix())
@@ -371,16 +389,17 @@ func makeInvalidInactiveProofFixture(alice, bob, carol ucan.Signer) InvalidModel
 		delegation.WithSubject(bob),
 		delegation.WithNoExpiration(),
 		delegation.WithNotBefore(nbf),
+		delegation.WithNonce(nonce[0]),
 	))
 
-	args := datamodel.NewMap()
 	inv := must(invocation.Invoke(
 		alice,
 		carol,
 		cmd,
-		args,
+		invocation.NoArguments{},
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link()),
+		invocation.WithNonce(nonce[1]),
 	))
 
 	return InvalidModel{
@@ -393,7 +412,7 @@ func makeInvalidInactiveProofFixture(alice, bob, carol ucan.Signer) InvalidModel
 	}
 }
 
-func makeInvalidExpiredInvocationFixture(alice, bob, carol ucan.Signer) InvalidModel {
+func makeInvalidExpiredInvocationFixture() InvalidModel {
 	cmd := must(command.Parse("/msg/send"))
 
 	dlg0 := must(delegation.Delegate(
@@ -402,17 +421,18 @@ func makeInvalidExpiredInvocationFixture(alice, bob, carol ucan.Signer) InvalidM
 		cmd,
 		delegation.WithSubject(bob),
 		delegation.WithNoExpiration(),
+		delegation.WithNonce(nonce[0]),
 	))
 
-	args := datamodel.NewMap()
 	exp := ucan.UTCUnixTimestamp(must(time.Parse(time.RFC3339, "2025-10-20T11:08:35Z")).Unix())
 	inv := must(invocation.Invoke(
 		alice,
 		carol,
 		cmd,
-		args,
+		invocation.NoArguments{},
 		invocation.WithExpiration(exp),
 		invocation.WithProofs(dlg0.Link()),
+		invocation.WithNonce(nonce[1]),
 	))
 
 	return InvalidModel{
