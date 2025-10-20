@@ -1,8 +1,12 @@
 package datamodel
 
 type ErrorModel struct {
-	Name    string `cborgen:"name"`
-	Message string `cborgen:"message"`
+	ErrorName string `cborgen:"name"`
+	Message   string `cborgen:"message"`
+}
+
+func (u ErrorModel) Name() string {
+	return u.ErrorName
 }
 
 func (u ErrorModel) Error() string {

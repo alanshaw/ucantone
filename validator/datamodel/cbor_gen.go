@@ -30,7 +30,7 @@ func (t *ErrorModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Name (string) (string)
+	// t.ErrorName (string) (string)
 	if len("name") > 8192 {
 		return xerrors.Errorf("Value in field \"name\" was too long")
 	}
@@ -42,10 +42,14 @@ func (t *ErrorModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("FOO"))); err != nil {
+	if len(t.ErrorName) > 8192 {
+		return xerrors.Errorf("Value in field t.ErrorName was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.ErrorName))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("FOO")); err != nil {
+	if _, err := cw.WriteString(string(t.ErrorName)); err != nil {
 		return err
 	}
 
@@ -115,7 +119,7 @@ func (t *ErrorModel) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Name (string) (string)
+		// t.ErrorName (string) (string)
 		case "name":
 
 			{
@@ -124,7 +128,7 @@ func (t *ErrorModel) UnmarshalCBOR(r io.Reader) (err error) {
 					return err
 				}
 
-				t.Name = string(sval)
+				t.ErrorName = string(sval)
 			}
 			// t.Message (string) (string)
 		case "message":

@@ -19,6 +19,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type NamedError interface {
+	error
+	Name() string
+}
+
 type BytesModel struct {
 	Value []byte
 }
@@ -94,43 +99,76 @@ func TestFixtures(t *testing.T) {
 	}
 
 	for _, vector := range fixtures.Valid {
-		t.Run(vector.Name, func(t *testing.T) {
+		t.Run("valid "+vector.Name, func(t *testing.T) {
 			inv, err := invocation.Decode(vector.Invocation.Value)
 			require.NoError(t, err)
 			t.Log("invocation", inv.Link())
 
-			proofs := map[ucan.Link]ucan.Delegation{}
-			for _, p := range vector.Proofs {
-				dlg, err := delegation.Decode(p.Value)
-				require.NoError(t, err)
-				proofs[dlg.Link()] = dlg
-				t.Log("proof", dlg.Link())
-			}
-
-			resolveProof := func(_ context.Context, link ucan.Link) (ucan.Delegation, error) {
-				dlg, ok := proofs[link]
-				if !ok {
-					return nil, validator.NewUnavailableProofError(link, errors.New("not provided"))
-				}
-				return dlg, nil
-			}
-
+			proofs := decodeProofs(t, vector.Proofs)
 			authority, err := ed25519.Generate()
 			require.NoError(t, err)
+			vrf := authority.Verifier()
 
 			// TODO: capability details in the vector?
 			cmd, err := command.Parse("/msg/send")
 			require.NoError(t, err)
 
+			opts := []validator.Option{
+				validator.WithProofResolver(newMapProofResolver(proofs)),
+			}
 			cap := validator.NewCapability[invocation.NoArguments](cmd, ucan.Policy{})
-			_, err = validator.Access(
-				t.Context(),
-				authority.Verifier(),
-				cap,
-				inv,
-				validator.WithProofResolver(resolveProof),
-			)
+			_, err = validator.Access(t.Context(), vrf, cap, inv, opts...)
 			require.NoError(t, err)
 		})
 	}
+
+	for _, vector := range fixtures.Invalid {
+		t.Run("invalid "+vector.Name, func(t *testing.T) {
+			inv, err := invocation.Decode(vector.Invocation.Value)
+			require.NoError(t, err)
+			t.Log("invocation", inv.Link())
+
+			proofs := decodeProofs(t, vector.Proofs)
+			authority, err := ed25519.Generate()
+			require.NoError(t, err)
+			vrf := authority.Verifier()
+
+			// TODO: capability details in the vector?
+			cmd, err := command.Parse("/msg/send")
+			require.NoError(t, err)
+
+			opts := []validator.Option{
+				validator.WithProofResolver(newMapProofResolver(proofs)),
+			}
+			cap := validator.NewCapability[invocation.NoArguments](cmd, ucan.Policy{})
+			_, err = validator.Access(t.Context(), vrf, cap, inv, opts...)
+			require.Error(t, err)
+			t.Log(err)
+
+			var namedErr NamedError
+			require.True(t, errors.As(err, &namedErr))
+			require.Equal(t, vector.Error.Name, namedErr.Name())
+		})
+	}
+}
+
+func newMapProofResolver(proofs map[ucan.Link]ucan.Delegation) validator.ProofResolverFunc {
+	return func(_ context.Context, link ucan.Link) (ucan.Delegation, error) {
+		dlg, ok := proofs[link]
+		if !ok {
+			return nil, validator.NewUnavailableProofError(link, errors.New("not provided"))
+		}
+		return dlg, nil
+	}
+}
+
+func decodeProofs(t *testing.T, vectorProofs []BytesModel) map[ucan.Link]ucan.Delegation {
+	proofs := map[ucan.Link]ucan.Delegation{}
+	for _, p := range vectorProofs {
+		dlg, err := delegation.Decode(p.Value)
+		require.NoError(t, err)
+		proofs[dlg.Link()] = dlg
+		t.Log("proof", dlg.Link())
+	}
+	return proofs
 }
