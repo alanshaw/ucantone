@@ -22,7 +22,7 @@ func TestDelegation(t *testing.T) {
 		command := helpers.Must(command.Parse("/test/invoke"))(t)
 		then := ucan.Now()
 
-		initial, err := delegation.Delegate(issuer, audience, command)
+		initial, err := delegation.Delegate(issuer, audience, command, delegation.WithPowerline(true))
 		require.NoError(t, err)
 
 		encoded, err := delegation.Encode(initial)

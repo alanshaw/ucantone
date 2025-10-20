@@ -11,20 +11,39 @@ import (
 type Option func(cfg *delegationConfig)
 
 type delegationConfig struct {
-	sub   did.DID
-	exp   *ucan.UTCUnixTimestamp
-	nbf   *ucan.UTCUnixTimestamp
-	noexp bool
-	nnc   []byte
-	nonnc bool
-	meta  ipld.Map[string, ipld.Any]
-	pol   ucan.Policy
+	sub       *did.DID
+	powerline bool
+	exp       *ucan.UTCUnixTimestamp
+	nbf       *ucan.UTCUnixTimestamp
+	noexp     bool
+	nnc       []byte
+	nonnc     bool
+	meta      ipld.Map[string, ipld.Any]
+	pol       ucan.Policy
 }
 
 // WithSubject configures the DID of the subject of the delegation chain.
 func WithSubject(sub ucan.Principal) Option {
 	return func(cfg *delegationConfig) {
-		cfg.sub = sub.DID()
+		if sub == nil {
+			cfg.sub = nil
+		} else {
+			sub := sub.DID()
+			cfg.sub = &sub
+		}
+	}
+}
+
+// WithPowerline configures the delegation powerline. Setting powerline to true
+// allows the delegation subject to be unset.
+//
+// "Powerline" is a pattern for automatically delegating all future delegations
+// to another agent regardless of Subject.
+//
+// https://github.com/ucan-wg/delegation/blob/main/README.md#powerline
+func WithPowerline(on bool) Option {
+	return func(cfg *delegationConfig) {
+		cfg.powerline = on
 	}
 }
 

@@ -182,6 +182,17 @@ func Delegate(
 		return nil, fmt.Errorf("encoding varsig header: %w", err)
 	}
 
+	if cfg.sub == nil && !cfg.powerline {
+		return nil, errors.New("one of subject or powerline must be configured")
+	}
+	if cfg.sub != nil && cfg.powerline {
+		return nil, errors.New("subject and powerline cannot both be configured")
+	}
+	var sub did.DID
+	if cfg.sub != nil {
+		sub = *cfg.sub
+	}
+
 	cmd, err := cmd.Parse(string(command))
 	if err != nil {
 		return nil, fmt.Errorf("parsing command: %w", err)
@@ -235,7 +246,7 @@ func Delegate(
 	tokenPayload := &ddm.TokenPayloadModel1_0_0_rc1{
 		Iss:   issuer.DID(),
 		Aud:   audience.DID(),
-		Sub:   cfg.sub,
+		Sub:   sub,
 		Cmd:   cmd,
 		Pol:   cfg.pol,
 		Nonce: nnc,

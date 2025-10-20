@@ -90,32 +90,31 @@ func main() {
 			"carol": BytesModel{Value: carol.Bytes()},
 		},
 		Valid: []ValidModel{
-			makeValidSelfSignedNoArgsNoProofsNoExpiryFixture(alice, bob, carol),
-			makeValidNoPowerlineNoArgsSingleNonTimeBoundedProofNoExpiryFixture(alice, bob, carol),
-			makeValidPowerlineNoArgsSingleNonTimeBoundedProofNoExpiryFixture(alice, bob, carol),
-			makeValidNoPowerlineNoArgsSingleActiveNonExpiredProofNoExpiryFixture(alice, bob, carol),
-			makeValidNoPowerlineNoArgsNonTimeBoundedProofsNoExpiryFixture(alice, bob, carol),
-			makeValidNoPowerlineNoArgsActiveNonExpiredProofsNoExpiryFixture(alice, bob, carol),
-			makeValidPowerlineNoArgsNonTimeBoundedProofsNoExpiryFixture(alice, bob, carol),
+			makeValidSelfSignedFixture(alice, bob, carol),
+			makeValidSingleNonTimeBoundedProofFixture(alice, bob, carol),
+			makeValidSingleActiveProofFixture(alice, bob, carol),
+			makeValidMultipleProofsFixture(alice, bob, carol),
+			makeValidMultipleActiveProofsFixture(alice, bob, carol),
+			makeValidPowerlineFixture(alice, bob, carol),
 		},
 	}
 
 	fmt.Println(string(must(json.MarshalIndent(fixtures, "", "  "))))
 }
 
-func makeValidSelfSignedNoArgsNoProofsNoExpiryFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidSelfSignedFixture(alice, bob, carol ucan.Signer) ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 	args := datamodel.NewMap()
 	inv := must(invocation.Invoke(alice, alice, cmd, args, invocation.WithNoExpiration()))
 
 	return ValidModel{
-		Name:       "self signed invocation no args, no proofs, no expiry",
+		Name:       "self signed invocation",
 		Invocation: BytesModel{must(invocation.Encode(inv))},
 		Proofs:     []BytesModel{},
 	}
 }
 
-func makeValidNoPowerlineNoArgsSingleNonTimeBoundedProofNoExpiryFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidSingleNonTimeBoundedProofFixture(alice, bob, carol ucan.Signer) ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 	dlg0 := must(delegation.Delegate(
 		bob,
@@ -136,39 +135,13 @@ func makeValidNoPowerlineNoArgsSingleNonTimeBoundedProofNoExpiryFixture(alice, b
 	))
 
 	return ValidModel{
-		Name:       "invocation with no powerline, no args, single non-time bounded proof, no expiry",
+		Name:       "invocation with single non-time bounded proof",
 		Invocation: BytesModel{must(invocation.Encode(inv))},
 		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
 	}
 }
 
-func makeValidPowerlineNoArgsSingleNonTimeBoundedProofNoExpiryFixture(alice, bob, carol ucan.Signer) ValidModel {
-	cmd := must(command.Parse("/msg/send"))
-	dlg0 := must(delegation.Delegate(
-		bob,
-		alice,
-		cmd,
-		delegation.WithNoExpiration(),
-	))
-
-	args := datamodel.NewMap()
-	inv := must(invocation.Invoke(
-		alice,
-		bob,
-		cmd,
-		args,
-		invocation.WithNoExpiration(),
-		invocation.WithProofs(dlg0.Link()),
-	))
-
-	return ValidModel{
-		Name:       "invocation with powerline, no args, single non-time bounded proof, no expiry",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
-	}
-}
-
-func makeValidNoPowerlineNoArgsSingleActiveNonExpiredProofNoExpiryFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidSingleActiveProofFixture(alice, bob, carol ucan.Signer) ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 	nbf := ucan.UTCUnixTimestamp(must(time.Parse(time.RFC3339, "2025-10-20T11:08:35Z")).Unix())
 	dlg0 := must(delegation.Delegate(
@@ -191,13 +164,13 @@ func makeValidNoPowerlineNoArgsSingleActiveNonExpiredProofNoExpiryFixture(alice,
 	))
 
 	return ValidModel{
-		Name:       "invocation with no powerline, no args, single active non-expired proof, no expiry",
+		Name:       "invocation with single active non-expired proof",
 		Invocation: BytesModel{must(invocation.Encode(inv))},
 		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
 	}
 }
 
-func makeValidNoPowerlineNoArgsNonTimeBoundedProofsNoExpiryFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidMultipleProofsFixture(alice, bob, carol ucan.Signer) ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 	dlg0 := must(delegation.Delegate(
 		carol,
@@ -222,17 +195,17 @@ func makeValidNoPowerlineNoArgsNonTimeBoundedProofsNoExpiryFixture(alice, bob, c
 		cmd,
 		args,
 		invocation.WithNoExpiration(),
-		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithProofs(dlg1.Link(), dlg0.Link()),
 	))
 
 	return ValidModel{
-		Name:       "invocation with no powerline, no args, non non-time bounded proofs, no expiry",
+		Name:       "invocation with multiple proofs",
 		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
+		Proofs:     []BytesModel{{must(delegation.Encode(dlg1))}, {must(delegation.Encode(dlg0))}},
 	}
 }
 
-func makeValidNoPowerlineNoArgsActiveNonExpiredProofsNoExpiryFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidMultipleActiveProofsFixture(alice, bob, carol ucan.Signer) ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 
 	dlg0 := must(delegation.Delegate(
@@ -264,13 +237,13 @@ func makeValidNoPowerlineNoArgsActiveNonExpiredProofsNoExpiryFixture(alice, bob,
 	))
 
 	return ValidModel{
-		Name:       "invocation with no powerline, no args, active non-expired proofs, no expiry",
+		Name:       "invocation with multiple active proofs",
 		Invocation: BytesModel{must(invocation.Encode(inv))},
 		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
 	}
 }
 
-func makeValidPowerlineNoArgsNonTimeBoundedProofsNoExpiryFixture(alice, bob, carol ucan.Signer) ValidModel {
+func makeValidPowerlineFixture(alice, bob, carol ucan.Signer) ValidModel {
 	cmd := must(command.Parse("/msg/send"))
 
 	dlg0 := must(delegation.Delegate(
@@ -278,12 +251,14 @@ func makeValidPowerlineNoArgsNonTimeBoundedProofsNoExpiryFixture(alice, bob, car
 		bob,
 		cmd,
 		delegation.WithNoExpiration(),
+		delegation.WithPowerline(true),
 	))
 
 	dlg1 := must(delegation.Delegate(
 		bob,
 		alice,
 		cmd,
+		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
 	))
 
@@ -298,7 +273,7 @@ func makeValidPowerlineNoArgsNonTimeBoundedProofsNoExpiryFixture(alice, bob, car
 	))
 
 	return ValidModel{
-		Name:       "invocation with powerline, no args, non-time bounded proofs, no expiry",
+		Name:       "invocation with powerline",
 		Invocation: BytesModel{must(invocation.Encode(inv))},
 		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
 	}
