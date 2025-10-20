@@ -50,10 +50,11 @@ func NewMap(options ...MapOption) *Map {
 	return &m
 }
 
-func (m *Map) Keys() iter.Seq[string] {
-	return func(yield func(string) bool) {
+func (m *Map) Entries() iter.Seq2[string, ipld.Any] {
+	return func(yield func(string, ipld.Any) bool) {
 		for _, k := range m.keys {
-			if !yield(k) {
+			v := m.values[k].Value
+			if !yield(k, v) {
 				return
 			}
 		}
@@ -68,12 +69,32 @@ func (m *Map) Get(k string) (ipld.Any, bool) {
 	return v.Value, true
 }
 
+func (m *Map) Keys() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		for _, k := range m.keys {
+			if !yield(k) {
+				return
+			}
+		}
+	}
+}
+
 func (m *Map) Set(k string, v ipld.Any) {
 	a := Any{Value: v}
 	_, ok := m.values[k]
 	m.values[k] = &a
 	if !ok {
 		m.keys = append(m.keys, k)
+	}
+}
+
+func (m *Map) Values() iter.Seq[ipld.Any] {
+	return func(yield func(ipld.Any) bool) {
+		for _, v := range m.values {
+			if !yield(v.Value) {
+				return
+			}
+		}
 	}
 }
 

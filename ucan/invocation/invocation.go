@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
@@ -20,9 +21,6 @@ import (
 	multihash "github.com/multiformats/go-multihash/core"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
-
-// NoArguments can be used to issue an invocation with no arguments.
-var NoArguments ipld.Map[string, ipld.Any] = datamodel.NewMap()
 
 // UCAN Invocation defines a format for expressing the intention to execute
 // delegated UCAN capabilities, and the attested receipts from an execution.
@@ -241,51 +239,24 @@ func Invoke(
 	}
 
 	var args cbg.Deferred
-	if cmargs, ok := arguments.(dagcbor.CBORMarshaler); ok {
-		var buf bytes.Buffer
-		err := cmargs.MarshalCBOR(&buf)
-		if err != nil {
-			return nil, fmt.Errorf("marshaling arguments CBOR: %w", err)
-		}
-		args.Raw = buf.Bytes()
-	} else {
-		return nil, errors.New("arguments are not CBOR marshaler")
+	argsMap := datamodel.NewMap(datamodel.WithEntries(arguments.Entries()))
+	var argsBuf bytes.Buffer
+	err = argsMap.MarshalCBOR(&argsBuf)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling arguments CBOR: %w", err)
 	}
-
-	var argsMap *datamodel.Map
-	if a, ok := arguments.(*datamodel.Map); ok {
-		argsMap = a
-	} else {
-		err := argsMap.UnmarshalCBOR(bytes.NewReader(args.Raw))
-		if err != nil {
-			return nil, err
-		}
-	}
+	args.Raw = argsBuf.Bytes()
 
 	var meta *cbg.Deferred
-	if cfg.meta != nil {
-		if cmmeta, ok := cfg.meta.(dagcbor.CBORMarshaler); ok {
-			var buf bytes.Buffer
-			err := cmmeta.MarshalCBOR(&buf)
-			if err != nil {
-				return nil, fmt.Errorf("marshaling metadata CBOR: %w", err)
-			}
-			meta = &cbg.Deferred{Raw: buf.Bytes()}
-		} else {
-			return nil, errors.New("metadata is not CBOR marshaler")
-		}
-	}
-
 	var metaMap *datamodel.Map
 	if cfg.meta != nil {
-		if m, ok := cfg.meta.(*datamodel.Map); ok {
-			metaMap = m
-		} else {
-			err := metaMap.UnmarshalCBOR(bytes.NewReader(meta.Raw))
-			if err != nil {
-				return nil, err
-			}
+		metaMap = datamodel.NewMap(datamodel.WithEntries(cfg.meta.Entries()))
+		var buf bytes.Buffer
+		err := metaMap.MarshalCBOR(&buf)
+		if err != nil {
+			return nil, fmt.Errorf("marshaling metadata CBOR: %w", err)
 		}
+		meta = &cbg.Deferred{Raw: buf.Bytes()}
 	}
 
 	nnc := cfg.nnc
@@ -331,7 +302,7 @@ func Invoke(
 	var sigBuf bytes.Buffer
 	err = sigPayload.MarshalCBOR(&sigBuf)
 	if err != nil {
-		return nil, fmt.Errorf("marshaling token payload: %w", err)
+		return nil, fmt.Errorf("marshaling signature payload: %w", err)
 	}
 
 	sigBytes := issuer.Sign(sigBuf.Bytes())
@@ -374,4 +345,69 @@ func Invoke(
 		meta:  metaMap,
 		task:  task,
 	}, nil
+}
+
+func VerifySignature(inv ucan.Invocation, verifier ucan.Verifier) (bool, error) {
+	var sub did.DID
+	if inv.Subject() != nil {
+		sub = inv.Subject().DID()
+	}
+	var aud *did.DID
+	if inv.Audience() != nil {
+		a := inv.Audience().DID()
+		aud = &a
+	}
+
+	var args cbg.Deferred
+	argsMap := datamodel.NewMap(datamodel.WithEntries(inv.Arguments().Entries()))
+	var argsBuf bytes.Buffer
+	err := argsMap.MarshalCBOR(&argsBuf)
+	if err != nil {
+		return false, fmt.Errorf("marshaling arguments CBOR: %w", err)
+	}
+	args.Raw = argsBuf.Bytes()
+
+	var meta *cbg.Deferred
+	var metaMap *datamodel.Map
+	if inv.Metadata() != nil {
+		metaMap = datamodel.NewMap(datamodel.WithEntries(inv.Metadata().Entries()))
+		var buf bytes.Buffer
+		err := metaMap.MarshalCBOR(&buf)
+		if err != nil {
+			return false, fmt.Errorf("marshaling metadata CBOR: %w", err)
+		}
+		meta = &cbg.Deferred{Raw: buf.Bytes()}
+	}
+
+	tokenPayload := &idm.TokenPayloadModel1_0_0_rc1{
+		Iss:   inv.Issuer().DID(),
+		Sub:   sub,
+		Aud:   aud,
+		Cmd:   inv.Command(),
+		Args:  args,
+		Prf:   inv.Proofs(),
+		Meta:  meta,
+		Nonce: inv.Nonce(),
+		Exp:   inv.Expiration(),
+		Iat:   inv.IssuedAt(),
+		Cause: inv.Cause(),
+	}
+
+	h, err := varsig.Encode(inv.Signature().Header())
+	if err != nil {
+		return false, fmt.Errorf("encoding varsig header: %w", err)
+	}
+
+	sigPayload := idm.SigPayloadModel{
+		Header:                h,
+		TokenPayload1_0_0_rc1: tokenPayload,
+	}
+
+	var sigBuf bytes.Buffer
+	err = sigPayload.MarshalCBOR(&sigBuf)
+	if err != nil {
+		return false, fmt.Errorf("marshaling signature payload: %w", err)
+	}
+
+	return inv.Issuer().DID() == verifier.DID() && verifier.Verify(sigBuf.Bytes(), inv.Signature().Bytes()), nil
 }

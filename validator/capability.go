@@ -2,7 +2,6 @@ package validator
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
@@ -20,7 +19,6 @@ type Arguments interface {
 
 type Task[A Arguments] struct {
 	*invocation.Task
-	args A
 }
 
 func NewTask[A Arguments](
@@ -29,27 +27,21 @@ func NewTask[A Arguments](
 	arguments ipld.Map[string, ipld.Any],
 	nonce ucan.Nonce,
 ) (*Task[A], error) {
-	cmargs, ok := arguments.(dagcbor.CBORMarshaler)
-	if !ok {
-		return nil, fmt.Errorf("arguments are not CBOR marshaler")
-	}
-	var args A
-	if err := datamodel.Rebind(cmargs, args); err != nil {
-		return nil, NewMalformedArgumentsError(command, err)
-	}
 	task, err := invocation.NewTask(subject, command, arguments, nonce)
 	if err != nil {
 		return nil, err
 	}
-	return &Task[A]{
-		Task: task,
-		args: args,
-	}, nil
+	return &Task[A]{Task: task}, nil
 }
 
-// BindArgs returns the arguments bound to the argument type var for this task.
-func (t *Task[A]) BindArgs() A {
-	return t.args
+// BindArguments binds the arguments to the arguments type for this task.
+func (t *Task[A]) BindArguments() (A, error) {
+	argsMap := datamodel.NewMap(datamodel.WithEntries(t.Arguments().Entries()))
+	var args A
+	if err := datamodel.Rebind(argsMap, args); err != nil {
+		return args, NewMalformedArgumentsError(t.Command(), err)
+	}
+	return args, nil
 }
 
 var _ ucan.Task = (*Task[Arguments])(nil)

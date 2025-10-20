@@ -1,7 +1,6 @@
 package ucan
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/alanshaw/ucantone/did"
@@ -248,9 +247,4 @@ func IsTooEarly(delegation Delegation) bool {
 // UCAN.
 func Now() UTCUnixTimestamp {
 	return UTCUnixTimestamp(time.Now().Unix())
-}
-
-func VerifySignature(token Token, verifier Verifier) bool {
-	fmt.Println("issuer", token.Issuer().DID(), "verifier", verifier.DID())
-	return token.Issuer().DID() == verifier.DID() && verifier.Verify(token.Bytes(), token.Signature().Bytes())
 }

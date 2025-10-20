@@ -11,6 +11,8 @@ import (
 	edverifier "github.com/alanshaw/ucantone/principal/ed25519/verifier"
 	"github.com/alanshaw/ucantone/principal/verifier"
 	"github.com/alanshaw/ucantone/ucan"
+	"github.com/alanshaw/ucantone/ucan/delegation"
+	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/ipfs/go-cid"
 )
 
@@ -250,11 +252,11 @@ func VerifyAuthorization(
 		if err != nil {
 			return NewUnverifiableSignatureError(inv, err)
 		}
-		return VerifySignature(inv, verifier)
+		return VerifyInvocationSignature(inv, verifier)
 	}
 
 	if inv.Issuer().DID() == authority.DID() {
-		return VerifySignature(inv, authority)
+		return VerifyInvocationSignature(inv, authority)
 	}
 
 	// TODO: verify attestations?
@@ -280,7 +282,7 @@ func VerifyAuthorization(
 			continue
 		}
 
-		err = VerifySignature(inv, wvfr)
+		err = VerifyInvocationSignature(inv, wvfr)
 		if err != nil {
 			verifyErr = err
 			continue
@@ -297,11 +299,26 @@ func VerifyAuthorization(
 	return nil
 }
 
-// VerifySignature verifies the token was signed by the passed verifier.
-func VerifySignature(token ucan.Token, verifier ucan.Verifier) error {
-	ok := ucan.VerifySignature(token, verifier)
+// VerifyInvocationSignature verifies the invocation was signed by the passed verifier.
+func VerifyInvocationSignature(inv ucan.Invocation, verifier ucan.Verifier) error {
+	ok, err := invocation.VerifySignature(inv, verifier)
+	if err != nil {
+		return err
+	}
 	if !ok {
-		return NewInvalidSignatureError(token, verifier)
+		return NewInvalidSignatureError(inv, verifier)
+	}
+	return nil
+}
+
+// VerifyDelegationSignature verifies the delegation was signed by the passed verifier.
+func VerifyDelegationSignature(dlg ucan.Delegation, verifier ucan.Verifier) error {
+	ok, err := delegation.VerifySignature(dlg, verifier)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return NewInvalidSignatureError(dlg, verifier)
 	}
 	return nil
 }

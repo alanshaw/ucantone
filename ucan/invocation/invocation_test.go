@@ -15,7 +15,7 @@ func TestInvoke(t *testing.T) {
 		issuer := helpers.RandomSigner(t)
 		subject := helpers.RandomDID(t)
 		command := helpers.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments
+		arguments := invocation.NoArguments{}
 		then := ucan.Now()
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments)
@@ -38,7 +38,7 @@ func TestInvoke(t *testing.T) {
 	t.Run("bad command", func(t *testing.T) {
 		issuer := helpers.RandomSigner(t)
 		subject := helpers.RandomDID(t)
-		arguments := invocation.NoArguments
+		arguments := invocation.NoArguments{}
 
 		_, err := invocation.Invoke(issuer, subject, "testinvoke", arguments)
 		require.Error(t, err)
@@ -49,7 +49,7 @@ func TestInvoke(t *testing.T) {
 		issuer := helpers.RandomSigner(t)
 		subject := helpers.RandomDID(t)
 		command := helpers.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments
+		arguments := invocation.NoArguments{}
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNoNonce())
 		require.NoError(t, err)
@@ -68,7 +68,7 @@ func TestInvoke(t *testing.T) {
 		issuer := helpers.RandomSigner(t)
 		subject := helpers.RandomDID(t)
 		command := helpers.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments
+		arguments := invocation.NoArguments{}
 		nonce := []byte{1, 2, 3}
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNonce(nonce))
@@ -87,7 +87,7 @@ func TestInvoke(t *testing.T) {
 		issuer := helpers.RandomSigner(t)
 		subject := helpers.RandomDID(t)
 		command := helpers.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments
+		arguments := invocation.NoArguments{}
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNoExpiration())
 		require.NoError(t, err)
@@ -106,7 +106,7 @@ func TestInvoke(t *testing.T) {
 		issuer := helpers.RandomSigner(t)
 		subject := helpers.RandomDID(t)
 		command := helpers.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments
+		arguments := invocation.NoArguments{}
 		expiration := ucan.Now() + 138
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithExpiration(expiration))
@@ -125,7 +125,7 @@ func TestInvoke(t *testing.T) {
 		issuer := helpers.RandomSigner(t)
 		subject := helpers.RandomDID(t)
 		command := helpers.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments
+		arguments := invocation.NoArguments{}
 		audience := helpers.RandomDID(t)
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithAudience(audience))

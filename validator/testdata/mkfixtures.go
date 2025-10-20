@@ -15,6 +15,12 @@ import (
 	"github.com/alanshaw/ucantone/ucan/invocation"
 )
 
+const (
+	Alice = "gCa9UfZv+yI5/rvUIt21DaGI7EZJlzFO1uDc5AyJ30c6/w"
+	Bob   = "gCZfj9+RzU2U518TMBNK/fjdGQz34sB4iKE6z+9lQDpCIQ"
+	Carol = "gCZC43QGw7ZvYQuKTtBwBy+tdjYrKf0hXU3dd+J0HON5dw"
+)
+
 type BytesModel struct {
 	Value []byte
 }
@@ -63,18 +69,23 @@ type ValidModel struct {
 	Proofs     []BytesModel `json:"proofs"`
 }
 
+type ErrorModel struct {
+	Name string `json:"name"`
+}
+
+type InvalidModel struct {
+	Name       string       `json:"name"`
+	Invocation BytesModel   `json:"invocation"`
+	Proofs     []BytesModel `json:"proofs"`
+	Error      ErrorModel   `json:"error"`
+}
+
 type FixturesModel struct {
 	Version    string                `json:"version"`
 	Comments   string                `json:"comments"`
 	Principals map[string]BytesModel `json:"principals"`
 	Valid      []ValidModel          `json:"valid"`
 }
-
-const (
-	Alice = "gCa9UfZv+yI5/rvUIt21DaGI7EZJlzFO1uDc5AyJ30c6/w"
-	Bob   = "gCZfj9+RzU2U518TMBNK/fjdGQz34sB4iKE6z+9lQDpCIQ"
-	Carol = "gCZC43QGw7ZvYQuKTtBwBy+tdjYrKf0hXU3dd+J0HON5dw"
-)
 
 func main() {
 	alice := must(ed25519.Decode(must(base64.RawStdEncoding.DecodeString(Alice))))
@@ -97,6 +108,9 @@ func main() {
 			makeValidMultipleActiveProofsFixture(alice, bob, carol),
 			makeValidPowerlineFixture(alice, bob, carol),
 		},
+		// Invalid: []InvalidModel{
+		// 	makeInvalidOutOfOrderProofFixture(alice, bob, carol),
+		// },
 	}
 
 	fmt.Println(string(must(json.MarshalIndent(fixtures, "", "  "))))

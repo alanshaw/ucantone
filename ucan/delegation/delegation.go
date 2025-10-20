@@ -199,29 +199,15 @@ func Delegate(
 	}
 
 	var meta *cbg.Deferred
-	if cfg.meta != nil {
-		if cmmeta, ok := cfg.meta.(dagcbor.CBORMarshaler); ok {
-			var buf bytes.Buffer
-			err := cmmeta.MarshalCBOR(&buf)
-			if err != nil {
-				return nil, fmt.Errorf("marshaling metadata CBOR: %w", err)
-			}
-			meta = &cbg.Deferred{Raw: buf.Bytes()}
-		} else {
-			return nil, errors.New("metadata is not CBOR marshaler")
-		}
-	}
-
 	var metaMap *datamodel.Map
 	if cfg.meta != nil {
-		if m, ok := cfg.meta.(*datamodel.Map); ok {
-			metaMap = m
-		} else {
-			err := metaMap.UnmarshalCBOR(bytes.NewReader(meta.Raw))
-			if err != nil {
-				return nil, err
-			}
+		metaMap = datamodel.NewMap(datamodel.WithEntries(cfg.meta.Entries()))
+		var buf bytes.Buffer
+		err = metaMap.MarshalCBOR(&buf)
+		if err != nil {
+			return nil, fmt.Errorf("marshaling metadata CBOR: %w", err)
 		}
+		meta = &cbg.Deferred{Raw: buf.Bytes()}
 	}
 
 	nnc := cfg.nnc
@@ -294,4 +280,53 @@ func Delegate(
 		model: &model,
 		meta:  metaMap,
 	}, nil
+}
+
+func VerifySignature(dlg ucan.Delegation, verifier ucan.Verifier) (bool, error) {
+	var sub did.DID
+	if dlg.Subject() != nil {
+		sub = dlg.Subject().DID()
+	}
+
+	var meta *cbg.Deferred
+	var metaMap *datamodel.Map
+	if dlg.Metadata() != nil {
+		metaMap = datamodel.NewMap(datamodel.WithEntries(dlg.Metadata().Entries()))
+		var buf bytes.Buffer
+		err := metaMap.MarshalCBOR(&buf)
+		if err != nil {
+			return false, fmt.Errorf("marshaling metadata CBOR: %w", err)
+		}
+		meta = &cbg.Deferred{Raw: buf.Bytes()}
+	}
+
+	tokenPayload := &ddm.TokenPayloadModel1_0_0_rc1{
+		Iss:   dlg.Issuer().DID(),
+		Aud:   dlg.Audience().DID(),
+		Sub:   sub,
+		Cmd:   dlg.Command(),
+		Pol:   dlg.Policy(),
+		Nonce: dlg.Nonce(),
+		Meta:  meta,
+		Nbf:   dlg.NotBefore(),
+		Exp:   dlg.Expiration(),
+	}
+
+	h, err := varsig.Encode(dlg.Signature().Header())
+	if err != nil {
+		return false, fmt.Errorf("encoding varsig header: %w", err)
+	}
+
+	sigPayload := ddm.SigPayloadModel{
+		Header:                h,
+		TokenPayload1_0_0_rc1: tokenPayload,
+	}
+
+	var sigBuf bytes.Buffer
+	err = sigPayload.MarshalCBOR(&sigBuf)
+	if err != nil {
+		return false, fmt.Errorf("marshaling signature payload: %w", err)
+	}
+
+	return dlg.Issuer().DID() == verifier.DID() && verifier.Verify(sigBuf.Bytes(), dlg.Signature().Bytes()), nil
 }

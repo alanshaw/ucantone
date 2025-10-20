@@ -2,11 +2,11 @@ package invocation
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
+	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	cid "github.com/ipfs/go-cid"
@@ -30,16 +30,13 @@ func NewTask(
 	nonce ucan.Nonce,
 ) (*Task, error) {
 	var args cbg.Deferred
-	if cmargs, ok := arguments.(dagcbor.CBORMarshaler); ok {
-		var buf bytes.Buffer
-		err := cmargs.MarshalCBOR(&buf)
-		if err != nil {
-			return nil, fmt.Errorf("marshaling arguments CBOR: %w", err)
-		}
-		args.Raw = buf.Bytes()
-	} else {
-		return nil, errors.New("arguments are not CBOR marshaler")
+	argsMap := datamodel.NewMap(datamodel.WithEntries(arguments.Entries()))
+	var argsBuf bytes.Buffer
+	err := argsMap.MarshalCBOR(&argsBuf)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling arguments CBOR: %w", err)
 	}
+	args.Raw = argsBuf.Bytes()
 
 	taskModel := idm.TaskModel{
 		Sub:   subject.DID(),
@@ -48,7 +45,7 @@ func NewTask(
 		Nonce: nonce,
 	}
 	var taskBuf bytes.Buffer
-	err := taskModel.MarshalCBOR(&taskBuf)
+	err = taskModel.MarshalCBOR(&taskBuf)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling task CBOR: %w", err)
 	}

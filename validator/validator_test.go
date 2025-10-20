@@ -9,7 +9,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/testing/helpers"
 	"github.com/alanshaw/ucantone/ucan"
@@ -61,11 +60,23 @@ type ValidModel struct {
 	Proofs     []BytesModel
 }
 
+type ErrorModel struct {
+	Name string
+}
+
+type InvalidModel struct {
+	Name       string
+	Invocation BytesModel
+	Proofs     []BytesModel
+	Error      ErrorModel
+}
+
 type FixturesModel struct {
 	Version    string
 	Comments   string
 	Principals map[string]BytesModel
 	Valid      []ValidModel
+	Invalid    []InvalidModel
 }
 
 func TestFixtures(t *testing.T) {
@@ -107,11 +118,11 @@ func TestFixtures(t *testing.T) {
 			authority, err := ed25519.Generate()
 			require.NoError(t, err)
 
-			// TODO: capability details in the vector
+			// TODO: capability details in the vector?
 			cmd, err := command.Parse("/msg/send")
 			require.NoError(t, err)
 
-			cap := validator.NewCapability[*datamodel.Map](cmd, ucan.Policy{})
+			cap := validator.NewCapability[invocation.NoArguments](cmd, ucan.Policy{})
 			_, err = validator.Access(
 				t.Context(),
 				authority.Verifier(),
