@@ -1,0 +1,137 @@
+{
+  "version": "1.0.0-rc.1",
+  "comments": "Encoded as dag-json. Principals are ed25519 private key bytes with varint(0x1300) prefix.",
+  "principals": {
+    "alice": {
+      "/": {
+        "bytes": "gCa9UfZv+yI5/rvUIt21DaGI7EZJlzFO1uDc5AyJ30c6/w"
+      }
+    },
+    "bob": {
+      "/": {
+        "bytes": "gCZfj9+RzU2U518TMBNK/fjdGQz34sB4iKE6z+9lQDpCIQ"
+      }
+    },
+    "carol": {
+      "/": {
+        "bytes": "gCZC43QGw7ZvYQuKTtBwBy+tdjYrKf0hXU3dd+J0HON5dw"
+      }
+    }
+  },
+  "valid": [
+    {
+      "name": "self signed invocation no args, no proofs, no expiry",
+      "invocation": {
+        "/": {
+          "bytes": "glhAFgyb0JvvaGUkSnMzsA0vE1QxrBohNjxUWs/z05mIRS0SGs90OGdFYp0ixWzGgp5I+6bmR1SSEpvJ6YeavvpVDqJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj2DAljaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaAY3N1Yng4ZGlkOmtleTp6Nk1rZ0d5a045QVJORmpFem93VnE0bUxQMmtMNE5zeUFhREdYZUpGUTVxRTFiZmdkYXJnc6Blbm9uY2VQ02X6NGFtDVIWP3+Mfxqbbg"
+        }
+      },
+      "proofs": []
+    },
+    {
+      "name": "invocation with no powerline, no args, single non-time bounded proof, no expiry",
+      "invocation": {
+        "/": {
+          "bytes": "glhAAxvvRJWa3WIwU1ja4WNF7CW4dgHJDiU+YYudW+NjN0XBbFTHk+TuZdihU/IR3+8K3oVbd/ny+8dV8oitEWyzB6JhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj2DAljaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgn1PJzlzsyfrH/8u8Wud6tQNjroYh1tTmFR95H8SO9DVjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoGVub25jZVCig4GaQmw1y8JGIy/IaCqk"
+        }
+      },
+      "proofs": [
+        {
+          "/": {
+            "bytes": "glhA+BT6vzgh4BOdGxRHfh4aRLHgcpljrZlcRwIUUK2S9sOkmEVHeOitaBmBehe8Mh9ih6lxAHIc4UncTOwEDnvsDaJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y3BvbIBjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemVub25jZVC7QvVqmcZi5lVuvKmnHkBr"
+          }
+        }
+      ]
+    },
+    {
+      "name": "invocation with powerline, no args, single non-time bounded proof, no expiry",
+      "invocation": {
+        "/": {
+          "bytes": "glhAtqUEwJArKxmIXrR9vJ5HoVAGvXfAjy5RRW3QoNDt/tXf0QVstbjyCGJzbvtZ0GZtbkuFdZ/DAyPDReQqcdYCB6JhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj2DAljaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIg4xWNkmUJcO28fgHtJfEuNHQVLMV86U4TUpzbprHCe9hjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoGVub25jZVBES43dvYWMongapaB97a4O"
+        }
+      },
+      "proofs": [
+        {
+          "/": {
+            "bytes": "glhAvTjSf0sgWqqXkqLFgnl9vb2zvlToxtZZiTIPvmz6KMZAypTYxa1JJFeDzgZ6g1GYFXx5PcoQQ0TIBUS7TCp7DKJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y3BvbIBjc3Vi9mVub25jZVDObkjrtWpFyXI2N5VPAKIB"
+          }
+        }
+      ]
+    },
+    {
+      "name": "invocation with no powerline, no args, single active non-expired proof, no expiry",
+      "invocation": {
+        "/": {
+          "bytes": "glhAOuKRJujqjZJibPsmzMBQztUJja8sHn7D7rIQuFXwixtahXPXVzmFD9UQE0SvKK9nILx38t5jqPet8GRKAeE4CKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj2DAljaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgX4BBTSX9UsiUaW4YwP5/19nlar2+v3I+pOHRsNAlO4ljc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoGVub25jZVBK6g9LA9q3Ev1Czc8LpGoX"
+        }
+      },
+      "proofs": [
+        {
+          "/": {
+            "bytes": "glhA7RXsnWuV0FnuyvOL+EIpZG4cst1Z69k5EVm7BlnpcDwhx8m0JCn1V+meAMV1RDUdItI3qOAgpBHWVqbDEfvpC6JhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xqGNhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y25iZhpo9hgzY3BvbIBjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemVub25jZVBZAGkTmO3GU/fraggFmaW7"
+          }
+        }
+      ]
+    },
+    {
+      "name": "invocation with no powerline, no args, non non-time bounded proofs, no expiry",
+      "invocation": {
+        "/": {
+          "bytes": "glhA4K2MPutm6lIcwbHJWiL3sV4ytnfCgKowaIzIjfW5IXhlVDGRm4OrmdA/Z4WFk9eryi2Y5ey0LwFqLqZHStXXA6JhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj2DAljaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIg+BHNeS97aDVM3nydznFML1APhBqyzrG8DU+tNyr1rK/YKlglAAFxEiBJmTVMZquGtCKG2FWc4QUNp0AoTk67bLQfCN8IMNiIKGNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlUDtSalQCEELU8JQSLSawMr0"
+        }
+      },
+      "proofs": [
+        {
+          "/": {
+            "bytes": "glhA7MQFHG9ERFsb2hJoB7KdkVL6R9pbtUJXRWfoVozxh4rTy5Bn8KweJq20n954qEv7IUdvM/Vze9TNlDrL+Aa1AKJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDY3BvbIBjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2Vub25jZVDkF0mHR0Mys1crNVv84Qdt"
+          }
+        },
+        {
+          "/": {
+            "bytes": "glhA7e995/8cYk/glkRFfBs5s3762Umww+VsXVVSDfI7ecnhCZ9n53M9bKd4ieMsOTbBEGd9/MTo7eVCEr6b4W9UB6JhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y3BvbIBjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2Vub25jZVBdJFXAzHF54bCLh680qMb0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "invocation with no powerline, no args, active non-expired proofs, no expiry",
+      "invocation": {
+        "/": {
+          "bytes": "glhABSiqZbHEaGxMkKmjrTiVb6pHyxGKSZfQjszi9HhjL75+MEnOWnVFqZXSJGKnopkRYFgqP5I1sWeEh6QEUXGPDqJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj2DAljaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgTmNdl4AQgfAbYQBncj6si257u7v1U98S6irxLct9tTjYKlglAAFxEiBv6IU/P2wyna5fr+XmExEa5Nx/TjbGI39CR0WYFCaoS2NzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlUB3waOgP8+Dw90VL5cBZcaU"
+        }
+      },
+      "proofs": [
+        {
+          "/": {
+            "bytes": "glhAztTrCU1kLVAyBreMqY6+hfegFe2Ii1AK1aypNZQ4/oRYEWHBQ+7cUI73fAWRUxSpl02gFrFcUkrL3/H22PpADqJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDY3BvbIBjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2Vub25jZVByrTxkPwRgyLTs3uOZek42"
+          }
+        },
+        {
+          "/": {
+            "bytes": "glhAbQLiDCmgpcQap/XxEDIMori2T6LghwJRAA1uWdo0RbCYA/wue8zpu7iWNrvlVb4sAaO7kL2NZwzuO7ZkjasiAKJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xqGNhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y25iZhpo9hgzY3BvbIBjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2Vub25jZVAv8XVHsi43x5V7kJr6NyzZ"
+          }
+        }
+      ]
+    },
+    {
+      "name": "invocation with powerline, no args, non-time bounded proofs, no expiry",
+      "invocation": {
+        "/": {
+          "bytes": "glhAzyZRvYMFc3XEfwZjEF/WbIi8BuOsnQnX064qFlbs6BSBzcTA7BHDtyImW0CHpH79zZa0UEHQs1y68FBTwiSeBKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj2DAljaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgRLbx+V7aMQp7YJqY1KhZS+jJDbCshqJrwuJZEzpTh1TYKlglAAFxEiCQGLh6VMmc1QnKFQyDZOzCV7KosKp//eSGwwf/gq9bGGNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlUNb6hW5aQOMFVPiGSdQRkJk"
+        }
+      },
+      "proofs": [
+        {
+          "/": {
+            "bytes": "glhATrfkcWVAjnfAl3ISk+xbMe5CroGSydqMYSVzgMMG7o7tZrotSv+yYM1m8hEAcFMQ1hYAr9Qyjo0iVeGZ4xkjDKJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDY3BvbIBjc3Vi9mVub25jZVC7P+dujdYvksE72s0CWHsP"
+          }
+        },
+        {
+          "/": {
+            "bytes": "glhAQCdyk6/Es37HDu1mBg19eM7Womq+0oYtq1CabSo1I9Bp6eWCMlbckG4GGvMHj+lztwvO1loZqXWQrQsF78lrCKJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y3BvbIBjc3Vi9mVub25jZVCQyzI7F0Oj2HjAlWn9dARS"
+          }
+        }
+      ]
+    }
+  ]
+}

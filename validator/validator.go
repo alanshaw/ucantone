@@ -8,6 +8,7 @@ import (
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
+	edverifier "github.com/alanshaw/ucantone/principal/ed25519/verifier"
 	"github.com/alanshaw/ucantone/principal/verifier"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/ipfs/go-cid"
@@ -141,6 +142,7 @@ func Access[A Arguments](
 ) (Authorization[A], error) {
 	cfg := validationConfig{
 		canIssue:              IsSelfIssued,
+		parsePrincipal:        ParsePrincipal,
 		resolveProof:          ProofUnavailable,
 		resolveDIDKey:         FailDIDKeyResolution,
 		validateAuthorization: NopValidateAuthorization,
@@ -154,7 +156,7 @@ func Access[A Arguments](
 		return Authorization[A]{}, err
 	}
 
-	err = Validate(ctx, invocation, proofs)
+	err = Validate(ctx, authority, cfg.parsePrincipal, cfg.resolveDIDKey, invocation, proofs)
 	if err != nil {
 		return Authorization[A]{}, err
 	}
@@ -185,13 +187,20 @@ func ResolveProofs(ctx context.Context, resolve ProofResolverFunc, links []ucan.
 
 // Validate an invocation to check it is within the time bounds and that it is
 // authorized by the issuer.
-func Validate(ctx context.Context, invocation ucan.Invocation, proofs map[cid.Cid]ucan.Delegation) error {
-	err := ValidateNotExpired(invocation)
+func Validate(
+	ctx context.Context,
+	authority ucan.Verifier,
+	parsePrincipal PrincipalParserFunc,
+	resolveDIDKey DIDResolverFunc,
+	inv ucan.Invocation,
+	prfs map[cid.Cid]ucan.Delegation,
+) error {
+	err := ValidateNotExpired(inv)
 	if err != nil {
 		return err
 	}
 
-	for _, p := range proofs {
+	for _, p := range prfs {
 		err := ValidateNotExpired(p)
 		if err != nil {
 			return err
@@ -202,7 +211,7 @@ func Validate(ctx context.Context, invocation ucan.Invocation, proofs map[cid.Ci
 		}
 	}
 
-	return VerifyAuthorization()
+	return VerifyAuthorization(ctx, authority, parsePrincipal, resolveDIDKey, inv, prfs)
 }
 
 func ValidateNotExpired(token ucan.Token) error {
@@ -283,6 +292,8 @@ func VerifyAuthorization(
 		return NewUnverifiableSignatureError(inv, verifyErr)
 	}
 
+	// TODO: proofs?
+
 	return nil
 }
 
@@ -298,6 +309,11 @@ func VerifySignature(token ucan.Token, verifier ucan.Verifier) error {
 // IsSelfIssued is a [CanIssueFunc] that allows delegations to be self signed.
 func IsSelfIssued(capability ucan.Capability, issuer ucan.Principal) bool {
 	return capability.Subject().DID() == issuer.DID()
+}
+
+// ParsePrincipal is a [PrincipalParser] that supports parsing ed25519 DIDs.
+func ParsePrincipal(str string) (principal.Verifier, error) {
+	return edverifier.Parse(str)
 }
 
 // ProofUnavailable is a [ProofResolverFunc] that always fails.
