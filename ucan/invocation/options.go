@@ -18,6 +18,7 @@ type invocationConfig struct {
 	nonnc bool
 	meta  ipld.Map[string, ipld.Any]
 	prf   []cid.Cid
+	iat   *ucan.UTCUnixTimestamp
 	cause *cid.Cid
 }
 
@@ -77,6 +78,14 @@ func WithMetadata(meta ipld.Map[string, ipld.Any]) Option {
 func WithProofs(prf ...ucan.Link) Option {
 	return func(cfg *invocationConfig) {
 		cfg.prf = prf
+	}
+}
+
+// WithIssuedAt sets the time at which the invocation was issued at in UTC
+// seconds since Unix epoch.
+func WithIssuedAt(iat ucan.UTCUnixTimestamp) Option {
+	return func(cfg *invocationConfig) {
+		cfg.iat = &iat
 	}
 }
 

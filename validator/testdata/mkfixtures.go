@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
@@ -100,6 +99,8 @@ var nonce = [][]byte{
 	[]byte{7, 8, 9},
 }
 
+var iat = ucan.UTCUnixTimestamp(must(time.Parse(time.RFC3339, "2025-10-20T00:00:00Z")).Unix())
+
 func main() {
 	fixtures := FixturesModel{
 		Version:  "1.0.0-rc.1",
@@ -130,8 +131,15 @@ func main() {
 
 func makeValidSelfSignedFixture() ValidModel {
 	cmd := must(command.Parse("/msg/send"))
-	args := datamodel.NewMap()
-	inv := must(invocation.Invoke(alice, alice, cmd, args, invocation.WithNoExpiration(), invocation.WithNonce(nonce[0])))
+	inv := must(invocation.Invoke(
+		alice,
+		alice,
+		cmd,
+		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
+		invocation.WithNoExpiration(),
+		invocation.WithNonce(nonce[0]),
+	))
 
 	return ValidModel{
 		Name:       "self signed",
@@ -156,6 +164,7 @@ func makeValidSingleNonTimeBoundedProofFixture() ValidModel {
 		bob,
 		cmd,
 		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link()),
 		invocation.WithNonce(nonce[1]),
@@ -186,6 +195,7 @@ func makeValidSingleActiveProofFixture() ValidModel {
 		bob,
 		cmd,
 		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link()),
 		invocation.WithNonce(nonce[1]),
@@ -223,6 +233,7 @@ func makeValidMultipleProofsFixture() ValidModel {
 		carol,
 		cmd,
 		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
 		invocation.WithNonce(nonce[2]),
@@ -263,6 +274,7 @@ func makeValidMultipleActiveProofsFixture() ValidModel {
 		carol,
 		cmd,
 		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
 		invocation.WithNonce(nonce[2]),
@@ -301,6 +313,7 @@ func makeValidPowerlineFixture() ValidModel {
 		carol,
 		cmd,
 		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
 		invocation.WithNonce(nonce[2]),
@@ -330,6 +343,7 @@ func makeInvalidMissingProofFixture() InvalidModel {
 		carol,
 		cmd,
 		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link()),
 		invocation.WithNonce(nonce[1]),
@@ -363,6 +377,7 @@ func makeInvalidExpiredProofFixture() InvalidModel {
 		carol,
 		cmd,
 		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link()),
 		invocation.WithNonce(nonce[1]),
@@ -397,6 +412,7 @@ func makeInvalidInactiveProofFixture() InvalidModel {
 		carol,
 		cmd,
 		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
 		invocation.WithProofs(dlg0.Link()),
 		invocation.WithNonce(nonce[1]),
@@ -430,6 +446,7 @@ func makeInvalidExpiredInvocationFixture() InvalidModel {
 		carol,
 		cmd,
 		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
 		invocation.WithExpiration(exp),
 		invocation.WithProofs(dlg0.Link()),
 		invocation.WithNonce(nonce[1]),
