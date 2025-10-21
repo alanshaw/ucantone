@@ -116,8 +116,11 @@ func TestFixtures(t *testing.T) {
 			opts := []validator.Option{
 				validator.WithProofResolver(newMapProofResolver(proofs)),
 			}
-			cap := validator.NewCapability[invocation.NoArguments](cmd, ucan.Policy{})
-			_, err = validator.Access(t.Context(), vrf, cap, inv, opts...)
+			cap := validator.NewCapability[invocation.UnknownArguments](cmd, ucan.Policy{})
+			authorization, err := validator.Access(t.Context(), vrf, cap, inv, opts...)
+			require.NoError(t, err)
+
+			_, err = authorization.Task.BindArguments()
 			require.NoError(t, err)
 		})
 	}
@@ -140,7 +143,7 @@ func TestFixtures(t *testing.T) {
 			opts := []validator.Option{
 				validator.WithProofResolver(newMapProofResolver(proofs)),
 			}
-			cap := validator.NewCapability[invocation.NoArguments](cmd, ucan.Policy{})
+			cap := validator.NewCapability[invocation.UnknownArguments](cmd, ucan.Policy{})
 			_, err = validator.Access(t.Context(), vrf, cap, inv, opts...)
 			require.Error(t, err)
 			t.Log(err)

@@ -38,3 +38,7 @@ func (n NoArguments) Values() iter.Seq[ipld.Any] {
 
 var _ ipld.Map[string, ipld.Any] = (*NoArguments)(nil)
 var _ dagcbor.CBORMarshalable = (*NoArguments)(nil)
+
+// UnknownArguments can be used when the arguments for an invocation cannot be
+// bound to a known type.
+type UnknownArguments = *datamodel.Map

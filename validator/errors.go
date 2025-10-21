@@ -90,3 +90,12 @@ func NewUnverifiableSignatureError(token ucan.Token, cause error) vdm.ErrorModel
 		Message:   fmt.Sprintf("proof %s issued by %s cannot be verified: %s", token.Link(), issuer, cause.Error()),
 	}
 }
+
+const PrincipalAlignmentErrorName = "InvalidAudience"
+
+func NewPrincipalAlignmentError(audience ucan.Principal, dlg ucan.Delegation) vdm.ErrorModel {
+	return vdm.ErrorModel{
+		ErrorName: PrincipalAlignmentErrorName,
+		Message:   fmt.Sprintf("delegation %s audience is %s not %s", dlg.Link(), audience.DID(), dlg.Audience().DID()),
+	}
+}

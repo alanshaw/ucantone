@@ -1,17 +1,24 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
+	ddm "github.com/alanshaw/ucantone/ucan/delegation/datamodel"
 	"github.com/alanshaw/ucantone/ucan/invocation"
+	"github.com/alanshaw/ucantone/varsig"
+	"github.com/alanshaw/ucantone/varsig/common"
+	"github.com/ipfs/go-cid"
+	"github.com/multiformats/go-multihash"
 )
 
 const (
@@ -123,6 +130,7 @@ func main() {
 			makeInvalidExpiredProofFixture(),
 			makeInvalidInactiveProofFixture(),
 			makeInvalidExpiredInvocationFixture(),
+			makeInvalidUnverifiableProofSignatureFixture(),
 		},
 	}
 
@@ -458,6 +466,61 @@ func makeInvalidExpiredInvocationFixture() InvalidModel {
 		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
 		Error: ErrorModel{
 			Name: "Expired",
+		},
+	}
+}
+
+func makeInvalidUnverifiableProofSignatureFixture() InvalidModel {
+	cmd := must(command.Parse("/msg/send"))
+
+	h := must(varsig.Encode(common.Ed25519DagCbor))
+
+	tokenPayload := &ddm.TokenPayloadModel1_0_0_rc1{
+		Iss:   bob.DID(),
+		Aud:   alice.DID(),
+		Sub:   bob.DID(),
+		Cmd:   cmd,
+		Pol:   ucan.Policy{},
+		Nonce: nonce[0],
+	}
+
+	sigPayload := ddm.SigPayloadModel{
+		Header:                h,
+		TokenPayload1_0_0_rc1: tokenPayload,
+	}
+
+	model := ddm.EnvelopeModel{
+		Signature:  []byte{1, 2, 3},
+		SigPayload: sigPayload,
+	}
+
+	var dlg0Buf bytes.Buffer
+	err := model.MarshalCBOR(&dlg0Buf)
+	if err != nil {
+		panic(err)
+	}
+	dlg0Link := must(cid.V1Builder{
+		Codec:  dagcbor.Code,
+		MhType: multihash.SHA2_256,
+	}.Sum(dlg0Buf.Bytes()))
+
+	inv := must(invocation.Invoke(
+		alice,
+		carol,
+		cmd,
+		invocation.NoArguments{},
+		invocation.WithIssuedAt(iat),
+		invocation.WithNoExpiration(),
+		invocation.WithProofs(dlg0Link),
+		invocation.WithNonce(nonce[1]),
+	))
+
+	return InvalidModel{
+		Name:       "proof signature",
+		Invocation: BytesModel{must(invocation.Encode(inv))},
+		Proofs:     []BytesModel{{dlg0Buf.Bytes()}},
+		Error: ErrorModel{
+			Name: "InvalidSignature",
 		},
 	}
 }

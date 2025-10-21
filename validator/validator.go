@@ -158,7 +158,7 @@ func Access[A Arguments](
 		return Authorization[A]{}, err
 	}
 
-	err = Validate(ctx, authority, cfg.parsePrincipal, cfg.resolveDIDKey, invocation, proofs)
+	err = Validate(ctx, authority, cfg.canIssue, cfg.parsePrincipal, cfg.resolveDIDKey, invocation, proofs)
 	if err != nil {
 		return Authorization[A]{}, err
 	}
@@ -192,6 +192,7 @@ func ResolveProofs(ctx context.Context, resolve ProofResolverFunc, links []ucan.
 func Validate(
 	ctx context.Context,
 	authority ucan.Verifier,
+	canIssue CanIssueFunc,
 	parsePrincipal PrincipalParserFunc,
 	resolveDIDKey DIDResolverFunc,
 	inv ucan.Invocation,
@@ -213,7 +214,7 @@ func Validate(
 		}
 	}
 
-	return VerifyAuthorization(ctx, authority, parsePrincipal, resolveDIDKey, inv, prfs)
+	return VerifyAuthorization(ctx, authority, canIssue, parsePrincipal, resolveDIDKey, inv, prfs)
 }
 
 func ValidateNotExpired(token ucan.Token) error {
@@ -240,6 +241,7 @@ func ValidateNotTooEarly(dlg ucan.Delegation) error {
 func VerifyAuthorization(
 	ctx context.Context,
 	authority ucan.Verifier,
+	canIssue CanIssueFunc,
 	parsePrincipal PrincipalParserFunc,
 	resolveDIDKey DIDResolverFunc,
 	inv ucan.Invocation,
@@ -252,49 +254,138 @@ func VerifyAuthorization(
 		if err != nil {
 			return NewUnverifiableSignatureError(inv, err)
 		}
-		return VerifyInvocationSignature(inv, verifier)
-	}
+		if err := VerifyInvocationSignature(inv, verifier); err != nil {
+			return err
+		}
+	} else if inv.Issuer().DID() == authority.DID() {
+		if err := VerifyInvocationSignature(inv, authority); err != nil {
+			return err
+		}
+	} else {
+		// TODO: verify attestations?
 
-	if inv.Issuer().DID() == authority.DID() {
-		return VerifyInvocationSignature(inv, authority)
-	}
-
-	// TODO: verify attestations?
-
-	// Otherwise we try to resolve did:key from the DID instead
-	// and use that to verify the signature
-	ids, err := resolveDIDKey(ctx, issuer)
-	if err != nil {
-		return err
-	}
-
-	var verifyErr error
-	for _, id := range ids {
-		vfr, err := parsePrincipal(id.String())
+		// Otherwise we try to resolve did:key from the DID instead
+		// and use that to verify the signature
+		ids, err := resolveDIDKey(ctx, issuer)
 		if err != nil {
-			verifyErr = err
-			continue
+			return err
 		}
 
-		wvfr, err := verifier.Wrap(vfr, issuer)
-		if err != nil {
-			verifyErr = err
-			continue
+		var verifyErr error
+		for _, id := range ids {
+			vfr, err := parsePrincipal(id.String())
+			if err != nil {
+				verifyErr = err
+				continue
+			}
+			wvfr, err := verifier.Wrap(vfr, issuer)
+			if err != nil {
+				verifyErr = err
+				continue
+			}
+			err = VerifyInvocationSignature(inv, wvfr)
+			if err != nil {
+				verifyErr = err
+				continue
+			}
+			break
 		}
-
-		err = VerifyInvocationSignature(inv, wvfr)
-		if err != nil {
-			verifyErr = err
-			continue
+		if verifyErr != nil {
+			return NewUnverifiableSignatureError(inv, verifyErr)
 		}
-		break
 	}
 
-	if verifyErr != nil {
-		return NewUnverifiableSignatureError(inv, verifyErr)
-	}
+	if len(inv.Proofs()) > 0 {
+		var root ucan.Delegation
+		var prior ucan.Delegation
+		for _, p := range inv.Proofs() {
+			prf := prfs[p]
+			issuer := prf.Issuer().DID()
 
-	// TODO: proofs?
+			// If the issuer is a did:key we just verify a signature
+			if strings.HasPrefix(issuer.String(), "did:key:") {
+				verifier, err := parsePrincipal(issuer.String())
+				if err != nil {
+					return NewUnverifiableSignatureError(prf, err)
+				}
+				if err := VerifyDelegationSignature(prf, verifier); err != nil {
+					return err
+				}
+			} else if prf.Issuer().DID() == authority.DID() {
+				if err := VerifyDelegationSignature(prf, authority); err != nil {
+					return err
+				}
+			} else {
+				// Otherwise we try to resolve did:key from the DID instead
+				// and use that to verify the signature
+				ids, err := resolveDIDKey(ctx, issuer)
+				if err != nil {
+					return err
+				}
+
+				var verifyErr error
+				for _, id := range ids {
+					vfr, err := parsePrincipal(id.String())
+					if err != nil {
+						verifyErr = err
+						continue
+					}
+					wvfr, err := verifier.Wrap(vfr, issuer)
+					if err != nil {
+						verifyErr = err
+						continue
+					}
+					err = VerifyDelegationSignature(prf, wvfr)
+					if err != nil {
+						verifyErr = err
+						continue
+					}
+					break
+				}
+				if verifyErr != nil {
+					return NewUnverifiableSignatureError(prf, verifyErr)
+				}
+			}
+
+			// this is the root delegation
+			if root == nil {
+				root = prf
+				// powerline is not allowed as root delegation.
+				// a priori there is no such thing as a null subject.
+				if prf.Subject() == nil {
+					return errors.New("root delegation subject is null")
+				}
+				// check root issuer/subject alignment
+				if !canIssue(ucan.Capability(prf), prf.Issuer()) {
+					return fmt.Errorf("%s cannot issue delegations for %s", prf.Issuer().DID(), prf.Subject().DID())
+				}
+			} else {
+				// otherwise check subject and principal alignment
+				if prf.Subject() != nil && prf.Subject().DID() != root.Subject().DID() {
+					return fmt.Errorf("delegation %s subject was %s not %s", prf.Link(), prf.Subject().DID(), root.Subject().DID())
+				}
+				if prf.Issuer().DID() != prior.Audience().DID() {
+					return NewPrincipalAlignmentError(prf.Issuer(), prior)
+				}
+			}
+
+			prior = prf
+		}
+
+		// check subject and principal alignment for invocation
+		if inv.Subject().DID() != root.Subject().DID() {
+			return fmt.Errorf("invocation %s subject was %s not %s", inv.Link(), inv.Subject().DID(), root.Subject().DID())
+		}
+		if inv.Issuer().DID() != prior.Audience().DID() {
+			return NewPrincipalAlignmentError(inv.Issuer(), prior)
+		}
+	} else {
+		// check invocation issuer/subject alignment
+		cap := delegation.NewCapability(inv.Subject(), inv.Command(), ucan.Policy{})
+		if !canIssue(cap, inv.Issuer()) {
+			return fmt.Errorf("%s cannot issue invocations for %s", inv.Issuer().DID(), inv.Subject().DID())
+		}
+	}
 
 	return nil
 }

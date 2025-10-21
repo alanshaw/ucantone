@@ -185,6 +185,24 @@
       "error": {
         "name": "Expired"
       }
+    },
+    {
+      "name": "proof signature",
+      "invocation": {
+        "/": {
+          "bytes": "glhABJHSzXBuguAKQK9PwFnFYUVY6t8IFwWQTsYsKtnSeuTb6CLAqMVGS9n2+XBEW+fL8vCZCW8Nz1AptqhXu6lnCKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIglNQUyhYZEjwWpdyHLp3psSgjcWCtKA16g/Vmscq9pEZjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2RhcmdzoGVub25jZUMEBQY"
+        }
+      },
+      "proofs": [
+        {
+          "/": {
+            "bytes": "gkMBAgOiYWhINAHtAe0BE3FzdWNhbi9kbGdAMS4wLjAtcmMuMadjYXVkeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NjbWRpL21zZy9zZW5kY2V4cPZjaXNzeDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemNwb2yAY3N1Yng4ZGlkOmtleTp6Nk1rbVQ5ajZmVlpxelhWOHUyd1ZWU3U0OWdZU1JZR1NRbmR1V1hGNmZvQUpycXplbm9uY2VDAQID"
+          }
+        }
+      ],
+      "error": {
+        "name": "InvalidSignature"
+      }
     }
   ]
 }

@@ -2,6 +2,7 @@ package validator
 
 import (
 	"errors"
+	"reflect"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
@@ -14,6 +15,7 @@ import (
 )
 
 type Arguments interface {
+	ipld.Map[string, ipld.Any]
 	dagcbor.CBORMarshalable
 }
 
@@ -38,6 +40,12 @@ func NewTask[A Arguments](
 func (t *Task[A]) BindArguments() (A, error) {
 	argsMap := datamodel.NewMap(datamodel.WithEntries(t.Arguments().Entries()))
 	var args A
+	// if args is a pointer type, then we need to create an instance of it because
+	// rebind requires a non-nil pointer.
+	typ := reflect.TypeOf(args)
+	if typ.Kind() == reflect.Ptr {
+		args = reflect.New(typ.Elem()).Interface().(A)
+	}
 	if err := datamodel.Rebind(argsMap, args); err != nil {
 		return args, NewMalformedArgumentsError(t.Command(), err)
 	}
