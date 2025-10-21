@@ -77,11 +77,10 @@ type InvalidModel struct {
 }
 
 type FixturesModel struct {
-	Version    string
-	Comments   string
-	Principals map[string]BytesModel
-	Valid      []ValidModel
-	Invalid    []InvalidModel
+	Version  string
+	Comments string
+	Valid    []ValidModel
+	Invalid  []InvalidModel
 }
 
 func TestFixtures(t *testing.T) {
@@ -90,13 +89,6 @@ func TestFixtures(t *testing.T) {
 	var fixtures FixturesModel
 	err := json.Unmarshal(fixtureBytes, &fixtures)
 	require.NoError(t, err)
-
-	principals := map[string]ucan.Signer{}
-	for name, bytes := range fixtures.Principals {
-		signer := helpers.Must(ed25519.Decode(bytes.Value))(t)
-		principals[signer.DID().String()] = signer
-		t.Logf("%s: %s", name, signer.DID())
-	}
 
 	for _, vector := range fixtures.Valid {
 		t.Run("valid "+vector.Name, func(t *testing.T) {

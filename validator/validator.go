@@ -353,16 +353,16 @@ func VerifyAuthorization(
 				// powerline is not allowed as root delegation.
 				// a priori there is no such thing as a null subject.
 				if prf.Subject() == nil {
-					return errors.New("root delegation subject is null")
+					return NewInvalidClaimError("root delegation subject is null")
 				}
 				// check root issuer/subject alignment
 				if !canIssue(ucan.Capability(prf), prf.Issuer()) {
-					return fmt.Errorf("%s cannot issue delegations for %s", prf.Issuer().DID(), prf.Subject().DID())
+					return NewInvalidClaimError(fmt.Sprintf("%s cannot issue delegations for %s", prf.Issuer().DID(), prf.Subject().DID()))
 				}
 			} else {
 				// otherwise check subject and principal alignment
 				if prf.Subject() != nil && prf.Subject().DID() != root.Subject().DID() {
-					return fmt.Errorf("delegation %s subject was %s not %s", prf.Link(), prf.Subject().DID(), root.Subject().DID())
+					return NewSubjectAlignmentError(root.Subject(), prf)
 				}
 				if prf.Issuer().DID() != prior.Audience().DID() {
 					return NewPrincipalAlignmentError(prf.Issuer(), prior)
@@ -374,7 +374,7 @@ func VerifyAuthorization(
 
 		// check subject and principal alignment for invocation
 		if inv.Subject().DID() != root.Subject().DID() {
-			return fmt.Errorf("invocation %s subject was %s not %s", inv.Link(), inv.Subject().DID(), root.Subject().DID())
+			return NewSubjectAlignmentError(root.Subject(), inv)
 		}
 		if inv.Issuer().DID() != prior.Audience().DID() {
 			return NewPrincipalAlignmentError(inv.Issuer(), prior)
@@ -383,7 +383,7 @@ func VerifyAuthorization(
 		// check invocation issuer/subject alignment
 		cap := delegation.NewCapability(inv.Subject(), inv.Command(), ucan.Policy{})
 		if !canIssue(cap, inv.Issuer()) {
-			return fmt.Errorf("%s cannot issue invocations for %s", inv.Issuer().DID(), inv.Subject().DID())
+			return NewInvalidClaimError(fmt.Sprintf("%s cannot issue invocations for %s", inv.Issuer().DID(), inv.Subject().DID()))
 		}
 	}
 

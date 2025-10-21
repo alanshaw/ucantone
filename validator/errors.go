@@ -99,3 +99,27 @@ func NewPrincipalAlignmentError(audience ucan.Principal, dlg ucan.Delegation) vd
 		Message:   fmt.Sprintf("delegation %s audience is %s not %s", dlg.Link(), audience.DID(), dlg.Audience().DID()),
 	}
 }
+
+const SubjectAlignmentErrorName = "InvalidSubject"
+
+func NewSubjectAlignmentError(subject ucan.Subject, t ucan.Token) vdm.ErrorModel {
+	var name string
+	if _, ok := t.(ucan.Invocation); ok {
+		name = "invocation"
+	} else {
+		name = "delegation"
+	}
+	return vdm.ErrorModel{
+		ErrorName: SubjectAlignmentErrorName,
+		Message:   fmt.Sprintf("%s %s subject is %s not %s", name, t.Link(), t.Subject().DID(), subject.DID()),
+	}
+}
+
+const InvalidClaimErrorName = "InvalidClaim"
+
+func NewInvalidClaimError(msg string) vdm.ErrorModel {
+	return vdm.ErrorModel{
+		ErrorName: InvalidClaimErrorName,
+		Message:   msg,
+	}
+}

@@ -416,24 +416,44 @@ func unmarshalCBORStatement(data []byte) (Statement, error) {
 	if err != nil {
 		return nil, err
 	}
-	var stmt cbg.CBORUnmarshaler
 	switch statementModel.Op {
 	case OpEqual, OpNotEqual, OpGreaterThan, OpGreaterThanOrEqual, OpLessThan, OpLessThanOrEqual:
-		stmt = &ComparisonStatement{}
+		stmt := ComparisonStatement{}
+		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
+			return nil, err
+		}
+		return stmt, nil
 	case OpAnd:
-		stmt = &ConjunctionStatement{}
+		stmt := ConjunctionStatement{}
+		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
+			return nil, err
+		}
+		return stmt, nil
 	case OpOr:
-		stmt = &DisjunctionStatement{}
+		stmt := DisjunctionStatement{}
+		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
+			return nil, err
+		}
+		return stmt, nil
 	case OpNot:
-		stmt = &NegationStatement{}
+		stmt := NegationStatement{}
+		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
+			return nil, err
+		}
+		return stmt, nil
 	case OpLike:
-		stmt = &WildcardStatement{}
+		stmt := WildcardStatement{}
+		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
+			return nil, err
+		}
+		return stmt, nil
 	case OpAny, OpAll:
-		stmt = &QuantificationStatement{}
+		stmt := QuantificationStatement{}
+		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
+			return nil, err
+		}
+		return stmt, nil
+	default:
+		return nil, fmt.Errorf("unknown statement operation: %s", statementModel.Op)
 	}
-	err = stmt.UnmarshalCBOR(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	return stmt.(Statement), nil
 }

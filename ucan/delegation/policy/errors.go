@@ -29,7 +29,7 @@ func NewMatchError(statement Statement, err error) pdm.MatchErrorModel {
 	}
 
 	return pdm.MatchErrorModel{
-		Name:      MatchErrorName,
+		ErrorName: MatchErrorName,
 		Message:   err.Error(),
 		Statement: &s,
 		Cause:     &c,

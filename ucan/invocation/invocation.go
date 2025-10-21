@@ -330,14 +330,14 @@ func Invoke(
 	var envBuf bytes.Buffer
 	err = model.MarshalCBOR(&envBuf)
 	if err != nil {
-		return nil, fmt.Errorf("marshaling delegation CBOR: %w", err)
+		return nil, fmt.Errorf("marshaling invocation CBOR: %w", err)
 	}
 	root, err := cid.V1Builder{
 		Codec:  dagcbor.Code,
 		MhType: multihash.SHA2_256,
 	}.Sum(envBuf.Bytes())
 	if err != nil {
-		return nil, fmt.Errorf("hashing delegation bytes: %w", err)
+		return nil, fmt.Errorf("hashing invocation bytes: %w", err)
 	}
 
 	return &Invocation{
