@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/alanshaw/ucantone/principal/multiformat"
-	"github.com/alanshaw/ucantone/testing/helpers"
+	"github.com/alanshaw/ucantone/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,7 +12,7 @@ func TestTag(t *testing.T) {
 	t.Run("round trip", func(t *testing.T) {
 		b := []byte{1, 2, 3}
 		tb := multiformat.TagWith(1, b)
-		utb := helpers.Must(multiformat.UntagWith(1, tb, 0))(t)
+		utb := testutil.Must(multiformat.UntagWith(1, tb, 0))(t)
 		require.EqualValues(t, b, utb)
 	})
 

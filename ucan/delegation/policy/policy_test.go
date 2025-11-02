@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/alanshaw/ucantone/testing/helpers"
+	"github.com/alanshaw/ucantone/testutil"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 	"github.com/stretchr/testify/require"
@@ -13,7 +13,7 @@ import (
 func TestRoundtripCBOR(t *testing.T) {
 	initial := policy.Policy{
 		Statements: []policy.Statement{
-			policy.Equal(helpers.Must(selector.Parse(".foo"))(t), "bar"),
+			policy.Equal(testutil.Must(selector.Parse(".foo"))(t), "bar"),
 		},
 	}
 	var b bytes.Buffer

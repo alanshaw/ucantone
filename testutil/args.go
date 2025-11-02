@@ -1,11 +1,11 @@
-package helpers
+package testutil
 
 import (
 	"testing"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
-	hdm "github.com/alanshaw/ucantone/testing/helpers/datamodel"
+	hdm "github.com/alanshaw/ucantone/testutil/datamodel"
 	"github.com/stretchr/testify/require"
 )
 

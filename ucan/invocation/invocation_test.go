@@ -3,7 +3,7 @@ package invocation_test
 import (
 	"testing"
 
-	"github.com/alanshaw/ucantone/testing/helpers"
+	"github.com/alanshaw/ucantone/testutil"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/invocation"
@@ -12,9 +12,9 @@ import (
 
 func TestInvoke(t *testing.T) {
 	t.Run("minimal", func(t *testing.T) {
-		issuer := helpers.RandomSigner(t)
-		subject := helpers.RandomDID(t)
-		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		issuer := testutil.RandomSigner(t)
+		subject := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
 		arguments := invocation.NoArguments{}
 		then := ucan.Now()
 
@@ -36,8 +36,8 @@ func TestInvoke(t *testing.T) {
 	})
 
 	t.Run("bad command", func(t *testing.T) {
-		issuer := helpers.RandomSigner(t)
-		subject := helpers.RandomDID(t)
+		issuer := testutil.RandomSigner(t)
+		subject := testutil.RandomDID(t)
 		arguments := invocation.NoArguments{}
 
 		_, err := invocation.Invoke(issuer, subject, "testinvoke", arguments)
@@ -46,9 +46,9 @@ func TestInvoke(t *testing.T) {
 	})
 
 	t.Run("no nonce", func(t *testing.T) {
-		issuer := helpers.RandomSigner(t)
-		subject := helpers.RandomDID(t)
-		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		issuer := testutil.RandomSigner(t)
+		subject := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
 		arguments := invocation.NoArguments{}
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNoNonce())
@@ -65,9 +65,9 @@ func TestInvoke(t *testing.T) {
 	})
 
 	t.Run("custom nonce", func(t *testing.T) {
-		issuer := helpers.RandomSigner(t)
-		subject := helpers.RandomDID(t)
-		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		issuer := testutil.RandomSigner(t)
+		subject := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
 		arguments := invocation.NoArguments{}
 		nonce := []byte{1, 2, 3}
 
@@ -84,9 +84,9 @@ func TestInvoke(t *testing.T) {
 	})
 
 	t.Run("no expiration", func(t *testing.T) {
-		issuer := helpers.RandomSigner(t)
-		subject := helpers.RandomDID(t)
-		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		issuer := testutil.RandomSigner(t)
+		subject := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
 		arguments := invocation.NoArguments{}
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNoExpiration())
@@ -103,9 +103,9 @@ func TestInvoke(t *testing.T) {
 	})
 
 	t.Run("custom expiration", func(t *testing.T) {
-		issuer := helpers.RandomSigner(t)
-		subject := helpers.RandomDID(t)
-		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		issuer := testutil.RandomSigner(t)
+		subject := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
 		arguments := invocation.NoArguments{}
 		expiration := ucan.Now() + 138
 
@@ -122,11 +122,11 @@ func TestInvoke(t *testing.T) {
 	})
 
 	t.Run("custom audience", func(t *testing.T) {
-		issuer := helpers.RandomSigner(t)
-		subject := helpers.RandomDID(t)
-		command := helpers.Must(command.Parse("/test/invoke"))(t)
+		issuer := testutil.RandomSigner(t)
+		subject := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
 		arguments := invocation.NoArguments{}
-		audience := helpers.RandomDID(t)
+		audience := testutil.RandomDID(t)
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithAudience(audience))
 		require.NoError(t, err)
@@ -141,10 +141,10 @@ func TestInvoke(t *testing.T) {
 	})
 
 	t.Run("custom auguments", func(t *testing.T) {
-		issuer := helpers.RandomSigner(t)
-		subject := helpers.RandomDID(t)
-		command := helpers.Must(command.Parse("/test/invoke"))(t)
-		arguments := helpers.RandomArgs(t)
+		issuer := testutil.RandomSigner(t)
+		subject := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
+		arguments := testutil.RandomArgs(t)
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments)
 		require.NoError(t, err)

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/alanshaw/ucantone/ipld/datamodel"
-	"github.com/alanshaw/ucantone/testing/helpers"
+	"github.com/alanshaw/ucantone/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +16,7 @@ func TestAny(t *testing.T) {
 		true,
 		false,
 		nil,
-		helpers.RandomCID(t),
+		testutil.RandomCID(t),
 		"test",
 		[]byte{1, 2, 3},
 		[]string{"one", "two", "three"},

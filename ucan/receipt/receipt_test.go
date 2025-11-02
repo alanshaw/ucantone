@@ -4,15 +4,15 @@ import (
 	"testing"
 
 	"github.com/alanshaw/ucantone/result"
-	"github.com/alanshaw/ucantone/testing/helpers"
+	"github.com/alanshaw/ucantone/testutil"
 	"github.com/alanshaw/ucantone/ucan/receipt"
 	"github.com/stretchr/testify/require"
 )
 
 func TestIssue(t *testing.T) {
 	t.Run("minimal", func(t *testing.T) {
-		executor := helpers.RandomSigner(t)
-		ran := helpers.RandomCID(t)
+		executor := testutil.RandomSigner(t)
+		ran := testutil.RandomCID(t)
 		out := result.Ok[int64, any](42)
 
 		initial, err := receipt.Issue(executor, ran, out)

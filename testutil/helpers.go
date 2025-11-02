@@ -1,4 +1,4 @@
-package helpers
+package testutil
 
 import (
 	crand "crypto/rand"

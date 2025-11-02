@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/alanshaw/ucantone/ipld/datamodel"
-	"github.com/alanshaw/ucantone/testing/helpers"
+	"github.com/alanshaw/ucantone/testutil"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 	"github.com/ipfs/go-cid"
@@ -14,7 +14,7 @@ import (
 func TestMatch(t *testing.T) {
 	t.Run("equality", func(t *testing.T) {
 		t.Run("string", func(t *testing.T) {
-			sel := helpers.Must(selector.Parse("."))(t)
+			sel := testutil.Must(selector.Parse("."))(t)
 			val := "test"
 
 			pol := policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "test")}}
@@ -36,7 +36,7 @@ func TestMatch(t *testing.T) {
 		})
 
 		t.Run("int", func(t *testing.T) {
-			sel := helpers.Must(selector.Parse("."))(t)
+			sel := testutil.Must(selector.Parse("."))(t)
 			val := 138
 
 			pol := policy.Policy{Statements: []policy.Statement{policy.Equal(sel, 138)}}
@@ -77,7 +77,7 @@ func TestMatch(t *testing.T) {
 		// 	})
 
 		t.Run("CID", func(t *testing.T) {
-			sel := helpers.Must(selector.Parse("."))(t)
+			sel := testutil.Must(selector.Parse("."))(t)
 			l0 := cid.MustParse("bafybeif4owy5gno5lwnixqm52rwqfodklf76hsetxdhffuxnplvijskzqq")
 			l1 := cid.MustParse("bafkreifau35r7vi37tvbvfy3hdwvgb4tlflqf7zcdzeujqcjk3rsphiwte")
 			val := l0
@@ -103,26 +103,26 @@ func TestMatch(t *testing.T) {
 		t.Run("string in map", func(t *testing.T) {
 			val := datamodel.NewMap(datamodel.WithEntry("foo", "bar"))
 
-			sel := helpers.Must(selector.Parse(".foo"))(t)
+			sel := testutil.Must(selector.Parse(".foo"))(t)
 			pol := policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "bar")}}
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
-			sel = helpers.Must(selector.Parse(`.["foo"]`))(t)
+			sel = testutil.Must(selector.Parse(`.["foo"]`))(t)
 			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "bar")}}
 			ok, err = policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
-			sel = helpers.Must(selector.Parse(".foo"))(t)
+			sel = testutil.Must(selector.Parse(".foo"))(t)
 			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "baz")}}
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
 			require.NotNil(t, err)
 			t.Log(err)
 
-			sel = helpers.Must(selector.Parse(".foobar"))(t)
+			sel = testutil.Must(selector.Parse(".foobar"))(t)
 			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "bar")}}
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
@@ -133,13 +133,13 @@ func TestMatch(t *testing.T) {
 		t.Run("string in list", func(t *testing.T) {
 			val := []string{"foo"}
 
-			sel := helpers.Must(selector.Parse(".[0]"))(t)
+			sel := testutil.Must(selector.Parse(".[0]"))(t)
 			pol := policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "foo")}}
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
-			sel = helpers.Must(selector.Parse(".[1]"))(t)
+			sel = testutil.Must(selector.Parse(".[1]"))(t)
 			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "foo")}}
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
@@ -150,7 +150,7 @@ func TestMatch(t *testing.T) {
 
 	t.Run("inequality", func(t *testing.T) {
 		t.Run("gt int", func(t *testing.T) {
-			sel := helpers.Must(selector.Parse("."))(t)
+			sel := testutil.Must(selector.Parse("."))(t)
 			val := 138
 			pol := policy.Policy{Statements: []policy.Statement{policy.GreaterThan(sel, 1)}}
 			ok, err := policy.Match(pol, val)
@@ -159,7 +159,7 @@ func TestMatch(t *testing.T) {
 		})
 
 		t.Run("gte int", func(t *testing.T) {
-			sel := helpers.Must(selector.Parse("."))(t)
+			sel := testutil.Must(selector.Parse("."))(t)
 			val := 138
 
 			pol := policy.Policy{Statements: []policy.Statement{policy.GreaterThanOrEqual(sel, 1)}}
@@ -200,7 +200,7 @@ func TestMatch(t *testing.T) {
 		// })
 
 		t.Run("lt int", func(t *testing.T) {
-			sel := helpers.Must(selector.Parse("."))(t)
+			sel := testutil.Must(selector.Parse("."))(t)
 			val := 138
 			pol := policy.Policy{Statements: []policy.Statement{policy.LessThan(sel, 1138)}}
 			ok, err := policy.Match(pol, val)
@@ -209,7 +209,7 @@ func TestMatch(t *testing.T) {
 		})
 
 		t.Run("lte int", func(t *testing.T) {
-			sel := helpers.Must(selector.Parse("."))(t)
+			sel := testutil.Must(selector.Parse("."))(t)
 			val := 138
 
 			pol := policy.Policy{Statements: []policy.Statement{policy.LessThanOrEqual(sel, 1138)}}
