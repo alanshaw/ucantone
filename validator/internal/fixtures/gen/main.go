@@ -2,7 +2,7 @@ package main
 
 import (
 	jsg "github.com/alanshaw/dag-json-gen"
-	"github.com/alanshaw/ucantone/validator/testdata/fixtures"
+	"github.com/alanshaw/ucantone/validator/internal/fixtures"
 )
 
 func main() {

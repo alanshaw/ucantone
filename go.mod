@@ -3,6 +3,7 @@ module github.com/alanshaw/ucantone
 go 1.25
 
 require (
+	github.com/alanshaw/dag-json-gen v0.0.1
 	github.com/gobwas/glob v0.2.3
 	github.com/ipfs/go-cid v0.5.0
 	github.com/multiformats/go-multibase v0.2.0
@@ -14,7 +15,6 @@ require (
 )
 
 require (
-	github.com/alanshaw/dag-json-gen v0.0.0-20251027090725-234a310ea802 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect

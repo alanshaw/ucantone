@@ -19,7 +19,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	"github.com/alanshaw/ucantone/validator"
-	"github.com/alanshaw/ucantone/validator/testdata/fixtures"
+	"github.com/alanshaw/ucantone/validator/internal/fixtures"
 	"github.com/alanshaw/ucantone/varsig"
 	"github.com/alanshaw/ucantone/varsig/common"
 	"github.com/ipfs/go-cid"
@@ -320,7 +320,7 @@ func makeInvalidNoProofFixture() fixtures.InvalidModel {
 		Name:       "no proof",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{},
-		Error:      fixtures.ErrorModel{validator.InvalidClaimErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.InvalidClaimErrorName},
 	}
 }
 
@@ -349,7 +349,7 @@ func makeInvalidMissingProofFixture() fixtures.InvalidModel {
 		Name:       "missing proof",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{},
-		Error:      fixtures.ErrorModel{validator.UnavailableProofErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.UnavailableProofErrorName},
 	}
 }
 
@@ -379,7 +379,7 @@ func makeInvalidExpiredProofFixture() fixtures.InvalidModel {
 		Name:       "expired proof",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
-		Error:      fixtures.ErrorModel{validator.ExpiredErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.ExpiredErrorName},
 	}
 }
 
@@ -410,7 +410,7 @@ func makeInvalidInactiveProofFixture() fixtures.InvalidModel {
 		Name:       "inactive proof",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
-		Error:      fixtures.ErrorModel{validator.TooEarlyErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.TooEarlyErrorName},
 	}
 }
 
@@ -448,7 +448,7 @@ func makeInvalidProofPrincipalAlignmentFixture() fixtures.InvalidModel {
 		Name:       "proof principal alignment",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
-		Error:      fixtures.ErrorModel{validator.PrincipalAlignmentErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.PrincipalAlignmentErrorName},
 	}
 }
 
@@ -486,7 +486,7 @@ func makeInvalidInvocationPrincipalAlignmentFixture() fixtures.InvalidModel {
 		Name:       "invocation principal alignment",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
-		Error:      fixtures.ErrorModel{validator.PrincipalAlignmentErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.PrincipalAlignmentErrorName},
 	}
 }
 
@@ -524,7 +524,7 @@ func makeInvalidProofSubjectAlignmentFixture() fixtures.InvalidModel {
 		Name:       "proof subject alignment",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
-		Error:      fixtures.ErrorModel{validator.SubjectAlignmentErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.SubjectAlignmentErrorName},
 	}
 }
 
@@ -562,7 +562,7 @@ func makeInvalidInvocationSubjectAlignmentFixture() fixtures.InvalidModel {
 		Name:       "invocation subject alignment",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
-		Error:      fixtures.ErrorModel{validator.SubjectAlignmentErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.SubjectAlignmentErrorName},
 	}
 }
 
@@ -592,7 +592,7 @@ func makeInvalidExpiredInvocationFixture() fixtures.InvalidModel {
 		Name:       "expired invocation",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
-		Error:      fixtures.ErrorModel{validator.ExpiredErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.ExpiredErrorName},
 	}
 }
 
@@ -640,7 +640,7 @@ func makeInvalidProofSignatureFixture() fixtures.InvalidModel {
 		Name:       "invalid proof signature",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{dlg0Buf.Bytes()},
-		Error:      fixtures.ErrorModel{validator.InvalidSignatureErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.InvalidSignatureErrorName},
 	}
 }
 
@@ -679,7 +679,7 @@ func makeInvalidInvocationSignatureFixture() fixtures.InvalidModel {
 		Name:       "invalid invocation signature",
 		Invocation: envBuf.Bytes(),
 		Proofs:     [][]byte{},
-		Error:      fixtures.ErrorModel{validator.InvalidSignatureErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.InvalidSignatureErrorName},
 	}
 }
 
@@ -708,7 +708,7 @@ func makeInvalidPowerlineFixture() fixtures.InvalidModel {
 		Name:       "invalid powerline",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
-		Error:      fixtures.ErrorModel{validator.InvalidClaimErrorName},
+		Error:      fixtures.ErrorModel{Name: validator.InvalidClaimErrorName},
 	}
 }
 
@@ -740,7 +740,7 @@ func makeInvalidPolicyViolationFixture() fixtures.InvalidModel {
 		Name:       "policy violation",
 		Invocation: must(invocation.Encode(inv)),
 		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
-		Error:      fixtures.ErrorModel{policy.MatchErrorName},
+		Error:      fixtures.ErrorModel{Name: policy.MatchErrorName},
 	}
 }
 
