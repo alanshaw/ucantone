@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	"github.com/alanshaw/ucantone/validator"
+	"github.com/alanshaw/ucantone/validator/testdata/fixtures"
 	"github.com/alanshaw/ucantone/varsig"
 	"github.com/alanshaw/ucantone/varsig/common"
 	"github.com/ipfs/go-cid"
@@ -35,72 +35,6 @@ const (
 	Dave  = "gCY4fdpJOoIaIhEpj4HUj9qfgf8BlW7h3T9IbK9pTddRCw" // did:key:z6Mkh7wJtReCeeT9yDR2nR52omKCayS6zbg8tnW8Jok9CJhk
 )
 
-type BytesModel struct {
-	Value []byte
-}
-
-func (m BytesModel) MarshalJSON() ([]byte, error) {
-	if m.Value == nil {
-		return json.Marshal(nil)
-	}
-	return []byte(fmt.Sprintf(`{"/":{"bytes":"%s"}}`, base64.RawStdEncoding.EncodeToString(m.Value))), nil
-}
-
-func (m *BytesModel) UnmarshalJSON(data []byte) error {
-	var outer map[string]map[string]string
-	err := json.Unmarshal(data, &outer)
-	if err != nil {
-		return err
-	}
-	if outer == nil {
-		return nil
-	}
-	if len(outer) != 1 {
-		return errors.New("invalid IPLD value: extraneous fields")
-	}
-	inner, ok := outer["/"]
-	if !ok {
-		return errors.New(`invalid IPLD value: missing field: "/"`)
-	}
-	if len(inner) != 1 {
-		return errors.New("invalid IPLD value: extraneous fields")
-	}
-	b64bytes, ok := inner["bytes"]
-	if !ok {
-		return errors.New(`invalid IPLD value: missing field: "bytes"`)
-	}
-	bytes, err := base64.RawStdEncoding.DecodeString(b64bytes)
-	if err != nil {
-		return fmt.Errorf("decoding base64 bytes: %w", err)
-	}
-	m.Value = bytes
-	return nil
-}
-
-type ValidModel struct {
-	Name       string       `json:"name"`
-	Invocation BytesModel   `json:"invocation"`
-	Proofs     []BytesModel `json:"proofs"`
-}
-
-type ErrorModel struct {
-	Name string `json:"name"`
-}
-
-type InvalidModel struct {
-	Name       string       `json:"name"`
-	Invocation BytesModel   `json:"invocation"`
-	Proofs     []BytesModel `json:"proofs"`
-	Error      ErrorModel   `json:"error"`
-}
-
-type FixturesModel struct {
-	Version  string         `json:"version"`
-	Comments string         `json:"comments"`
-	Valid    []ValidModel   `json:"valid"`
-	Invalid  []InvalidModel `json:"invalid"`
-}
-
 var (
 	alice = must(ed25519.Decode(must(base64.RawStdEncoding.DecodeString(Alice))))
 	bob   = must(ed25519.Decode(must(base64.RawStdEncoding.DecodeString(Bob))))
@@ -115,10 +49,10 @@ var (
 )
 
 func main() {
-	fixtures := FixturesModel{
+	fixtures := fixtures.FixturesModel{
 		Version:  "1.0.0-rc.1",
 		Comments: "Encoded as dag-json.",
-		Valid: []ValidModel{
+		Valid: []fixtures.ValidModel{
 			makeValidSelfSignedFixture(),
 			makeValidSingleNonTimeBoundedProofFixture(),
 			makeValidSingleActiveProofFixture(),
@@ -127,7 +61,7 @@ func main() {
 			makeValidPowerlineFixture(),
 			makeValidPolicyMatchFixture(),
 		},
-		Invalid: []InvalidModel{
+		Invalid: []fixtures.InvalidModel{
 			makeInvalidNoProofFixture(),
 			makeInvalidMissingProofFixture(),
 			makeInvalidExpiredProofFixture(),
@@ -144,10 +78,14 @@ func main() {
 		},
 	}
 
-	fmt.Println(string(must(json.MarshalIndent(fixtures, "", "  "))))
+	var in bytes.Buffer
+	must0(fixtures.MarshalDagJSON(&in))
+	var out bytes.Buffer
+	must0(json.Indent(&out, in.Bytes(), "", "  "))
+	fmt.Println(out.String())
 }
 
-func makeValidSelfSignedFixture() ValidModel {
+func makeValidSelfSignedFixture() fixtures.ValidModel {
 	inv := must(invocation.Invoke(
 		alice,
 		alice,
@@ -158,14 +96,14 @@ func makeValidSelfSignedFixture() ValidModel {
 		invocation.WithNonce(nonce[0]),
 	))
 
-	return ValidModel{
+	return fixtures.ValidModel{
 		Name:       "self signed",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{},
 	}
 }
 
-func makeValidSingleNonTimeBoundedProofFixture() ValidModel {
+func makeValidSingleNonTimeBoundedProofFixture() fixtures.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
@@ -186,14 +124,14 @@ func makeValidSingleNonTimeBoundedProofFixture() ValidModel {
 		invocation.WithNonce(nonce[1]),
 	))
 
-	return ValidModel{
+	return fixtures.ValidModel{
 		Name:       "single non-time bounded proof",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
 	}
 }
 
-func makeValidSingleActiveProofFixture() ValidModel {
+func makeValidSingleActiveProofFixture() fixtures.ValidModel {
 	nbf := ucan.UTCUnixTimestamp(must(time.Parse(time.RFC3339, "2025-10-20T11:08:35Z")).Unix())
 	dlg0 := must(delegation.Delegate(
 		bob,
@@ -216,14 +154,14 @@ func makeValidSingleActiveProofFixture() ValidModel {
 		invocation.WithNonce(nonce[1]),
 	))
 
-	return ValidModel{
+	return fixtures.ValidModel{
 		Name:       "single active non-expired proof",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
 	}
 }
 
-func makeValidMultipleProofsFixture() ValidModel {
+func makeValidMultipleProofsFixture() fixtures.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		carol,
 		bob,
@@ -253,14 +191,14 @@ func makeValidMultipleProofsFixture() ValidModel {
 		invocation.WithNonce(nonce[2]),
 	))
 
-	return ValidModel{
+	return fixtures.ValidModel{
 		Name:       "multiple proofs",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
 	}
 }
 
-func makeValidMultipleActiveProofsFixture() ValidModel {
+func makeValidMultipleActiveProofsFixture() fixtures.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		carol,
 		bob,
@@ -292,14 +230,14 @@ func makeValidMultipleActiveProofsFixture() ValidModel {
 		invocation.WithNonce(nonce[2]),
 	))
 
-	return ValidModel{
+	return fixtures.ValidModel{
 		Name:       "multiple active proofs",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
 	}
 }
 
-func makeValidPowerlineFixture() ValidModel {
+func makeValidPowerlineFixture() fixtures.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		carol,
 		bob,
@@ -329,14 +267,14 @@ func makeValidPowerlineFixture() ValidModel {
 		invocation.WithNonce(nonce[2]),
 	))
 
-	return ValidModel{
+	return fixtures.ValidModel{
 		Name:       "powerline",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
 	}
 }
 
-func makeValidPolicyMatchFixture() ValidModel {
+func makeValidPolicyMatchFixture() fixtures.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
@@ -360,14 +298,14 @@ func makeValidPolicyMatchFixture() ValidModel {
 		invocation.WithNonce(nonce[1]),
 	))
 
-	return ValidModel{
+	return fixtures.ValidModel{
 		Name:       "policy match",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
 	}
 }
 
-func makeInvalidNoProofFixture() InvalidModel {
+func makeInvalidNoProofFixture() fixtures.InvalidModel {
 	inv := must(invocation.Invoke(
 		alice,
 		carol,
@@ -378,15 +316,15 @@ func makeInvalidNoProofFixture() InvalidModel {
 		invocation.WithNonce(nonce[0]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "no proof",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{},
-		Error:      ErrorModel{validator.InvalidClaimErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{},
+		Error:      fixtures.ErrorModel{validator.InvalidClaimErrorName},
 	}
 }
 
-func makeInvalidMissingProofFixture() InvalidModel {
+func makeInvalidMissingProofFixture() fixtures.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
@@ -407,15 +345,15 @@ func makeInvalidMissingProofFixture() InvalidModel {
 		invocation.WithNonce(nonce[1]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "missing proof",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{},
-		Error:      ErrorModel{validator.UnavailableProofErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{},
+		Error:      fixtures.ErrorModel{validator.UnavailableProofErrorName},
 	}
 }
 
-func makeInvalidExpiredProofFixture() InvalidModel {
+func makeInvalidExpiredProofFixture() fixtures.InvalidModel {
 	exp := ucan.UTCUnixTimestamp(must(time.Parse(time.RFC3339, "2025-10-20T11:08:35Z")).Unix())
 	dlg0 := must(delegation.Delegate(
 		bob,
@@ -437,15 +375,15 @@ func makeInvalidExpiredProofFixture() InvalidModel {
 		invocation.WithNonce(nonce[1]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "expired proof",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
-		Error:      ErrorModel{validator.ExpiredErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
+		Error:      fixtures.ErrorModel{validator.ExpiredErrorName},
 	}
 }
 
-func makeInvalidInactiveProofFixture() InvalidModel {
+func makeInvalidInactiveProofFixture() fixtures.InvalidModel {
 	nbf := ucan.UTCUnixTimestamp(must(time.Parse(time.RFC3339, "9999-12-31T23:59:59Z")).Unix())
 	dlg0 := must(delegation.Delegate(
 		bob,
@@ -468,15 +406,15 @@ func makeInvalidInactiveProofFixture() InvalidModel {
 		invocation.WithNonce(nonce[1]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "inactive proof",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
-		Error:      ErrorModel{validator.TooEarlyErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
+		Error:      fixtures.ErrorModel{validator.TooEarlyErrorName},
 	}
 }
 
-func makeInvalidProofPrincipalAlignmentFixture() InvalidModel {
+func makeInvalidProofPrincipalAlignmentFixture() fixtures.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		dave,
 		carol,
@@ -506,15 +444,15 @@ func makeInvalidProofPrincipalAlignmentFixture() InvalidModel {
 		invocation.WithNonce(nonce[2]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "proof principal alignment",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
-		Error:      ErrorModel{validator.PrincipalAlignmentErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Error:      fixtures.ErrorModel{validator.PrincipalAlignmentErrorName},
 	}
 }
 
-func makeInvalidInvocationPrincipalAlignmentFixture() InvalidModel {
+func makeInvalidInvocationPrincipalAlignmentFixture() fixtures.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		dave,
 		carol,
@@ -544,15 +482,15 @@ func makeInvalidInvocationPrincipalAlignmentFixture() InvalidModel {
 		invocation.WithNonce(nonce[2]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "invocation principal alignment",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
-		Error:      ErrorModel{validator.PrincipalAlignmentErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Error:      fixtures.ErrorModel{validator.PrincipalAlignmentErrorName},
 	}
 }
 
-func makeInvalidProofSubjectAlignmentFixture() InvalidModel {
+func makeInvalidProofSubjectAlignmentFixture() fixtures.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		carol,
 		bob,
@@ -582,15 +520,15 @@ func makeInvalidProofSubjectAlignmentFixture() InvalidModel {
 		invocation.WithNonce(nonce[2]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "proof subject alignment",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
-		Error:      ErrorModel{validator.SubjectAlignmentErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Error:      fixtures.ErrorModel{validator.SubjectAlignmentErrorName},
 	}
 }
 
-func makeInvalidInvocationSubjectAlignmentFixture() InvalidModel {
+func makeInvalidInvocationSubjectAlignmentFixture() fixtures.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		carol,
 		bob,
@@ -620,15 +558,15 @@ func makeInvalidInvocationSubjectAlignmentFixture() InvalidModel {
 		invocation.WithNonce(nonce[2]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "invocation subject alignment",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}, {must(delegation.Encode(dlg1))}},
-		Error:      ErrorModel{validator.SubjectAlignmentErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Error:      fixtures.ErrorModel{validator.SubjectAlignmentErrorName},
 	}
 }
 
-func makeInvalidExpiredInvocationFixture() InvalidModel {
+func makeInvalidExpiredInvocationFixture() fixtures.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
@@ -650,15 +588,15 @@ func makeInvalidExpiredInvocationFixture() InvalidModel {
 		invocation.WithNonce(nonce[1]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "expired invocation",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
-		Error:      ErrorModel{validator.ExpiredErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
+		Error:      fixtures.ErrorModel{validator.ExpiredErrorName},
 	}
 }
 
-func makeInvalidProofSignatureFixture() InvalidModel {
+func makeInvalidProofSignatureFixture() fixtures.InvalidModel {
 	h := must(varsig.Encode(common.Ed25519DagCbor))
 
 	tokenPayload := &ddm.TokenPayloadModel1_0_0_rc1{
@@ -698,15 +636,15 @@ func makeInvalidProofSignatureFixture() InvalidModel {
 		invocation.WithNonce(nonce[1]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "invalid proof signature",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{dlg0Buf.Bytes()}},
-		Error:      ErrorModel{validator.InvalidSignatureErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{dlg0Buf.Bytes()},
+		Error:      fixtures.ErrorModel{validator.InvalidSignatureErrorName},
 	}
 }
 
-func makeInvalidInvocationSignatureFixture() InvalidModel {
+func makeInvalidInvocationSignatureFixture() fixtures.InvalidModel {
 	h := must(varsig.Encode(common.Ed25519DagCbor))
 
 	var args cbg.Deferred
@@ -737,15 +675,15 @@ func makeInvalidInvocationSignatureFixture() InvalidModel {
 	var envBuf bytes.Buffer
 	must0(model.MarshalCBOR(&envBuf))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "invalid invocation signature",
-		Invocation: BytesModel{envBuf.Bytes()},
-		Proofs:     []BytesModel{},
-		Error:      ErrorModel{validator.InvalidSignatureErrorName},
+		Invocation: envBuf.Bytes(),
+		Proofs:     [][]byte{},
+		Error:      fixtures.ErrorModel{validator.InvalidSignatureErrorName},
 	}
 }
 
-func makeInvalidPowerlineFixture() InvalidModel {
+func makeInvalidPowerlineFixture() fixtures.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
@@ -766,15 +704,15 @@ func makeInvalidPowerlineFixture() InvalidModel {
 		invocation.WithNonce(nonce[1]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "invalid powerline",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
-		Error:      ErrorModel{validator.InvalidClaimErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
+		Error:      fixtures.ErrorModel{validator.InvalidClaimErrorName},
 	}
 }
 
-func makeInvalidPolicyViolationFixture() InvalidModel {
+func makeInvalidPolicyViolationFixture() fixtures.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
@@ -798,11 +736,11 @@ func makeInvalidPolicyViolationFixture() InvalidModel {
 		invocation.WithNonce(nonce[1]),
 	))
 
-	return InvalidModel{
+	return fixtures.InvalidModel{
 		Name:       "policy violation",
-		Invocation: BytesModel{must(invocation.Encode(inv))},
-		Proofs:     []BytesModel{{must(delegation.Encode(dlg0))}},
-		Error:      ErrorModel{policy.MatchErrorName},
+		Invocation: must(invocation.Encode(inv)),
+		Proofs:     [][]byte{must(delegation.Encode(dlg0))},
+		Error:      fixtures.ErrorModel{policy.MatchErrorName},
 	}
 }
 

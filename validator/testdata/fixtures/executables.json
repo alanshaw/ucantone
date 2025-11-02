@@ -1,53 +1,46 @@
 {
-  "version": "1.0.0-rc.1",
-  "comments": "Encoded as dag-json.",
   "valid": [
     {
       "name": "self signed",
+      "proofs": [],
       "invocation": {
         "/": {
           "bytes": "glhAdkO/Rfbb/0LCtIfgxAb5eylG1ihFqThLGYo/lNqvITZpqO3wbbN4XJmuTvNwEvkH2pUdrLfyh9ERB/I1UsfgBaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaAY3N1Yng4ZGlkOmtleTp6Nk1rZ0d5a045QVJORmpFem93VnE0bUxQMmtMNE5zeUFhREdYZUpGUTVxRTFiZmdkYXJnc6Blbm9uY2VDAQID"
         }
-      },
-      "proofs": []
+      }
     },
     {
       "name": "single non-time bounded proof",
-      "invocation": {
-        "/": {
-          "bytes": "glhA+zYTMDabHkRoQ12Ph8EtlHs0ffjkIQ3JH+d53o0HxWkSBOO2sR/RSXMCR3H0iP6tRbHgaasOQZ9+QHgoXcAFCaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgC9G48BvfntsNiDdk6b0byHJgwx4aSxu3Pq3G9fkRumVjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoGVub25jZUMEBQY"
-        }
-      },
       "proofs": [
         {
           "/": {
             "bytes": "glhAJd5TQr51AS6NEAcLVNaHamwa5uWb+FKRh+OxRU+TKTVGzluv4ZSrRMsUmBvAqhB5dkZQOP2JzpLTCsjRX3CIB6JhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y3BvbIBjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemVub25jZUMBAgM"
           }
         }
-      ]
+      ],
+      "invocation": {
+        "/": {
+          "bytes": "glhA+zYTMDabHkRoQ12Ph8EtlHs0ffjkIQ3JH+d53o0HxWkSBOO2sR/RSXMCR3H0iP6tRbHgaasOQZ9+QHgoXcAFCaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgC9G48BvfntsNiDdk6b0byHJgwx4aSxu3Pq3G9fkRumVjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoGVub25jZUMEBQY"
+        }
+      }
     },
     {
       "name": "single active non-expired proof",
-      "invocation": {
-        "/": {
-          "bytes": "glhAj3JipDPSbGCo0vJrDZ5g2ZxV1IFU7AHilsMaHqhBaLy198edLcZxooYPMpGYyaasvPLMWGSj29ez88zQAaS7BKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgRocmYOBsBSXFYrKplo1ZoLHjsdnG3k9H1Hb1sbQBhbZjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoGVub25jZUMEBQY"
-        }
-      },
       "proofs": [
         {
           "/": {
             "bytes": "glhApIRugAndD77Zy1bUsDtyzlQFQxQSzfqTVW2MaEjl7Ntxze1U5Ly5K1TnBmAxItoI1t5xXjE+qz/ilX7H1wazB6JhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xqGNhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y25iZhpo9hgzY3BvbIBjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemVub25jZUMBAgM"
           }
         }
-      ]
+      ],
+      "invocation": {
+        "/": {
+          "bytes": "glhAj3JipDPSbGCo0vJrDZ5g2ZxV1IFU7AHilsMaHqhBaLy198edLcZxooYPMpGYyaasvPLMWGSj29ez88zQAaS7BKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgRocmYOBsBSXFYrKplo1ZoLHjsdnG3k9H1Hb1sbQBhbZjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoGVub25jZUMEBQY"
+        }
+      }
     },
     {
       "name": "multiple proofs",
-      "invocation": {
-        "/": {
-          "bytes": "glhAO7Z3Ai5VTYRYKk6VdWcuvF+b0dRcJUwU4Dc3GGtqmaQDZQXv1EqdzDtCriUeS/mPDSACsNsvfgxDYQZWN8ioBKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgSpUwChBiO9jNiLxrmOgK4E5B8wHoD4AiI9T7M6fTkcjYKlglAAFxEiCtOtJVY2TvB6kBWLO9HNFvLijplNjVSVP/9A8bktgU3GNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwcICQ"
-        }
-      },
       "proofs": [
         {
           "/": {
@@ -59,15 +52,15 @@
             "bytes": "glhAXaxSt5oFulxgTjE+y/qAvMyYFdlDObJEFAQyu/cBVqK+wwqCd6ibOcAbFZn2FSCCY9HtZjQhGSMgwTt+QcXpBqJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y3BvbIBjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2Vub25jZUMEBQY"
           }
         }
-      ]
+      ],
+      "invocation": {
+        "/": {
+          "bytes": "glhAO7Z3Ai5VTYRYKk6VdWcuvF+b0dRcJUwU4Dc3GGtqmaQDZQXv1EqdzDtCriUeS/mPDSACsNsvfgxDYQZWN8ioBKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgSpUwChBiO9jNiLxrmOgK4E5B8wHoD4AiI9T7M6fTkcjYKlglAAFxEiCtOtJVY2TvB6kBWLO9HNFvLijplNjVSVP/9A8bktgU3GNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwcICQ"
+        }
+      }
     },
     {
       "name": "multiple active proofs",
-      "invocation": {
-        "/": {
-          "bytes": "glhAZFPrLu+AQRPKnEfPxHFj+dACj/Kfevw7oksP02V+D8sNEFcdpYNrFNs3q9IlXHwQd1HgP/EGKxa0Ygmw0kyCBqJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgSpUwChBiO9jNiLxrmOgK4E5B8wHoD4AiI9T7M6fTkcjYKlglAAFxEiDtxTDYouY+OIbAVF5oqqfRisVPtY4GkdEroXwZtinB/mNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwcICQ"
-        }
-      },
       "proofs": [
         {
           "/": {
@@ -79,15 +72,15 @@
             "bytes": "glhA96LcmETJMMZWZdQ57fMWEash/71rpfrFdmq/oaZONYZvQuRJztHwVdvu9YyEeg2u8mNY84ZGft3rXh5kYlsnBaJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xqGNhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y25iZhpo9hgzY3BvbIBjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2Vub25jZUMEBQY"
           }
         }
-      ]
+      ],
+      "invocation": {
+        "/": {
+          "bytes": "glhAZFPrLu+AQRPKnEfPxHFj+dACj/Kfevw7oksP02V+D8sNEFcdpYNrFNs3q9IlXHwQd1HgP/EGKxa0Ygmw0kyCBqJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgSpUwChBiO9jNiLxrmOgK4E5B8wHoD4AiI9T7M6fTkcjYKlglAAFxEiDtxTDYouY+OIbAVF5oqqfRisVPtY4GkdEroXwZtinB/mNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwcICQ"
+        }
+      }
     },
     {
       "name": "powerline",
-      "invocation": {
-        "/": {
-          "bytes": "glhAJHo9rU+//nIndtqTkLrDbXWAnJtGLXXq56lVSsJM+IHQ+NF0Q5gT7Gyyz45eIDqmahp4nLWuj/ccyVTTzfRGBqJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgSpUwChBiO9jNiLxrmOgK4E5B8wHoD4AiI9T7M6fTkcjYKlglAAFxEiBCnV+P3+KhGhIs8OnIMSZZLS6fRj30CPJbzQhatgChMWNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwcICQ"
-        }
-      },
       "proofs": [
         {
           "/": {
@@ -99,55 +92,58 @@
             "bytes": "glhA1IyJO9QgNssbtvR093zY6eByrB8yLNVcZe1Dhx3z/4FVZkRTegZHBPTGJDWFjUZE9a/6xZA0S7QqaoAL7XhYAaJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y3BvbIBjc3Vi9mVub25jZUMEBQY"
           }
         }
-      ]
+      ],
+      "invocation": {
+        "/": {
+          "bytes": "glhAJHo9rU+//nIndtqTkLrDbXWAnJtGLXXq56lVSsJM+IHQ+NF0Q5gT7Gyyz45eIDqmahp4nLWuj/ccyVTTzfRGBqJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgSpUwChBiO9jNiLxrmOgK4E5B8wHoD4AiI9T7M6fTkcjYKlglAAFxEiBCnV+P3+KhGhIs8OnIMSZZLS6fRj30CPJbzQhatgChMWNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwcICQ"
+        }
+      }
     },
     {
       "name": "policy match",
-      "invocation": {
-        "/": {
-          "bytes": "glhAkbwOQD6fieAvlME5GZdHcTXgRS/ZP4DiEsJ/uGdft60ca5nilX+MGRVkxLy9hYVC/qH3h7HIy0lXU+I33XK8BKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgSmtT946RgryAhbUJ6UyIZNdiPZtYehg89nwghW6GLOtjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoWZhbnN3ZXIYKmVub25jZUMEBQY"
-        }
-      },
       "proofs": [
         {
           "/": {
             "bytes": "glhA831Le5oE6jkpaWOmukdi87qVMvuJabBhlSftbYGHX62KZ2jnQHculur7VkulglGBNv3q+6QiLHtPSaOBWK53AKJhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa2dHeWtOOUFSTkZqRXpvd1ZxNG1MUDJrTDROc3lBYURHWGVKRlE1cUUxYmZnY2NtZGkvbXNnL3NlbmRjZXhw9mNpc3N4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6Y3BvbIGDYj09Zy5hbnN3ZXIYKmNzdWJ4OGRpZDprZXk6ejZNa21UOWo2ZlZacXpYVjh1MndWVlN1NDlnWVNSWUdTUW5kdVdYRjZmb0FKcnF6ZW5vbmNlQwECAw"
           }
         }
-      ]
+      ],
+      "invocation": {
+        "/": {
+          "bytes": "glhAkbwOQD6fieAvlME5GZdHcTXgRS/ZP4DiEsJ/uGdft60ca5nilX+MGRVkxLy9hYVC/qH3h7HIy0lXU+I33XK8BKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgSmtT946RgryAhbUJ6UyIZNdiPZtYehg89nwghW6GLOtjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoWZhbnN3ZXIYKmVub25jZUMEBQY"
+        }
+      }
     }
   ],
   "invalid": [
     {
       "name": "no proof",
+      "error": {
+        "name": "InvalidClaim"
+      },
+      "proofs": [],
       "invocation": {
         "/": {
           "bytes": "glhA9FkP6W4BGElTqFw+hWEQEMu+JU6N0+RTV7cn+z2qWGWQ6bDD7ir98YTt/d6HGTehXeL3HoRM68LWygpq1pwxBaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaAY3N1Yng4ZGlkOmtleTp6Nk1rbUpjZVZvUVNIczQ1Y1JlRVhvTHRXbTF3b3NDRzhSTHhmS3doeG9xem9Ua0NkYXJnc6Blbm9uY2VDAQID"
         }
-      },
-      "proofs": [],
-      "error": {
-        "name": "InvalidClaim"
       }
     },
     {
       "name": "missing proof",
+      "error": {
+        "name": "UnavailableProof"
+      },
+      "proofs": [],
       "invocation": {
         "/": {
           "bytes": "glhAQ9J12n9FQEBY695woMriPw8l1Xbd5dUe/VJP2EUEgcu8ndwb3BZuHueADlhf3YkR5Zt8QkaQNpAks3NWrfunD6JhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgC9G48BvfntsNiDdk6b0byHJgwx4aSxu3Pq3G9fkRumVjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2RhcmdzoGVub25jZUMEBQY"
         }
-      },
-      "proofs": [],
-      "error": {
-        "name": "UnavailableProof"
       }
     },
     {
       "name": "expired proof",
-      "invocation": {
-        "/": {
-          "bytes": "glhAqZhE8ubFjfXkivqUYC0I88T2wFCsjCE3B9G81Rw5QBX7XjIuCDMAFPCq+v9kFHw3WzeMwxKbpwY8qHFAjDRWBqJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgCA9nqLQF4wG6sLtUrYv+TKGWrIht6utkAgoH8iUQkAZjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2RhcmdzoGVub25jZUMEBQY"
-        }
+      "error": {
+        "name": "Expired"
       },
       "proofs": [
         {
@@ -156,16 +152,16 @@
           }
         }
       ],
-      "error": {
-        "name": "Expired"
+      "invocation": {
+        "/": {
+          "bytes": "glhAqZhE8ubFjfXkivqUYC0I88T2wFCsjCE3B9G81Rw5QBX7XjIuCDMAFPCq+v9kFHw3WzeMwxKbpwY8qHFAjDRWBqJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgCA9nqLQF4wG6sLtUrYv+TKGWrIht6utkAgoH8iUQkAZjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2RhcmdzoGVub25jZUMEBQY"
+        }
       }
     },
     {
       "name": "inactive proof",
-      "invocation": {
-        "/": {
-          "bytes": "glhAQ+JaHfmjs+K2Oe81YGGgR5veZ2ozncHelXpkoLV3GlWQ/k5fnMosQf6w2cJYad7yneGqfsulyin4lEQFN4yeDKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgVLWfq9jR0iF4/p6EMpUaWOArh1QegdnrxgjgrSD66wxjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2RhcmdzoGVub25jZUMEBQY"
-        }
+      "error": {
+        "name": "TooEarly"
       },
       "proofs": [
         {
@@ -174,16 +170,16 @@
           }
         }
       ],
-      "error": {
-        "name": "TooEarly"
+      "invocation": {
+        "/": {
+          "bytes": "glhAQ+JaHfmjs+K2Oe81YGGgR5veZ2ozncHelXpkoLV3GlWQ/k5fnMosQf6w2cJYad7yneGqfsulyin4lEQFN4yeDKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgVLWfq9jR0iF4/p6EMpUaWOArh1QegdnrxgjgrSD66wxjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2RhcmdzoGVub25jZUMEBQY"
+        }
       }
     },
     {
       "name": "proof principal alignment",
-      "invocation": {
-        "/": {
-          "bytes": "glhAqhh0pA/v1QNXFfvhNvlQWiIG9i35KMdieH3WMIgB5T/LJltB4ChK8zHsbNv8iztuGkevuk0G274/H7zdNq0tB6JhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgjmUQiRQsu0xsopvk1sKBqkOkejSYYIqk0zvDGXxx0DHYKlglAAFxEiAz64c25+k6RJPiy5XgIaqQDWyLurbqV7OoqW7dcEpaNmNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwcICQ"
-        }
+      "error": {
+        "name": "InvalidAudience"
       },
       "proofs": [
         {
@@ -197,16 +193,16 @@
           }
         }
       ],
-      "error": {
-        "name": "InvalidAudience"
+      "invocation": {
+        "/": {
+          "bytes": "glhAqhh0pA/v1QNXFfvhNvlQWiIG9i35KMdieH3WMIgB5T/LJltB4ChK8zHsbNv8iztuGkevuk0G274/H7zdNq0tB6JhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgjmUQiRQsu0xsopvk1sKBqkOkejSYYIqk0zvDGXxx0DHYKlglAAFxEiAz64c25+k6RJPiy5XgIaqQDWyLurbqV7OoqW7dcEpaNmNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwcICQ"
+        }
       }
     },
     {
       "name": "invocation principal alignment",
-      "invocation": {
-        "/": {
-          "bytes": "glhAs7N3SpH9U2mlrVw97IXpRgPc9cn1AGB8D0hl07B93q+zvjBPvLXTEXCoh6qzwi9u372xhGqumBSqIaklAdlYBKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgjmUQiRQsu0xsopvk1sKBqkOkejSYYIqk0zvDGXxx0DHYKlglAAFxEiB0eKubgQDi14qxCqbJmEkrCYYdnM8H5UvqPuefBtutgGNzdWJ4OGRpZDprZXk6ejZNa2g3d0p0UmVDZWVUOXlEUjJuUjUyb21LQ2F5UzZ6Ymc4dG5XOEpvazlDSmhrZGFyZ3OgZW5vbmNlQwcICQ"
-        }
+      "error": {
+        "name": "InvalidAudience"
       },
       "proofs": [
         {
@@ -220,16 +216,16 @@
           }
         }
       ],
-      "error": {
-        "name": "InvalidAudience"
+      "invocation": {
+        "/": {
+          "bytes": "glhAs7N3SpH9U2mlrVw97IXpRgPc9cn1AGB8D0hl07B93q+zvjBPvLXTEXCoh6qzwi9u372xhGqumBSqIaklAdlYBKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgjmUQiRQsu0xsopvk1sKBqkOkejSYYIqk0zvDGXxx0DHYKlglAAFxEiB0eKubgQDi14qxCqbJmEkrCYYdnM8H5UvqPuefBtutgGNzdWJ4OGRpZDprZXk6ejZNa2g3d0p0UmVDZWVUOXlEUjJuUjUyb21LQ2F5UzZ6Ymc4dG5XOEpvazlDSmhrZGFyZ3OgZW5vbmNlQwcICQ"
+        }
       }
     },
     {
       "name": "proof subject alignment",
-      "invocation": {
-        "/": {
-          "bytes": "glhAcTg1zmt9YZCDwYTXNky3R3PvtlYT0Po7IXbC6k8qLp64J/ne3EBnpdRBF8Sgyxu90kKklq9/VoA+AKZBzUrnAaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgSpUwChBiO9jNiLxrmOgK4E5B8wHoD4AiI9T7M6fTkcjYKlglAAFxEiD8NQogrXmEktAVlT4bldrqXyr/c79Bi1bpb2jm+/GE82NzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwcICQ"
-        }
+      "error": {
+        "name": "InvalidSubject"
       },
       "proofs": [
         {
@@ -243,16 +239,16 @@
           }
         }
       ],
-      "error": {
-        "name": "InvalidSubject"
+      "invocation": {
+        "/": {
+          "bytes": "glhAcTg1zmt9YZCDwYTXNky3R3PvtlYT0Po7IXbC6k8qLp64J/ne3EBnpdRBF8Sgyxu90kKklq9/VoA+AKZBzUrnAaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgSpUwChBiO9jNiLxrmOgK4E5B8wHoD4AiI9T7M6fTkcjYKlglAAFxEiD8NQogrXmEktAVlT4bldrqXyr/c79Bi1bpb2jm+/GE82NzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwcICQ"
+        }
       }
     },
     {
       "name": "invocation subject alignment",
-      "invocation": {
-        "/": {
-          "bytes": "glhAhHREHGwsskG62dVyntpyUcuYW2Csc+fAyn/32irxrbYkzENiPXcHb6eanyY2k1gO9CLUpgL86COFXL/JreVJAaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgSpUwChBiO9jNiLxrmOgK4E5B8wHoD4AiI9T7M6fTkcjYKlglAAFxEiCtOtJVY2TvB6kBWLO9HNFvLijplNjVSVP/9A8bktgU3GNzdWJ4OGRpZDprZXk6ejZNa2g3d0p0UmVDZWVUOXlEUjJuUjUyb21LQ2F5UzZ6Ymc4dG5XOEpvazlDSmhrZGFyZ3OgZW5vbmNlQwcICQ"
-        }
+      "error": {
+        "name": "InvalidSubject"
       },
       "proofs": [
         {
@@ -266,16 +262,16 @@
           }
         }
       ],
-      "error": {
-        "name": "InvalidSubject"
+      "invocation": {
+        "/": {
+          "bytes": "glhAhHREHGwsskG62dVyntpyUcuYW2Csc+fAyn/32irxrbYkzENiPXcHb6eanyY2k1gO9CLUpgL86COFXL/JreVJAaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaC2CpYJQABcRIgSpUwChBiO9jNiLxrmOgK4E5B8wHoD4AiI9T7M6fTkcjYKlglAAFxEiCtOtJVY2TvB6kBWLO9HNFvLijplNjVSVP/9A8bktgU3GNzdWJ4OGRpZDprZXk6ejZNa2g3d0p0UmVDZWVUOXlEUjJuUjUyb21LQ2F5UzZ6Ymc4dG5XOEpvazlDSmhrZGFyZ3OgZW5vbmNlQwcICQ"
+        }
       }
     },
     {
       "name": "expired invocation",
-      "invocation": {
-        "/": {
-          "bytes": "glhAi+UEXFt7QT1ytkoOHh3m89w85ZegFUstkm7HdKNicZJc+PYPZQP1EZS7/ZHKkUd5iDV3POxzlS5/EIFU/3yFD6JhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cBpo9hgzY2lhdBpo9XuAY2lzc3g4ZGlkOmtleTp6Nk1rZ0d5a045QVJORmpFem93VnE0bUxQMmtMNE5zeUFhREdYZUpGUTVxRTFiZmdjcHJmgdgqWCUAAXESIAvRuPAb357bDYg3ZOm9G8hyYMMeGksbtz6txvX5EbplY3N1Yng4ZGlkOmtleTp6Nk1rbUpjZVZvUVNIczQ1Y1JlRVhvTHRXbTF3b3NDRzhSTHhmS3doeG9xem9Ua0NkYXJnc6Blbm9uY2VDBAUG"
-        }
+      "error": {
+        "name": "Expired"
       },
       "proofs": [
         {
@@ -284,16 +280,16 @@
           }
         }
       ],
-      "error": {
-        "name": "Expired"
+      "invocation": {
+        "/": {
+          "bytes": "glhAi+UEXFt7QT1ytkoOHh3m89w85ZegFUstkm7HdKNicZJc+PYPZQP1EZS7/ZHKkUd5iDV3POxzlS5/EIFU/3yFD6JhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cBpo9hgzY2lhdBpo9XuAY2lzc3g4ZGlkOmtleTp6Nk1rZ0d5a045QVJORmpFem93VnE0bUxQMmtMNE5zeUFhREdYZUpGUTVxRTFiZmdjcHJmgdgqWCUAAXESIAvRuPAb357bDYg3ZOm9G8hyYMMeGksbtz6txvX5EbplY3N1Yng4ZGlkOmtleTp6Nk1rbUpjZVZvUVNIczQ1Y1JlRVhvTHRXbTF3b3NDRzhSTHhmS3doeG9xem9Ua0NkYXJnc6Blbm9uY2VDBAUG"
+        }
       }
     },
     {
       "name": "invalid proof signature",
-      "invocation": {
-        "/": {
-          "bytes": "glhABJHSzXBuguAKQK9PwFnFYUVY6t8IFwWQTsYsKtnSeuTb6CLAqMVGS9n2+XBEW+fL8vCZCW8Nz1AptqhXu6lnCKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIglNQUyhYZEjwWpdyHLp3psSgjcWCtKA16g/Vmscq9pEZjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2RhcmdzoGVub25jZUMEBQY"
-        }
+      "error": {
+        "name": "InvalidSignature"
       },
       "proofs": [
         {
@@ -302,28 +298,28 @@
           }
         }
       ],
-      "error": {
-        "name": "InvalidSignature"
+      "invocation": {
+        "/": {
+          "bytes": "glhABJHSzXBuguAKQK9PwFnFYUVY6t8IFwWQTsYsKtnSeuTb6CLAqMVGS9n2+XBEW+fL8vCZCW8Nz1AptqhXu6lnCKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIglNQUyhYZEjwWpdyHLp3psSgjcWCtKA16g/Vmscq9pEZjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2RhcmdzoGVub25jZUMEBQY"
+        }
       }
     },
     {
       "name": "invalid invocation signature",
+      "error": {
+        "name": "InvalidSignature"
+      },
+      "proofs": [],
       "invocation": {
         "/": {
           "bytes": "gkMBAgOiYWhINAHtAe0BE3FzdWNhbi9pbnZAMS4wLjAtcmMuMahjY21kaS9tc2cvc2VuZGNleHD2Y2lhdBpo9XuAY2lzc3g4ZGlkOmtleTp6Nk1rZ0d5a045QVJORmpFem93VnE0bUxQMmtMNE5zeUFhREdYZUpGUTVxRTFiZmdjcHJmgGNzdWJ4OGRpZDprZXk6ejZNa21KY2VWb1FTSHM0NWNSZUVYb0x0V20xd29zQ0c4Ukx4Zkt3aHhvcXpvVGtDZGFyZ3OgZW5vbmNlQwECAw"
         }
-      },
-      "proofs": [],
-      "error": {
-        "name": "InvalidSignature"
       }
     },
     {
       "name": "invalid powerline",
-      "invocation": {
-        "/": {
-          "bytes": "glhAH42jZsfYGQLb/L5MQPLntpnnypA1BTpzn3W0e0ilB2ycfCepWSFZK5Q7skC+iHgWOfp/7+TemjDnp/on2UeQCaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgRFZ5JrlBccy2bvNUfFz0vqCnGRuwPfgwwQ74YbiQqtpjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2RhcmdzoGVub25jZUMEBQY"
-        }
+      "error": {
+        "name": "InvalidClaim"
       },
       "proofs": [
         {
@@ -332,16 +328,16 @@
           }
         }
       ],
-      "error": {
-        "name": "InvalidClaim"
+      "invocation": {
+        "/": {
+          "bytes": "glhAH42jZsfYGQLb/L5MQPLntpnnypA1BTpzn3W0e0ilB2ycfCepWSFZK5Q7skC+iHgWOfp/7+TemjDnp/on2UeQCaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgRFZ5JrlBccy2bvNUfFz0vqCnGRuwPfgwwQ74YbiQqtpjc3VieDhkaWQ6a2V5Ono2TWttSmNlVm9RU0hzNDVjUmVFWG9MdFdtMXdvc0NHOFJMeGZLd2h4b3F6b1RrQ2RhcmdzoGVub25jZUMEBQY"
+        }
       }
     },
     {
       "name": "policy violation",
-      "invocation": {
-        "/": {
-          "bytes": "glhAQL/XPnoHApskl9Vsx6ZotTINrrNtxe9rAmF+VJg+iVTA+rjIDVduEIWlC/Cpj9jK12k7gdsJyi0RXymPRtbiDKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgSmtT946RgryAhbUJ6UyIZNdiPZtYehg89nwghW6GLOtjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoWZhbnN3ZXIYKWVub25jZUMEBQY"
-        }
+      "error": {
+        "name": "MatchError"
       },
       "proofs": [
         {
@@ -350,9 +346,13 @@
           }
         }
       ],
-      "error": {
-        "name": "MatchError"
+      "invocation": {
+        "/": {
+          "bytes": "glhAQL/XPnoHApskl9Vsx6ZotTINrrNtxe9rAmF+VJg+iVTA+rjIDVduEIWlC/Cpj9jK12k7gdsJyi0RXymPRtbiDKJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqGNjbWRpL21zZy9zZW5kY2V4cPZjaWF0Gmj1e4BjaXNzeDhkaWQ6a2V5Ono2TWtnR3lrTjlBUk5GakV6b3dWcTRtTFAya0w0TnN5QWFER1hlSkZRNXFFMWJmZ2NwcmaB2CpYJQABcRIgSmtT946RgryAhbUJ6UyIZNdiPZtYehg89nwghW6GLOtjc3VieDhkaWQ6a2V5Ono2TWttVDlqNmZWWnF6WFY4dTJ3VlZTdTQ5Z1lTUllHU1FuZHVXWEY2Zm9BSnJxemRhcmdzoWZhbnN3ZXIYKWVub25jZUMEBQY"
+        }
       }
     }
-  ]
+  ],
+  "version": "1.0.0-rc.1",
+  "comments": "Encoded as dag-json."
 }
