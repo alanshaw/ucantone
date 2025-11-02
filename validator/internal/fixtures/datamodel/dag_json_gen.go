@@ -128,7 +128,7 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 	}
 	written := 0
 
-	// t.Valid ([]fixtures.ValidModel) (slice)
+	// t.Valid ([]datamodel.ValidModel) (slice)
 	if len("valid") > 8192 {
 		return fmt.Errorf("String in field \"valid\" was too long")
 	}
@@ -166,7 +166,7 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Invalid ([]fixtures.InvalidModel) (slice)
+	// t.Invalid ([]datamodel.InvalidModel) (slice)
 	if len("invalid") > 8192 {
 		return fmt.Errorf("String in field \"invalid\" was too long")
 	}
@@ -283,7 +283,7 @@ func (t *FixturesModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Valid ([]fixtures.ValidModel) (slice)
+			// t.Valid ([]datamodel.ValidModel) (slice)
 			case "valid":
 				{
 
@@ -325,7 +325,7 @@ func (t *FixturesModel) UnmarshalDagJSON(r io.Reader) (err error) {
 
 				}
 
-				// t.Invalid ([]fixtures.InvalidModel) (slice)
+				// t.Invalid ([]datamodel.InvalidModel) (slice)
 			case "invalid":
 				{
 
@@ -448,7 +448,7 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Error (fixtures.ErrorModel) (struct)
+	// t.Error (datamodel.ErrorModel) (struct)
 	if len("error") > 8192 {
 		return fmt.Errorf("String in field \"error\" was too long")
 	}
@@ -530,6 +530,29 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 	}
 
 	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Description (string) (string)
+	if len("description") > 8192 {
+		return fmt.Errorf("String in field \"description\" was too long")
+	}
+	if err := jw.WriteString(string("description")); err != nil {
+		return fmt.Errorf("\"description\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Description) > 8192 {
+		return fmt.Errorf("String in field t.Description was too long")
+	}
+	if err := jw.WriteString(string(t.Description)); err != nil {
+		return fmt.Errorf("t.Description: %w", err)
+	}
+	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -582,7 +605,7 @@ func (t *InvalidModel) UnmarshalDagJSON(r io.Reader) (err error) {
 					t.Name = string(sval)
 				}
 
-				// t.Error (fixtures.ErrorModel) (struct)
+				// t.Error (datamodel.ErrorModel) (struct)
 			case "error":
 
 				if err := t.Error.UnmarshalDagJSON(jr); err != nil {
@@ -656,6 +679,18 @@ func (t *InvalidModel) UnmarshalDagJSON(r io.Reader) (err error) {
 					}
 				}
 
+				// t.Description (string) (string)
+			case "description":
+				{
+					sval, err := jr.ReadString(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("t.Description: string too long")
+						}
+						return fmt.Errorf("t.Description: %w", err)
+					}
+					t.Description = string(sval)
+				}
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
@@ -773,6 +808,29 @@ func (t *ValidModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("t.Invocation: %w", err)
 	}
 
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Description (string) (string)
+	if len("description") > 8192 {
+		return fmt.Errorf("String in field \"description\" was too long")
+	}
+	if err := jw.WriteString(string("description")); err != nil {
+		return fmt.Errorf("\"description\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Description) > 8192 {
+		return fmt.Errorf("String in field t.Description was too long")
+	}
+	if err := jw.WriteString(string(t.Description)); err != nil {
+		return fmt.Errorf("t.Description: %w", err)
+	}
 	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
@@ -893,6 +951,18 @@ func (t *ValidModel) UnmarshalDagJSON(r io.Reader) (err error) {
 					}
 				}
 
+				// t.Description (string) (string)
+			case "description":
+				{
+					sval, err := jr.ReadString(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("t.Description: string too long")
+						}
+						return fmt.Errorf("t.Description: %w", err)
+					}
+					t.Description = string(sval)
+				}
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {

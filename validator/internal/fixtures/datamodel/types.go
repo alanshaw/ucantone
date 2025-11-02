@@ -1,9 +1,10 @@
 package datamodel
 
 type ValidModel struct {
-	Name       string   `dagjsongen:"name"`
-	Invocation []byte   `dagjsongen:"invocation"`
-	Proofs     [][]byte `dagjsongen:"proofs"`
+	Name        string   `dagjsongen:"name"`
+	Description string   `dagjsongen:"description"`
+	Invocation  []byte   `dagjsongen:"invocation"`
+	Proofs      [][]byte `dagjsongen:"proofs"`
 }
 
 type ErrorModel struct {
@@ -11,10 +12,11 @@ type ErrorModel struct {
 }
 
 type InvalidModel struct {
-	Name       string     `dagjsongen:"name"`
-	Invocation []byte     `dagjsongen:"invocation"`
-	Proofs     [][]byte   `dagjsongen:"proofs"`
-	Error      ErrorModel `dagjsongen:"error"`
+	Name        string     `dagjsongen:"name"`
+	Description string     `dagjsongen:"description"`
+	Invocation  []byte     `dagjsongen:"invocation"`
+	Proofs      [][]byte   `dagjsongen:"proofs"`
+	Error       ErrorModel `dagjsongen:"error"`
 }
 
 type FixturesModel struct {
