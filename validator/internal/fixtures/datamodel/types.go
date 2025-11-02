@@ -1,4 +1,4 @@
-package fixtures
+package datamodel
 
 type ValidModel struct {
 	Name       string   `dagjsongen:"name"`

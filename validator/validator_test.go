@@ -2,20 +2,17 @@ package validator_test
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/alanshaw/ucantone/principal/ed25519"
-	"github.com/alanshaw/ucantone/testing/helpers"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/validator"
+	fdm "github.com/alanshaw/ucantone/validator/internal/fixtures/datamodel"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,75 +21,17 @@ type NamedError interface {
 	Name() string
 }
 
-type BytesModel struct {
-	Value []byte
-}
-
-func (m *BytesModel) UnmarshalJSON(data []byte) error {
-	var outer map[string]map[string]string
-	err := json.Unmarshal(data, &outer)
-	if err != nil {
-		return err
-	}
-	if outer == nil {
-		return nil
-	}
-	if len(outer) != 1 {
-		return errors.New("invalid IPLD value: extraneous fields")
-	}
-	inner, ok := outer["/"]
-	if !ok {
-		return errors.New(`invalid IPLD value: missing field: "/"`)
-	}
-	if len(inner) != 1 {
-		return errors.New("invalid IPLD value: extraneous fields")
-	}
-	b64bytes, ok := inner["bytes"]
-	if !ok {
-		return errors.New(`invalid IPLD value: missing field: "bytes"`)
-	}
-	bytes, err := base64.RawStdEncoding.DecodeString(b64bytes)
-	if err != nil {
-		return fmt.Errorf("decoding base64 bytes: %w", err)
-	}
-	m.Value = bytes
-	return nil
-}
-
-type ValidModel struct {
-	Name       string
-	Invocation BytesModel
-	Proofs     []BytesModel
-}
-
-type ErrorModel struct {
-	Name string
-}
-
-type InvalidModel struct {
-	Name       string
-	Invocation BytesModel
-	Proofs     []BytesModel
-	Error      ErrorModel
-}
-
-type FixturesModel struct {
-	Version  string
-	Comments string
-	Valid    []ValidModel
-	Invalid  []InvalidModel
-}
-
 func TestFixtures(t *testing.T) {
-	fixtureBytes := helpers.Must(os.ReadFile("./testdata/fixtures/executables.json"))(t)
+	fixturesFile, err := os.Open("./internal/fixtures/executables.json")
+	require.NoError(t, err)
 
-	var fixtures FixturesModel
-	err := json.Unmarshal(fixtureBytes, &fixtures)
+	var fixtures fdm.FixturesModel
+	err = fixtures.UnmarshalDagJSON(fixturesFile)
 	require.NoError(t, err)
 
 	for _, vector := range fixtures.Valid {
 		t.Run("valid "+vector.Name, func(t *testing.T) {
-			inv, err := invocation.Decode(vector.Invocation.Value)
+			inv, err := invocation.Decode(vector.Invocation)
 			require.NoError(t, err)
 			t.Log("invocation", inv.Link())
 
@@ -119,7 +58,7 @@ func TestFixtures(t *testing.T) {
 
 	for _, vector := range fixtures.Invalid {
 		t.Run("invalid "+vector.Name, func(t *testing.T) {
-			inv, err := invocation.Decode(vector.Invocation.Value)
+			inv, err := invocation.Decode(vector.Invocation)
 			require.NoError(t, err)
 			t.Log("invocation", inv.Link())
 
@@ -157,10 +96,10 @@ func newMapProofResolver(proofs map[ucan.Link]ucan.Delegation) validator.ProofRe
 	}
 }
 
-func decodeProofs(t *testing.T, vectorProofs []BytesModel) map[ucan.Link]ucan.Delegation {
+func decodeProofs(t *testing.T, vectorProofs [][]byte) map[ucan.Link]ucan.Delegation {
 	proofs := map[ucan.Link]ucan.Delegation{}
 	for _, p := range vectorProofs {
-		dlg, err := delegation.Decode(p.Value)
+		dlg, err := delegation.Decode(p)
 		require.NoError(t, err)
 		proofs[dlg.Link()] = dlg
 		t.Log("proof", dlg.Link())
