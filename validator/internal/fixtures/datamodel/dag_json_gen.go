@@ -128,37 +128,22 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 	}
 	written := 0
 
-	// t.Valid ([]datamodel.ValidModel) (slice)
-	if len("valid") > 8192 {
-		return fmt.Errorf("String in field \"valid\" was too long")
+	// t.Comments (string) (string)
+	if len("comments") > 8192 {
+		return fmt.Errorf("String in field \"comments\" was too long")
 	}
-	if err := jw.WriteString(string("valid")); err != nil {
-		return fmt.Errorf("\"valid\": %w", err)
+	if err := jw.WriteString(string("comments")); err != nil {
+		return fmt.Errorf("\"comments\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
-	if len(t.Valid) > 8192 {
-		return fmt.Errorf("Slice value in field t.Valid was too long")
+	if len(t.Comments) > 8192 {
+		return fmt.Errorf("String in field t.Comments was too long")
 	}
-
-	if err := jw.WriteArrayOpen(); err != nil {
-		return fmt.Errorf("t.Valid: %w", err)
+	if err := jw.WriteString(string(t.Comments)); err != nil {
+		return fmt.Errorf("t.Comments: %w", err)
 	}
-	for i, v := range t.Valid {
-		if i > 0 {
-			if err := jw.WriteComma(); err != nil {
-				return fmt.Errorf("t.Valid: %w", err)
-			}
-		}
-		if err := v.MarshalDagJSON(jw); err != nil {
-			return fmt.Errorf("v: %w", err)
-		}
-	}
-	if err := jw.WriteArrayClose(); err != nil {
-		return fmt.Errorf("t.Valid: %w", err)
-	}
-
 	written++
 	if written > 0 {
 		if err := jw.WriteComma(); err != nil {
@@ -204,6 +189,44 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
+	// t.Valid ([]datamodel.ValidModel) (slice)
+	if len("valid") > 8192 {
+		return fmt.Errorf("String in field \"valid\" was too long")
+	}
+	if err := jw.WriteString(string("valid")); err != nil {
+		return fmt.Errorf("\"valid\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Valid) > 8192 {
+		return fmt.Errorf("Slice value in field t.Valid was too long")
+	}
+
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("t.Valid: %w", err)
+	}
+	for i, v := range t.Valid {
+		if i > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return fmt.Errorf("t.Valid: %w", err)
+			}
+		}
+		if err := v.MarshalDagJSON(jw); err != nil {
+			return fmt.Errorf("v: %w", err)
+		}
+	}
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("t.Valid: %w", err)
+	}
+
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
 	// t.Version (string) (string)
 	if len("version") > 8192 {
 		return fmt.Errorf("String in field \"version\" was too long")
@@ -219,29 +242,6 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 	}
 	if err := jw.WriteString(string(t.Version)); err != nil {
 		return fmt.Errorf("t.Version: %w", err)
-	}
-	written++
-	if written > 0 {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Comments (string) (string)
-	if len("comments") > 8192 {
-		return fmt.Errorf("String in field \"comments\" was too long")
-	}
-	if err := jw.WriteString(string("comments")); err != nil {
-		return fmt.Errorf("\"comments\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if len(t.Comments) > 8192 {
-		return fmt.Errorf("String in field t.Comments was too long")
-	}
-	if err := jw.WriteString(string(t.Comments)); err != nil {
-		return fmt.Errorf("t.Comments: %w", err)
 	}
 	written++
 	if err := jw.WriteObjectClose(); err != nil {
@@ -283,46 +283,17 @@ func (t *FixturesModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Valid ([]datamodel.ValidModel) (slice)
-			case "valid":
+			// t.Comments (string) (string)
+			case "comments":
 				{
-
-					if err := jr.ReadArrayOpen(); err != nil {
-						return fmt.Errorf("t.Valid: %w", err)
-					}
-
-					close, err := jr.PeekArrayClose()
+					sval, err := jr.ReadString(8192)
 					if err != nil {
-						return fmt.Errorf("t.Valid: %w", err)
-					}
-					if close {
-						if err := jr.ReadArrayClose(); err != nil {
-							return fmt.Errorf("t.Valid: %w", err)
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("t.Comments: string too long")
 						}
-
-					} else {
-						for i := 0; i < 8192; i++ {
-							item := make([]ValidModel, 1)
-
-							if err := item[0].UnmarshalDagJSON(jr); err != nil {
-								return fmt.Errorf("unmarshaling item[0]: %w", err)
-							}
-
-							t.Valid = append(t.Valid, item[0])
-
-							close, err := jr.ReadArrayCloseOrComma()
-							if err != nil {
-								return fmt.Errorf("t.Valid: %w", err)
-							}
-							if close {
-								break
-							}
-							if i == 8192-1 {
-								return fmt.Errorf("t.Valid: slice too large")
-							}
-						}
+						return fmt.Errorf("t.Comments: %w", err)
 					}
-
+					t.Comments = string(sval)
 				}
 
 				// t.Invalid ([]datamodel.InvalidModel) (slice)
@@ -367,6 +338,48 @@ func (t *FixturesModel) UnmarshalDagJSON(r io.Reader) (err error) {
 
 				}
 
+				// t.Valid ([]datamodel.ValidModel) (slice)
+			case "valid":
+				{
+
+					if err := jr.ReadArrayOpen(); err != nil {
+						return fmt.Errorf("t.Valid: %w", err)
+					}
+
+					close, err := jr.PeekArrayClose()
+					if err != nil {
+						return fmt.Errorf("t.Valid: %w", err)
+					}
+					if close {
+						if err := jr.ReadArrayClose(); err != nil {
+							return fmt.Errorf("t.Valid: %w", err)
+						}
+
+					} else {
+						for i := 0; i < 8192; i++ {
+							item := make([]ValidModel, 1)
+
+							if err := item[0].UnmarshalDagJSON(jr); err != nil {
+								return fmt.Errorf("unmarshaling item[0]: %w", err)
+							}
+
+							t.Valid = append(t.Valid, item[0])
+
+							close, err := jr.ReadArrayCloseOrComma()
+							if err != nil {
+								return fmt.Errorf("t.Valid: %w", err)
+							}
+							if close {
+								break
+							}
+							if i == 8192-1 {
+								return fmt.Errorf("t.Valid: slice too large")
+							}
+						}
+					}
+
+				}
+
 				// t.Version (string) (string)
 			case "version":
 				{
@@ -378,19 +391,6 @@ func (t *FixturesModel) UnmarshalDagJSON(r io.Reader) (err error) {
 						return fmt.Errorf("t.Version: %w", err)
 					}
 					t.Version = string(sval)
-				}
-
-				// t.Comments (string) (string)
-			case "comments":
-				{
-					sval, err := jr.ReadString(8192)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("t.Comments: string too long")
-						}
-						return fmt.Errorf("t.Comments: %w", err)
-					}
-					t.Comments = string(sval)
 				}
 			default:
 				// Field doesn't exist on this type, so ignore it
@@ -425,21 +425,21 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 	}
 	written := 0
 
-	// t.Name (string) (string)
-	if len("name") > 8192 {
-		return fmt.Errorf("String in field \"name\" was too long")
+	// t.Description (string) (string)
+	if len("description") > 8192 {
+		return fmt.Errorf("String in field \"description\" was too long")
 	}
-	if err := jw.WriteString(string("name")); err != nil {
-		return fmt.Errorf("\"name\": %w", err)
+	if err := jw.WriteString(string("description")); err != nil {
+		return fmt.Errorf("\"description\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
-	if len(t.Name) > 8192 {
-		return fmt.Errorf("String in field t.Name was too long")
+	if len(t.Description) > 8192 {
+		return fmt.Errorf("String in field t.Description was too long")
 	}
-	if err := jw.WriteString(string(t.Name)); err != nil {
-		return fmt.Errorf("t.Name: %w", err)
+	if err := jw.WriteString(string(t.Description)); err != nil {
+		return fmt.Errorf("t.Description: %w", err)
 	}
 	written++
 	if written > 0 {
@@ -460,6 +460,54 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 	}
 	if err := t.Error.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("t.Error: %w", err)
+	}
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Invocation ([]uint8) (slice)
+	if len("invocation") > 8192 {
+		return fmt.Errorf("String in field \"invocation\" was too long")
+	}
+	if err := jw.WriteString(string("invocation")); err != nil {
+		return fmt.Errorf("\"invocation\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Invocation) > 2097152 {
+		return fmt.Errorf("Byte array in field t.Invocation was too long")
+	}
+
+	if err := jw.WriteBytes(t.Invocation); err != nil {
+		return fmt.Errorf("t.Invocation: %w", err)
+	}
+
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Name (string) (string)
+	if len("name") > 8192 {
+		return fmt.Errorf("String in field \"name\" was too long")
+	}
+	if err := jw.WriteString(string("name")); err != nil {
+		return fmt.Errorf("\"name\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Name) > 8192 {
+		return fmt.Errorf("String in field t.Name was too long")
+	}
+	if err := jw.WriteString(string(t.Name)); err != nil {
+		return fmt.Errorf("t.Name: %w", err)
 	}
 	written++
 	if written > 0 {
@@ -504,54 +552,6 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("t.Proofs: %w", err)
 	}
 
-	written++
-	if written > 0 {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Invocation ([]uint8) (slice)
-	if len("invocation") > 8192 {
-		return fmt.Errorf("String in field \"invocation\" was too long")
-	}
-	if err := jw.WriteString(string("invocation")); err != nil {
-		return fmt.Errorf("\"invocation\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if len(t.Invocation) > 2097152 {
-		return fmt.Errorf("Byte array in field t.Invocation was too long")
-	}
-
-	if err := jw.WriteBytes(t.Invocation); err != nil {
-		return fmt.Errorf("t.Invocation: %w", err)
-	}
-
-	written++
-	if written > 0 {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Description (string) (string)
-	if len("description") > 8192 {
-		return fmt.Errorf("String in field \"description\" was too long")
-	}
-	if err := jw.WriteString(string("description")); err != nil {
-		return fmt.Errorf("\"description\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if len(t.Description) > 8192 {
-		return fmt.Errorf("String in field t.Description was too long")
-	}
-	if err := jw.WriteString(string(t.Description)); err != nil {
-		return fmt.Errorf("t.Description: %w", err)
-	}
 	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
@@ -592,7 +592,43 @@ func (t *InvalidModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Name (string) (string)
+			// t.Description (string) (string)
+			case "description":
+				{
+					sval, err := jr.ReadString(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("t.Description: string too long")
+						}
+						return fmt.Errorf("t.Description: %w", err)
+					}
+					t.Description = string(sval)
+				}
+
+				// t.Error (datamodel.ErrorModel) (struct)
+			case "error":
+
+				if err := t.Error.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Error: %w", err)
+				}
+
+				// t.Invocation ([]uint8) (slice)
+			case "invocation":
+
+				{
+					bval, err := jr.ReadBytes(2097152)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("t.Invocation: byte array too large")
+						}
+						return fmt.Errorf("t.Invocation: %w", err)
+					}
+					if len(bval) > 0 {
+						t.Invocation = []uint8(bval)
+					}
+				}
+
+				// t.Name (string) (string)
 			case "name":
 				{
 					sval, err := jr.ReadString(8192)
@@ -603,13 +639,6 @@ func (t *InvalidModel) UnmarshalDagJSON(r io.Reader) (err error) {
 						return fmt.Errorf("t.Name: %w", err)
 					}
 					t.Name = string(sval)
-				}
-
-				// t.Error (datamodel.ErrorModel) (struct)
-			case "error":
-
-				if err := t.Error.UnmarshalDagJSON(jr); err != nil {
-					return fmt.Errorf("unmarshaling t.Error: %w", err)
 				}
 
 				// t.Proofs ([][]uint8) (slice)
@@ -662,35 +691,6 @@ func (t *InvalidModel) UnmarshalDagJSON(r io.Reader) (err error) {
 					}
 
 				}
-
-				// t.Invocation ([]uint8) (slice)
-			case "invocation":
-
-				{
-					bval, err := jr.ReadBytes(2097152)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("t.Invocation: byte array too large")
-						}
-						return fmt.Errorf("t.Invocation: %w", err)
-					}
-					if len(bval) > 0 {
-						t.Invocation = []uint8(bval)
-					}
-				}
-
-				// t.Description (string) (string)
-			case "description":
-				{
-					sval, err := jr.ReadString(8192)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("t.Description: string too long")
-						}
-						return fmt.Errorf("t.Description: %w", err)
-					}
-					t.Description = string(sval)
-				}
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
@@ -723,6 +723,54 @@ func (t *ValidModel) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 	written := 0
+
+	// t.Description (string) (string)
+	if len("description") > 8192 {
+		return fmt.Errorf("String in field \"description\" was too long")
+	}
+	if err := jw.WriteString(string("description")); err != nil {
+		return fmt.Errorf("\"description\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Description) > 8192 {
+		return fmt.Errorf("String in field t.Description was too long")
+	}
+	if err := jw.WriteString(string(t.Description)); err != nil {
+		return fmt.Errorf("t.Description: %w", err)
+	}
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Invocation ([]uint8) (slice)
+	if len("invocation") > 8192 {
+		return fmt.Errorf("String in field \"invocation\" was too long")
+	}
+	if err := jw.WriteString(string("invocation")); err != nil {
+		return fmt.Errorf("\"invocation\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Invocation) > 2097152 {
+		return fmt.Errorf("Byte array in field t.Invocation was too long")
+	}
+
+	if err := jw.WriteBytes(t.Invocation); err != nil {
+		return fmt.Errorf("t.Invocation: %w", err)
+	}
+
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
 
 	// t.Name (string) (string)
 	if len("name") > 8192 {
@@ -784,54 +832,6 @@ func (t *ValidModel) MarshalDagJSON(w io.Writer) error {
 	}
 
 	written++
-	if written > 0 {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Invocation ([]uint8) (slice)
-	if len("invocation") > 8192 {
-		return fmt.Errorf("String in field \"invocation\" was too long")
-	}
-	if err := jw.WriteString(string("invocation")); err != nil {
-		return fmt.Errorf("\"invocation\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if len(t.Invocation) > 2097152 {
-		return fmt.Errorf("Byte array in field t.Invocation was too long")
-	}
-
-	if err := jw.WriteBytes(t.Invocation); err != nil {
-		return fmt.Errorf("t.Invocation: %w", err)
-	}
-
-	written++
-	if written > 0 {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Description (string) (string)
-	if len("description") > 8192 {
-		return fmt.Errorf("String in field \"description\" was too long")
-	}
-	if err := jw.WriteString(string("description")); err != nil {
-		return fmt.Errorf("\"description\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if len(t.Description) > 8192 {
-		return fmt.Errorf("String in field t.Description was too long")
-	}
-	if err := jw.WriteString(string(t.Description)); err != nil {
-		return fmt.Errorf("t.Description: %w", err)
-	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -871,7 +871,36 @@ func (t *ValidModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Name (string) (string)
+			// t.Description (string) (string)
+			case "description":
+				{
+					sval, err := jr.ReadString(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("t.Description: string too long")
+						}
+						return fmt.Errorf("t.Description: %w", err)
+					}
+					t.Description = string(sval)
+				}
+
+				// t.Invocation ([]uint8) (slice)
+			case "invocation":
+
+				{
+					bval, err := jr.ReadBytes(2097152)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("t.Invocation: byte array too large")
+						}
+						return fmt.Errorf("t.Invocation: %w", err)
+					}
+					if len(bval) > 0 {
+						t.Invocation = []uint8(bval)
+					}
+				}
+
+				// t.Name (string) (string)
 			case "name":
 				{
 					sval, err := jr.ReadString(8192)
@@ -933,35 +962,6 @@ func (t *ValidModel) UnmarshalDagJSON(r io.Reader) (err error) {
 						}
 					}
 
-				}
-
-				// t.Invocation ([]uint8) (slice)
-			case "invocation":
-
-				{
-					bval, err := jr.ReadBytes(2097152)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("t.Invocation: byte array too large")
-						}
-						return fmt.Errorf("t.Invocation: %w", err)
-					}
-					if len(bval) > 0 {
-						t.Invocation = []uint8(bval)
-					}
-				}
-
-				// t.Description (string) (string)
-			case "description":
-				{
-					sval, err := jr.ReadString(8192)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("t.Description: string too long")
-						}
-						return fmt.Errorf("t.Description: %w", err)
-					}
-					t.Description = string(sval)
 				}
 			default:
 				// Field doesn't exist on this type, so ignore it

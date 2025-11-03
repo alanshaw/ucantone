@@ -1,5 +1,9 @@
 github.com/alanshaw/dag-json-gen v0.0.1 h1:E2UFkAegt0H6jUrEb3QA6og5yRGwDFHiJoNccB+/ffI=
 github.com/alanshaw/dag-json-gen v0.0.1/go.mod h1:rXxWw0SItP9QjxpRMpkju66h0KumF7TPCtvHdOKS5lY=
+github.com/alanshaw/dag-json-gen v0.0.2-0.20251103094509-dda2a3d65c6b h1:iOIiMbV1UDQ6S/PrcEAnF9sgATc7//Pv+3buZxDasNI=
+github.com/alanshaw/dag-json-gen v0.0.2-0.20251103094509-dda2a3d65c6b/go.mod h1:rXxWw0SItP9QjxpRMpkju66h0KumF7TPCtvHdOKS5lY=
+github.com/alanshaw/dag-json-gen v0.0.2 h1:Kr6uGQ5shJvz6G9wWp+J0/6KlCPjMou/mv7KzVpfqtQ=
+github.com/alanshaw/dag-json-gen v0.0.2/go.mod h1:rXxWw0SItP9QjxpRMpkju66h0KumF7TPCtvHdOKS5lY=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gobwas/glob v0.2.3 h1:A4xDbljILXROh+kObIiy5kIaPYD8e96x1tgBhUI5J+Y=
