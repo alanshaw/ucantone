@@ -22,7 +22,7 @@ type NamedError interface {
 }
 
 func TestFixtures(t *testing.T) {
-	fixturesFile, err := os.Open("./internal/fixtures/executables.json")
+	fixturesFile, err := os.Open("./internal/fixtures/invocations.json")
 	require.NoError(t, err)
 
 	var fixtures fdm.FixturesModel

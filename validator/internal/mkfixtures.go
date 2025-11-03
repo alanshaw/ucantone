@@ -240,7 +240,7 @@ func makeValidMultipleActiveProofsFixture() fdm.ValidModel {
 
 	return fdm.ValidModel{
 		Name:        "multiple active proofs",
-		Description: "a proof chain more than one delegation long where one or more proofs have an not before time in the past",
+		Description: "a proof chain more than one delegation long where one or more proofs have a not before time in the past",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
 	}
