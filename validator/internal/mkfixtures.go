@@ -194,7 +194,7 @@ func makeValidMultipleProofsFixture() fdm.ValidModel {
 		invocation.NoArguments{},
 		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
-		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithProofs(dlg1.Link(), dlg0.Link()),
 		invocation.WithNonce(nonce[2]),
 	))
 
@@ -202,7 +202,7 @@ func makeValidMultipleProofsFixture() fdm.ValidModel {
 		Name:        "multiple proofs",
 		Description: "a proof chain more than one delegation long",
 		Invocation:  must(invocation.Encode(inv)),
-		Proofs:      [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
 	}
 }
 
@@ -234,7 +234,7 @@ func makeValidMultipleActiveProofsFixture() fdm.ValidModel {
 		invocation.NoArguments{},
 		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
-		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithProofs(dlg1.Link(), dlg0.Link()),
 		invocation.WithNonce(nonce[2]),
 	))
 
@@ -242,7 +242,7 @@ func makeValidMultipleActiveProofsFixture() fdm.ValidModel {
 		Name:        "multiple active proofs",
 		Description: "a proof chain more than one delegation long where one or more proofs have a not before time in the past",
 		Invocation:  must(invocation.Encode(inv)),
-		Proofs:      [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
 	}
 }
 
@@ -272,7 +272,7 @@ func makeValidPowerlineFixture() fdm.ValidModel {
 		invocation.NoArguments{},
 		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
-		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithProofs(dlg1.Link(), dlg0.Link()),
 		invocation.WithNonce(nonce[2]),
 	))
 
@@ -280,7 +280,7 @@ func makeValidPowerlineFixture() fdm.ValidModel {
 		Name:        "powerline",
 		Description: "a proof chain with a powerline delegation (null value for subject)",
 		Invocation:  must(invocation.Encode(inv)),
-		Proofs:      [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
 	}
 }
 
@@ -450,20 +450,20 @@ func makeInvalidProofPrincipalAlignmentFixture() fdm.InvalidModel {
 
 	inv := must(invocation.Invoke(
 		alice,
-		carol,
+		dave,
 		cmd,
 		invocation.NoArguments{},
 		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
-		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithProofs(dlg1.Link(), dlg0.Link()),
 		invocation.WithNonce(nonce[2]),
 	))
 
 	return fdm.InvalidModel{
 		Name:        "proof principal alignment",
-		Description: "the audience of a delegation in the proof chain is not the issuer of the next delegation",
+		Description: "the issuer of a delegation in the proof chain is not the audience of the next delegation",
 		Invocation:  must(invocation.Encode(inv)),
-		Proofs:      [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
 		Error:       fdm.ErrorModel{Name: validator.PrincipalAlignmentErrorName},
 	}
 }
@@ -494,7 +494,7 @@ func makeInvalidInvocationPrincipalAlignmentFixture() fdm.InvalidModel {
 		invocation.NoArguments{},
 		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
-		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithProofs(dlg1.Link(), dlg0.Link()),
 		invocation.WithNonce(nonce[2]),
 	))
 
@@ -502,7 +502,7 @@ func makeInvalidInvocationPrincipalAlignmentFixture() fdm.InvalidModel {
 		Name:        "invocation principal alignment",
 		Description: "the audience of the delegation is not the issuer of the invocation",
 		Invocation:  must(invocation.Encode(inv)),
-		Proofs:      [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
 		Error:       fdm.ErrorModel{Name: validator.PrincipalAlignmentErrorName},
 	}
 }
@@ -533,7 +533,7 @@ func makeInvalidProofSubjectAlignmentFixture() fdm.InvalidModel {
 		invocation.NoArguments{},
 		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
-		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithProofs(dlg1.Link(), dlg0.Link()),
 		invocation.WithNonce(nonce[2]),
 	))
 
@@ -541,7 +541,7 @@ func makeInvalidProofSubjectAlignmentFixture() fdm.InvalidModel {
 		Name:        "proof subject alignment",
 		Description: "the subject is not the same for every delegation in the proof chain",
 		Invocation:  must(invocation.Encode(inv)),
-		Proofs:      [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
 		Error:       fdm.ErrorModel{Name: validator.SubjectAlignmentErrorName},
 	}
 }
@@ -572,7 +572,7 @@ func makeInvalidInvocationSubjectAlignmentFixture() fdm.InvalidModel {
 		invocation.NoArguments{},
 		invocation.WithIssuedAt(iat),
 		invocation.WithNoExpiration(),
-		invocation.WithProofs(dlg0.Link(), dlg1.Link()),
+		invocation.WithProofs(dlg1.Link(), dlg0.Link()),
 		invocation.WithNonce(nonce[2]),
 	))
 
@@ -580,7 +580,7 @@ func makeInvalidInvocationSubjectAlignmentFixture() fdm.InvalidModel {
 		Name:        "invocation subject alignment",
 		Description: "the subject of the invocation is not the same as the subject of the delegation",
 		Invocation:  must(invocation.Encode(inv)),
-		Proofs:      [][]byte{must(delegation.Encode(dlg0)), must(delegation.Encode(dlg1))},
+		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
 		Error:       fdm.ErrorModel{Name: validator.SubjectAlignmentErrorName},
 	}
 }

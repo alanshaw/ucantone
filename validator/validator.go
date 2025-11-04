@@ -253,10 +253,30 @@ func VerifyAuthorization(
 	}
 
 	if len(inv.Proofs()) > 0 {
-		var root ucan.Delegation
-		var prior ucan.Delegation
-		for _, p := range inv.Proofs() {
-			prf := prfs[p]
+		prf, ok := prfs[inv.Proofs()[0]]
+		if !ok {
+			return NewUnavailableProofError(inv.Proofs()[0], errors.New("missing from map"))
+		}
+
+		// check principal alignment
+		if inv.Issuer().DID() != prf.Audience().DID() {
+			return NewPrincipalAlignmentError(inv.Issuer(), prf)
+		}
+
+		for i, p := range inv.Proofs() {
+			var next ucan.Delegation
+			if i+1 < len(inv.Proofs()) {
+				np, ok := prfs[inv.Proofs()[i+1]]
+				if !ok {
+					return NewUnavailableProofError(inv.Proofs()[i+1], errors.New("missing from map"))
+				}
+				next = np
+			}
+
+			prf, ok := prfs[p]
+			if !ok {
+				return NewUnavailableProofError(p, errors.New("missing from map"))
+			}
 			issuer := prf.Issuer().DID()
 
 			// If the issuer is a did:key we just verify a signature
@@ -305,12 +325,14 @@ func VerifyAuthorization(
 			}
 
 			// this is the root delegation
-			if root == nil {
-				root = prf
+			if next == nil {
 				// powerline is not allowed as root delegation.
 				// a priori there is no such thing as a null subject.
 				if prf.Subject() == nil {
 					return NewInvalidClaimError("root delegation subject is null")
+				}
+				if prf.Subject().DID() != inv.Subject().DID() {
+					return NewSubjectAlignmentError(inv.Subject(), prf)
 				}
 				// check root issuer/subject alignment
 				if !canIssue(ucan.Capability(prf), prf.Issuer()) {
@@ -318,23 +340,13 @@ func VerifyAuthorization(
 				}
 			} else {
 				// otherwise check subject and principal alignment
-				if prf.Subject() != nil && prf.Subject().DID() != root.Subject().DID() {
-					return NewSubjectAlignmentError(root.Subject(), prf)
+				if prf.Subject() != nil && prf.Subject().DID() != inv.Subject().DID() {
+					return NewSubjectAlignmentError(inv.Subject(), prf)
 				}
-				if prf.Issuer().DID() != prior.Audience().DID() {
-					return NewPrincipalAlignmentError(prf.Issuer(), prior)
+				if prf.Issuer().DID() != next.Audience().DID() {
+					return NewPrincipalAlignmentError(prf.Issuer(), next)
 				}
 			}
-
-			prior = prf
-		}
-
-		// check subject and principal alignment for invocation
-		if inv.Subject().DID() != root.Subject().DID() {
-			return NewSubjectAlignmentError(root.Subject(), inv)
-		}
-		if inv.Issuer().DID() != prior.Audience().DID() {
-			return NewPrincipalAlignmentError(inv.Issuer(), prior)
 		}
 	} else {
 		// check invocation issuer/subject alignment
