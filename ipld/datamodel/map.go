@@ -50,7 +50,7 @@ func NewMap(options ...MapOption) *Map {
 	return &m
 }
 
-func (m *Map) Entries() iter.Seq2[string, ipld.Any] {
+func (m *Map) All() iter.Seq2[string, ipld.Any] {
 	return func(yield func(string, ipld.Any) bool) {
 		for _, k := range m.keys {
 			v := m.values[k].Value

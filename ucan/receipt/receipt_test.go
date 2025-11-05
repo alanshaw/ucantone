@@ -13,7 +13,7 @@ func TestIssue(t *testing.T) {
 	t.Run("minimal", func(t *testing.T) {
 		executor := testutil.RandomSigner(t)
 		ran := testutil.RandomCID(t)
-		out := result.Ok[int64, any](42)
+		out := result.OK[int64, any](42)
 
 		initial, err := receipt.Issue(executor, ran, out)
 		require.NoError(t, err)

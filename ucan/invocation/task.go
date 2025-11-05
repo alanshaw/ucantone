@@ -30,7 +30,7 @@ func NewTask(
 	nonce ucan.Nonce,
 ) (*Task, error) {
 	var args cbg.Deferred
-	argsMap := datamodel.NewMap(datamodel.WithEntries(arguments.Entries()))
+	argsMap := datamodel.NewMap(datamodel.WithEntries(arguments.All()))
 	var argsBuf bytes.Buffer
 	err := argsMap.MarshalCBOR(&argsBuf)
 	if err != nil {

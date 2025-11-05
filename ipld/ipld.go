@@ -21,8 +21,8 @@ type Any = any
 
 // Map is an IPLD map that supports any of the IPLD types for keys/values.
 type Map[K, V Any] interface {
-	// Entries is an iterator over the key/value pairs in this map.
-	Entries() iter.Seq2[K, V]
+	// All is an iterator over the key/value pairs in this map.
+	All() iter.Seq2[K, V]
 	// Get a value for the given key. It returns false if the key does not exist
 	// in the map.
 	Get(k K) (V, bool)

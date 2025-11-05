@@ -79,8 +79,8 @@ func MatchResultR0[O, X any](
 	}
 }
 
-// Ok returns a success result type
-func Ok[O, X any](value O) Result[O, X] {
+// OK returns a success result type
+func OK[O, X any](value O) Result[O, X] {
 	return &okResult[O, X]{value}
 }
 
@@ -89,8 +89,8 @@ func Error[O, X any](value X) Result[O, X] {
 	return &errResult[O, X]{value}
 }
 
-// MapOk transforms a successful result while leaving an error result unchanged
-func MapOk[O, X, O2 any](result Result[O, X], mapFn func(O) O2) Result[O2, X] {
+// MapOK transforms a successful result while leaving an error result unchanged
+func MapOK[O, X, O2 any](result Result[O, X], mapFn func(O) O2) Result[O2, X] {
 	return MapResultR0(result, mapFn, func(err X) X { return err })
 }
 
@@ -103,7 +103,7 @@ func MapError[O, X, X2 any](result Result[O, X], mapFn func(X) X2) Result[O, X2]
 // with seperate functions to modify both the success type and error type
 func MapResultR0[O, X, O2, X2 any](result Result[O, X], mapOkFn func(O) O2, mapErrFn func(X) X2) Result[O2, X2] {
 	return MatchResultR1(result, func(ok O) Result[O2, X2] {
-		return Ok[O2, X2](mapOkFn(ok))
+		return OK[O2, X2](mapOkFn(ok))
 	}, func(err X) Result[O2, X2] {
 		return Error[O2](mapErrFn(err))
 	})
@@ -114,7 +114,7 @@ func MapResultR0[O, X, O2, X2 any](result Result[O, X], mapOkFn func(O) O2, mapE
 func MapResultR1[O, X, O2, X2, R1 any](result Result[O, X], mapOkFn func(O) (O2, R1), mapErrFn func(X) (X2, R1)) (Result[O2, X2], R1) {
 	return MatchResultR2(result, func(ok O) (Result[O2, X2], R1) {
 		ok2, r1 := mapOkFn(ok)
-		return Ok[O2, X2](ok2), r1
+		return OK[O2, X2](ok2), r1
 	}, func(err X) (Result[O2, X2], R1) {
 		err2, r1 := mapErrFn(err)
 		return Error[O2](err2), r1
@@ -147,7 +147,7 @@ func Or[O, X, X2 any](res1 Result[O, X], res2 Result[O, X2]) Result[O, X2] {
 // runs an additional function that returns a subsequent result type
 func OrElse[O, X, X2 any](result Result[O, X], elseFunc func(X) Result[O, X2]) Result[O, X2] {
 	return MatchResultR1(result, func(ok O) Result[O, X2] {
-		return Ok[O, X2](ok)
+		return OK[O, X2](ok)
 	}, func(err X) Result[O, X2] {
 		return elseFunc(err)
 	})
@@ -162,7 +162,7 @@ func Wrap[O any, X comparable](inner func() (O, X)) Result[O, X] {
 	if err != nilErr {
 		return Error[O](err)
 	}
-	return Ok[O, X](o)
+	return OK[O, X](o)
 }
 
 func Unwrap[O, X any](result Result[O, X]) (O, X) {

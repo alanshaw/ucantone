@@ -11,18 +11,18 @@ import (
 
 func TestMatchResult(t *testing.T) {
 	t.Run("MatchResultR0", func(t *testing.T) {
-		testMatchResultR0(t, "ok (int)", result.Ok[int, any](5), true, false)
-		testMatchResultR0(t, "ok (string)", result.Ok[string, any]("apple"), true, false)
+		testMatchResultR0(t, "ok (int)", result.OK[int, any](5), true, false)
+		testMatchResultR0(t, "ok (string)", result.OK[string, any]("apple"), true, false)
 		testMatchResultR0(t, "err (error)", result.Error[int](errors.New("bad")), false, true)
 	})
 	t.Run("MatchResultR1", func(t *testing.T) {
 		testMatchResultR1(t, "ok (int)",
-			result.Ok[int, any](5),
+			result.OK[int, any](5),
 			func(o int) int { return o * 2 },
 			func(x any) int { return 0 },
 			10)
 		testMatchResultR1(t, "ok (string)",
-			result.Ok[string, any]("apple"),
+			result.OK[string, any]("apple"),
 			func(o string) string { return o + " tree" },
 			func(x any) string { return "nothing" },
 			"apple tree")
@@ -34,12 +34,12 @@ func TestMatchResult(t *testing.T) {
 	})
 	t.Run("MatchResultR2", func(t *testing.T) {
 		testMatchResultR2(t, "ok (int)",
-			result.Ok[int, any](5),
+			result.OK[int, any](5),
 			func(o int) (int, int) { return o * 2, o * 3 },
 			func(x any) (int, int) { return 0, 0 },
 			10, 15)
 		testMatchResultR2(t, "ok (string)",
-			result.Ok[string, any]("apple"),
+			result.OK[string, any]("apple"),
 			func(o string) (string, int) { return o + " tree", len(o) },
 			func(x any) (string, int) { return "nothing", 0 },
 			"apple tree", 5)
@@ -52,12 +52,12 @@ func TestMatchResult(t *testing.T) {
 
 	t.Run("MatchResultR2", func(t *testing.T) {
 		testMatchResultR3(t, "ok (int)",
-			result.Ok[int, any](5),
+			result.OK[int, any](5),
 			func(o int) (int, int, int) { return o * 2, o * 3, o * 4 },
 			func(x any) (int, int, int) { return 0, 0, 0 },
 			10, 15, 20)
 		testMatchResultR3(t, "ok (string)",
-			result.Ok[string, any]("apple"),
+			result.OK[string, any]("apple"),
 			func(o string) (string, int, string) { return o + " tree", len(o), o + " cart" },
 			func(x any) (string, int, string) { return "nothing", 0, "nothing" },
 			"apple tree", 5, "apple cart")
@@ -71,11 +71,11 @@ func TestMatchResult(t *testing.T) {
 
 func TestMap(t *testing.T) {
 	t.Run("MapOk", func(t *testing.T) {
-		testMapOk(t, "ok (int)", result.Ok[int, error](5), func(o int) int { return o * 2 }, result.Ok[int, error](10))
+		testMapOk(t, "ok (int)", result.OK[int, error](5), func(o int) int { return o * 2 }, result.OK[int, error](10))
 		testMapOk(t, "ok (string)",
-			result.Ok[string, error]("apple"),
+			result.OK[string, error]("apple"),
 			func(o string) int { return len(o) },
-			result.Ok[int, error](5))
+			result.OK[int, error](5))
 		testMapOk(t, "err (int)",
 			result.Error[int](errors.New("bad")),
 			func(o int) int { return o * 2 },
@@ -87,13 +87,13 @@ func TestMap(t *testing.T) {
 	})
 	t.Run("MapError", func(t *testing.T) {
 		testMapErr(t, "ok (int)",
-			result.Ok[int, error](5),
+			result.OK[int, error](5),
 			func(e error) error { return fmt.Errorf("something: %w", e) },
-			result.Ok[int, error](5))
+			result.OK[int, error](5))
 		testMapErr(t, "ok (string)",
-			result.Ok[string, error]("apple"),
+			result.OK[string, error]("apple"),
 			func(e error) string { return e.Error() },
-			result.Ok[string, string]("apple"))
+			result.OK[string, string]("apple"))
 		testMapErr(t, "err (int)",
 			result.Error[int](errors.New("bad")),
 			func(e error) error { return fmt.Errorf("something: %w", e) },
@@ -105,15 +105,15 @@ func TestMap(t *testing.T) {
 	})
 	t.Run("MapResult", func(t *testing.T) {
 		testMapResult(t, "ok (int)",
-			result.Ok[int, error](5),
+			result.OK[int, error](5),
 			func(o int) int { return o * 2 },
 			func(e error) error { return fmt.Errorf("something: %w", e) },
-			result.Ok[int, error](10))
+			result.OK[int, error](10))
 		testMapResult(t, "ok (string)",
-			result.Ok[string, error]("apple"),
+			result.OK[string, error]("apple"),
 			func(o string) int { return len(o) },
 			func(e error) string { return e.Error() },
-			result.Ok[int, string](5))
+			result.OK[int, string](5))
 		testMapResult(t, "err (int)",
 			result.Error[int](errors.New("bad")),
 			func(o int) int { return o * 2 },
@@ -128,15 +128,15 @@ func TestMap(t *testing.T) {
 
 	t.Run("MapResult", func(t *testing.T) {
 		testMapResultR1(t, "ok (int)",
-			result.Ok[int, error](5),
+			result.OK[int, error](5),
 			func(o int) (int, error) { return o * 2, nil },
 			func(e error) (error, error) { return fmt.Errorf("something: %w", e), errors.New("very") },
-			result.Ok[int, error](10), nil)
+			result.OK[int, error](10), nil)
 		testMapResultR1(t, "ok (string)",
-			result.Ok[string, error]("apple"),
+			result.OK[string, error]("apple"),
 			func(o string) (int, string) { return len(o), o + " tree" },
 			func(e error) (string, string) { return e.Error(), fmt.Errorf("something: %w", e).Error() },
-			result.Ok[int, string](5), "apple tree")
+			result.OK[int, string](5), "apple tree")
 		testMapResultR1(t, "err (int)",
 			result.Error[int](errors.New("bad")),
 			func(o int) (int, error) { return o * 2, nil },
@@ -152,7 +152,7 @@ func TestMap(t *testing.T) {
 
 func TestWrap(t *testing.T) {
 	require.Equal(t,
-		result.Ok[int, error](5),
+		result.OK[int, error](5),
 		result.Wrap(func() (int, error) { return 5, nil }),
 		"int (no error)")
 	require.Equal(t,
@@ -160,7 +160,7 @@ func TestWrap(t *testing.T) {
 		result.Wrap(func() (int, error) { return 0, errors.New("bad") }),
 		"int (error)")
 	require.Equal(t,
-		result.Ok[string, error]("apple"),
+		result.OK[string, error]("apple"),
 		result.Wrap(func() (string, error) { return "apple", nil }),
 		"string (no error)")
 	require.Equal(t,
@@ -187,15 +187,15 @@ func TestWrapUnwrap(t *testing.T) {
 func TestAndOr(t *testing.T) {
 	t.Run("And", func(t *testing.T) {
 		testAnd(t, "O - int, O2 - string, X - error (no error)",
-			result.Ok[int, error](10),
-			result.Ok[string, error]("apple"),
-			result.Ok[string, error]("apple"))
+			result.OK[int, error](10),
+			result.OK[string, error]("apple"),
+			result.OK[string, error]("apple"))
 		testAnd(t, "O - int, O2 - string, X - error (first error)",
 			result.Error[int](errors.New("bad")),
-			result.Ok[string, error]("apple"),
+			result.OK[string, error]("apple"),
 			result.Error[string](errors.New("bad")))
 		testAnd(t, "O - int, O2 - string, X - error (second error)",
-			result.Ok[int, error](10),
+			result.OK[int, error](10),
 			result.Error[string](errors.New("very bad")),
 			result.Error[string](errors.New("very bad")))
 		testAnd(t, "O - int, O2 - string, X - error (both error)",
@@ -206,17 +206,17 @@ func TestAndOr(t *testing.T) {
 
 	t.Run("Or", func(t *testing.T) {
 		testOr(t, "O - int, X - error, X2 - string (no error)",
-			result.Ok[int, error](10),
-			result.Ok[int, string](5),
-			result.Ok[int, string](10))
+			result.OK[int, error](10),
+			result.OK[int, string](5),
+			result.OK[int, string](10))
 		testOr(t, "O - int, X - error, X2 - string (first error)",
 			result.Error[int](errors.New("bad")),
-			result.Ok[int, string](5),
-			result.Ok[int, string](5))
+			result.OK[int, string](5),
+			result.OK[int, string](5))
 		testOr(t, "O - int, X - error, X2 - string (second error)",
-			result.Ok[int, error](10),
+			result.OK[int, error](10),
 			result.Error[int]("very bad"),
-			result.Ok[int, string](10))
+			result.OK[int, string](10))
 		testOr(t, "O - int, X - error, X2 - string (both error)",
 			result.Error[int](errors.New("bad")),
 			result.Error[int]("very bad"),
@@ -225,19 +225,19 @@ func TestAndOr(t *testing.T) {
 
 	t.Run("AndThen", func(t *testing.T) {
 		testAndThen(t, "O - int, O2 - string, X - error (ok, () -> ok)",
-			result.Ok[int, error](10),
+			result.OK[int, error](10),
 			func(x int) result.Result[string, error] {
-				return result.Ok[string, error](fmt.Sprintf("%d", x))
+				return result.OK[string, error](fmt.Sprintf("%d", x))
 			},
-			result.Ok[string, error]("10"))
+			result.OK[string, error]("10"))
 		testAndThen(t, "O - int, O2 - string, X - error (err, () -> ok)",
 			result.Error[int](errors.New("bad")),
 			func(x int) result.Result[string, error] {
-				return result.Ok[string, error](fmt.Sprintf("%d", x))
+				return result.OK[string, error](fmt.Sprintf("%d", x))
 			},
 			result.Error[string](errors.New("bad")))
 		testAndThen(t, "O - int, O2 - string, X - error (ok, () -> err)",
-			result.Ok[int, error](10),
+			result.OK[int, error](10),
 			func(x int) result.Result[string, error] {
 				return result.Error[string](fmt.Errorf("%d", x))
 			},
@@ -251,23 +251,23 @@ func TestAndOr(t *testing.T) {
 	})
 	t.Run("OrElse", func(t *testing.T) {
 		testOrElse(t, "O - int, X - error, X2 - string (ok, () -> ok)",
-			result.Ok[int, error](10),
+			result.OK[int, error](10),
 			func(e error) result.Result[int, string] {
-				return result.Ok[int, string](len(e.Error()))
+				return result.OK[int, string](len(e.Error()))
 			},
-			result.Ok[int, string](10))
+			result.OK[int, string](10))
 		testOrElse(t, "O - int, X - error, X2 - string (err, () -> ok)",
 			result.Error[int](errors.New("bad")),
 			func(e error) result.Result[int, string] {
-				return result.Ok[int, string](len(e.Error()))
+				return result.OK[int, string](len(e.Error()))
 			},
-			result.Ok[int, string](3))
+			result.OK[int, string](3))
 		testOrElse(t, "O - int, X - error, X2 - string (ok, () -> err)",
-			result.Ok[int, error](10),
+			result.OK[int, error](10),
 			func(e error) result.Result[int, string] {
 				return result.Error[int](e.Error())
 			},
-			result.Ok[int, string](10))
+			result.OK[int, string](10))
 		testOrElse(t, "O - int, X - error, X2 - string (err, () -> err)",
 			result.Error[int](errors.New("bad")),
 			func(e error) result.Result[int, string] {
@@ -328,7 +328,7 @@ func testMapOk[O, O2, X any](t *testing.T,
 	mapFn func(O) O2,
 	expResult result.Result[O2, X]) {
 	t.Run(testCase, func(t *testing.T) {
-		result := result.MapOk(testResult, mapFn)
+		result := result.MapOK(testResult, mapFn)
 		require.Equal(t, expResult, result)
 	})
 }

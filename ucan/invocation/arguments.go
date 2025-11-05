@@ -12,7 +12,7 @@ import (
 // NoArguments can be used to issue an invocation with no arguments.
 type NoArguments struct{}
 
-func (n NoArguments) Entries() iter.Seq2[string, ipld.Any] {
+func (n NoArguments) All() iter.Seq2[string, ipld.Any] {
 	return func(func(string, ipld.Any) bool) {}
 }
 

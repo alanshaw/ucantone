@@ -70,7 +70,7 @@ func Decode(data []byte) (*Receipt, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unmarshaling ok result CBOR: %w", err)
 		}
-		out = result.Ok[any, any](a.Value)
+		out = result.OK[any, any](a.Value)
 	} else if receiptArgs.Out.Err != nil {
 		var a datamodel.Any
 		err := a.UnmarshalCBOR(bytes.NewReader(receiptArgs.Out.Err.Raw))

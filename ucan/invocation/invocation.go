@@ -239,7 +239,7 @@ func Invoke(
 	}
 
 	var args cbg.Deferred
-	argsMap := datamodel.NewMap(datamodel.WithEntries(arguments.Entries()))
+	argsMap := datamodel.NewMap(datamodel.WithEntries(arguments.All()))
 	var argsBuf bytes.Buffer
 	err = argsMap.MarshalCBOR(&argsBuf)
 	if err != nil {
@@ -250,7 +250,7 @@ func Invoke(
 	var meta *cbg.Deferred
 	var metaMap *datamodel.Map
 	if cfg.meta != nil {
-		metaMap = datamodel.NewMap(datamodel.WithEntries(cfg.meta.Entries()))
+		metaMap = datamodel.NewMap(datamodel.WithEntries(cfg.meta.All()))
 		var buf bytes.Buffer
 		err := metaMap.MarshalCBOR(&buf)
 		if err != nil {
@@ -363,7 +363,7 @@ func VerifySignature(inv ucan.Invocation, verifier ucan.Verifier) (bool, error) 
 	}
 
 	var args cbg.Deferred
-	argsMap := datamodel.NewMap(datamodel.WithEntries(inv.Arguments().Entries()))
+	argsMap := datamodel.NewMap(datamodel.WithEntries(inv.Arguments().All()))
 	var argsBuf bytes.Buffer
 	err := argsMap.MarshalCBOR(&argsBuf)
 	if err != nil {
@@ -374,7 +374,7 @@ func VerifySignature(inv ucan.Invocation, verifier ucan.Verifier) (bool, error) 
 	var meta *cbg.Deferred
 	var metaMap *datamodel.Map
 	if inv.Metadata() != nil {
-		metaMap = datamodel.NewMap(datamodel.WithEntries(inv.Metadata().Entries()))
+		metaMap = datamodel.NewMap(datamodel.WithEntries(inv.Metadata().All()))
 		var buf bytes.Buffer
 		err := metaMap.MarshalCBOR(&buf)
 		if err != nil {

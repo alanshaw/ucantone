@@ -38,7 +38,7 @@ func NewTask[A Arguments](
 
 // BindArguments binds the arguments to the arguments type for this task.
 func (t *Task[A]) BindArguments() (A, error) {
-	argsMap := datamodel.NewMap(datamodel.WithEntries(t.Arguments().Entries()))
+	argsMap := datamodel.NewMap(datamodel.WithEntries(t.Arguments().All()))
 	var args A
 	// if args is a pointer type, then we need to create an instance of it because
 	// rebind requires a non-nil pointer.

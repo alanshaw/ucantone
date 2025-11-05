@@ -201,7 +201,7 @@ func Delegate(
 	var meta *cbg.Deferred
 	var metaMap *datamodel.Map
 	if cfg.meta != nil {
-		metaMap = datamodel.NewMap(datamodel.WithEntries(cfg.meta.Entries()))
+		metaMap = datamodel.NewMap(datamodel.WithEntries(cfg.meta.All()))
 		var buf bytes.Buffer
 		err = metaMap.MarshalCBOR(&buf)
 		if err != nil {
@@ -291,7 +291,7 @@ func VerifySignature(dlg ucan.Delegation, verifier ucan.Verifier) (bool, error) 
 	var meta *cbg.Deferred
 	var metaMap *datamodel.Map
 	if dlg.Metadata() != nil {
-		metaMap = datamodel.NewMap(datamodel.WithEntries(dlg.Metadata().Entries()))
+		metaMap = datamodel.NewMap(datamodel.WithEntries(dlg.Metadata().All()))
 		var buf bytes.Buffer
 		err := metaMap.MarshalCBOR(&buf)
 		if err != nil {
