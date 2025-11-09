@@ -17,6 +17,9 @@ import (
 )
 
 func TestCapabilityDefinition(t *testing.T) {
+	// Defining a capability with a CBOR marshalling struct type is useful because
+	// you get a typed Delegate and Invoke method (see below).
+	// i.e. the args parameter for those methods is the type you define here.
 	messageSendCapability := capability.New[*types.MessageSendArguments](
 		must(command.Parse("/message/send")),
 		capability.WithPolicy(
@@ -68,6 +71,11 @@ func TestCapabilityDefinition(t *testing.T) {
 }
 
 func TestCapabilityDefinitionGenericMap(t *testing.T) {
+	// You don't _have_ to create a struct type for arguments, you can just use
+	// the built in IPLD map. However this makes the definition less useful when
+	// calling Delegate or Invoke, since the args type is just the generic map
+	// i.e. no information about what keys can be added and no type information
+	// for values.
 	messageSendCapability := capability.New[*datamodel.Map](
 		must(command.Parse("/message/send")),
 		capability.WithPolicy(
