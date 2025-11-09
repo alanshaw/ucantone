@@ -17,13 +17,8 @@ import (
 )
 
 func TestCapabilityDefinition(t *testing.T) {
-	messageSendCommand, err := command.Parse("/message/send")
-	if err != nil {
-		panic(err)
-	}
-
 	messageSendCapability := capability.New[*types.MessageSendArguments](
-		messageSendCommand,
+		must(command.Parse("/message/send")),
 		capability.WithPolicy(
 			policy.Not(
 				policy.Equal(must(selector.Parse(".to")), []string{}),
@@ -73,13 +68,8 @@ func TestCapabilityDefinition(t *testing.T) {
 }
 
 func TestCapabilityDefinitionGenericMap(t *testing.T) {
-	messageSendCommand, err := command.Parse("/message/send")
-	if err != nil {
-		panic(err)
-	}
-
 	messageSendCapability := capability.New[*datamodel.Map](
-		messageSendCommand,
+		must(command.Parse("/message/send")),
 		capability.WithPolicy(
 			policy.Not(
 				policy.Equal(must(selector.Parse(".to")), []string{}),
