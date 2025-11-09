@@ -19,7 +19,7 @@ type delegationConfig struct {
 	nnc       []byte
 	nonnc     bool
 	meta      ipld.Map[string, ipld.Any]
-	pol       ucan.Policy
+	pol       policy.Policy
 }
 
 // WithSubject configures the DID of the subject of the delegation chain.
@@ -95,8 +95,8 @@ func WithMetadata(meta ipld.Map[string, ipld.Any]) Option {
 	}
 }
 
-func WithPolicy(statements ...policy.Statement) Option {
+func WithPolicy(statements ...ucan.Statement) Option {
 	return func(cfg *delegationConfig) {
-		cfg.pol = ucan.Policy{Statements: statements}
+		cfg.pol = policy.New(statements...)
 	}
 }

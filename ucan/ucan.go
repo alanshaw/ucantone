@@ -9,7 +9,6 @@ import (
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/crypto"
 	"github.com/alanshaw/ucantone/ucan/crypto/signature"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/varsig"
 	"github.com/ipfs/go-cid"
 )
@@ -101,12 +100,22 @@ type Token interface {
 	Signature() Signature
 }
 
+// Every statement MUST take the form [operator, selector, argument] except for
+// connectives (and, or, not) which MUST take the form [operator, argument].
+//
+// https://github.com/ucan-wg/delegation/blob/main/README.md#policy
+type Statement = interface {
+	Operation() string
+}
+
 // UCAN Delegation uses predicate logic statements extended with jq-inspired
 // selectors as a policy language. Policies are syntactically driven, and
 // constrain the args field of an eventual Invocation.
 //
 // https://github.com/ucan-wg/delegation/blob/main/README.md#policy
-type Policy = policy.Policy
+type Policy interface {
+	Statements() []Statement
+}
 
 // A capability is the semantically-relevant claim of a delegation.
 //

@@ -18,7 +18,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
-	"github.com/alanshaw/ucantone/validator"
+	verrs "github.com/alanshaw/ucantone/validator/errors"
 	fdm "github.com/alanshaw/ucantone/validator/internal/fixtures/datamodel"
 	"github.com/alanshaw/ucantone/varsig"
 	"github.com/alanshaw/ucantone/varsig/common"
@@ -332,7 +332,7 @@ func makeInvalidNoProofFixture() fdm.InvalidModel {
 		Description: "it has no proofs",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{},
-		Error:       fdm.ErrorModel{Name: validator.InvalidClaimErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.InvalidClaimErrorName},
 	}
 }
 
@@ -362,7 +362,7 @@ func makeInvalidMissingProofFixture() fdm.InvalidModel {
 		Description: "a proof is not provided or resolvable externally",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{},
-		Error:       fdm.ErrorModel{Name: validator.UnavailableProofErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.UnavailableProofErrorName},
 	}
 }
 
@@ -393,7 +393,7 @@ func makeInvalidExpiredProofFixture() fdm.InvalidModel {
 		Description: "a proof is expired",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{must(delegation.Encode(dlg0))},
-		Error:       fdm.ErrorModel{Name: validator.ExpiredErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.ExpiredErrorName},
 	}
 }
 
@@ -425,7 +425,7 @@ func makeInvalidInactiveProofFixture() fdm.InvalidModel {
 		Description: "a proof has a not before time in the future",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{must(delegation.Encode(dlg0))},
-		Error:       fdm.ErrorModel{Name: validator.TooEarlyErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.TooEarlyErrorName},
 	}
 }
 
@@ -464,7 +464,7 @@ func makeInvalidProofPrincipalAlignmentFixture() fdm.InvalidModel {
 		Description: "the issuer of a delegation in the proof chain is not the audience of the next delegation",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
-		Error:       fdm.ErrorModel{Name: validator.PrincipalAlignmentErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.PrincipalAlignmentErrorName},
 	}
 }
 
@@ -503,7 +503,7 @@ func makeInvalidInvocationPrincipalAlignmentFixture() fdm.InvalidModel {
 		Description: "the audience of the delegation is not the issuer of the invocation",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
-		Error:       fdm.ErrorModel{Name: validator.PrincipalAlignmentErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.PrincipalAlignmentErrorName},
 	}
 }
 
@@ -542,7 +542,7 @@ func makeInvalidProofSubjectAlignmentFixture() fdm.InvalidModel {
 		Description: "the subject is not the same for every delegation in the proof chain",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
-		Error:       fdm.ErrorModel{Name: validator.SubjectAlignmentErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.SubjectAlignmentErrorName},
 	}
 }
 
@@ -581,7 +581,7 @@ func makeInvalidInvocationSubjectAlignmentFixture() fdm.InvalidModel {
 		Description: "the subject of the invocation is not the same as the subject of the delegation",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{must(delegation.Encode(dlg1)), must(delegation.Encode(dlg0))},
-		Error:       fdm.ErrorModel{Name: validator.SubjectAlignmentErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.SubjectAlignmentErrorName},
 	}
 }
 
@@ -612,7 +612,7 @@ func makeInvalidExpiredInvocationFixture() fdm.InvalidModel {
 		Description: "the invocation is expired",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{must(delegation.Encode(dlg0))},
-		Error:       fdm.ErrorModel{Name: validator.ExpiredErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.ExpiredErrorName},
 	}
 }
 
@@ -624,7 +624,7 @@ func makeInvalidProofSignatureFixture() fdm.InvalidModel {
 		Aud:   alice.DID(),
 		Sub:   bob.DID(),
 		Cmd:   cmd,
-		Pol:   ucan.Policy{},
+		Pol:   policy.Policy{},
 		Nonce: nonce[0],
 	}
 
@@ -661,7 +661,7 @@ func makeInvalidProofSignatureFixture() fdm.InvalidModel {
 		Description: "the signature of a proof is not verifiable",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{dlg0Buf.Bytes()},
-		Error:       fdm.ErrorModel{Name: validator.InvalidSignatureErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.InvalidSignatureErrorName},
 	}
 }
 
@@ -701,7 +701,7 @@ func makeInvalidInvocationSignatureFixture() fdm.InvalidModel {
 		Description: "the signature of the invocation is not verifiable",
 		Invocation:  envBuf.Bytes(),
 		Proofs:      [][]byte{},
-		Error:       fdm.ErrorModel{Name: validator.InvalidSignatureErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.InvalidSignatureErrorName},
 	}
 }
 
@@ -731,7 +731,7 @@ func makeInvalidPowerlineFixture() fdm.InvalidModel {
 		Description: "the root delegation has a null subject",
 		Invocation:  must(invocation.Encode(inv)),
 		Proofs:      [][]byte{must(delegation.Encode(dlg0))},
-		Error:       fdm.ErrorModel{Name: validator.InvalidClaimErrorName},
+		Error:       fdm.ErrorModel{Name: verrs.InvalidClaimErrorName},
 	}
 }
 

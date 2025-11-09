@@ -3,6 +3,7 @@ package datamodel
 import (
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ucan"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	edm "github.com/alanshaw/ucantone/ucan/envelope/datamodel"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
@@ -20,7 +21,7 @@ type TokenPayloadModel1_0_0_rc1 struct {
 	Cmd ucan.Command `cborgen:"cmd"`
 	// Additional constraints on eventual invocation arguments, expressed in the
 	// UCAN Policy Language.
-	Pol ucan.Policy `cborgen:"pol"`
+	Pol policy.Policy `cborgen:"pol"`
 	// A unique, random nonce.
 	Nonce ucan.Nonce `cborgen:"nonce"`
 	// Arbitrary metadata.

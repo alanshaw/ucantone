@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"errors"
 
+	"github.com/alanshaw/ucantone/ucan"
 	pdm "github.com/alanshaw/ucantone/ucan/delegation/policy/datamodel"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 const MatchErrorName = "MatchError"
 
-func NewMatchError(statement Statement, err error) pdm.MatchErrorModel {
+func NewMatchError(statement ucan.Statement, err error) pdm.MatchErrorModel {
 	var s cbg.Deferred
 	if cms, ok := statement.(cbg.CBORMarshaler); ok {
 		var b bytes.Buffer

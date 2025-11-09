@@ -12,13 +12,16 @@ import (
 	"github.com/alanshaw/ucantone/principal/verifier"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/delegation"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
+	"github.com/alanshaw/ucantone/validator/capability"
+	verrs "github.com/alanshaw/ucantone/validator/errors"
 	"github.com/ipfs/go-cid"
 )
 
 // Authorization is the details of an invocation that has been validated by the
 // validator.
-type Authorization[A Arguments] struct {
+type Authorization[A capability.Arguments] struct {
 	// Invocation is the invocation that was validated by the validator.
 	Invocation ucan.Invocation
 	// Proofs are the path of authority from the subject to the invoker. They are
@@ -26,7 +29,7 @@ type Authorization[A Arguments] struct {
 	// strict sequence where the audience of the previous delegation matches the
 	// issuer of the next Delegation.
 	Proofs map[cid.Cid]ucan.Delegation
-	Task   *Task[A]
+	Task   *capability.Task[A]
 }
 
 // ProofResolverFunc finds a delegation corresponding to an external proof link.
@@ -39,7 +42,7 @@ type CanIssueFunc func(capability ucan.Capability, issuer ucan.Principal) bool
 // ValidateAuthorizationFunc allows an authorization to be validated further. It
 // is typically used to check that the delegations from the authorization have
 // not been revoked. It returns `nil` on success.
-type ValidateAuthorizationFunc func(ctx context.Context, auth Authorization[Arguments]) error
+type ValidateAuthorizationFunc func(ctx context.Context, auth Authorization[capability.Arguments]) error
 
 // DIDResolverFunc is used to resolve a key of the principal that is
 // identified by DID different from did:key method. It can be passed into a
@@ -92,10 +95,10 @@ type ValidationContext struct {
 //
 // It also allows a service identified by non did:key e.g. did:web or did:dns
 // to pass a resolved key so it does not need to be resolved at runtime.
-func Access[A Arguments](
+func Access[A capability.Arguments](
 	ctx context.Context,
 	authority ucan.Verifier,
-	capability *Capability[A],
+	capability *capability.Capability[A],
 	invocation ucan.Invocation,
 	options ...Option,
 ) (Authorization[A], error) {
@@ -176,14 +179,14 @@ func Validate(
 
 func ValidateNotExpired(token ucan.Token) error {
 	if ucan.IsExpired(token) {
-		return NewExpiredError(token)
+		return verrs.NewExpiredError(token)
 	}
 	return nil
 }
 
 func ValidateNotTooEarly(dlg ucan.Delegation) error {
 	if ucan.IsTooEarly(dlg) {
-		return NewTooEarlyError(dlg)
+		return verrs.NewTooEarlyError(dlg)
 	}
 	return nil
 }
@@ -209,7 +212,7 @@ func VerifyAuthorization(
 	if strings.HasPrefix(issuer.String(), "did:key:") {
 		verifier, err := parsePrincipal(issuer.String())
 		if err != nil {
-			return NewUnverifiableSignatureError(inv, err)
+			return verrs.NewUnverifiableSignatureError(inv, err)
 		}
 		if err := VerifyInvocationSignature(inv, verifier); err != nil {
 			return err
@@ -248,19 +251,19 @@ func VerifyAuthorization(
 			break
 		}
 		if verifyErr != nil {
-			return NewUnverifiableSignatureError(inv, verifyErr)
+			return verrs.NewUnverifiableSignatureError(inv, verifyErr)
 		}
 	}
 
 	if len(inv.Proofs()) > 0 {
 		prf, ok := prfs[inv.Proofs()[0]]
 		if !ok {
-			return NewUnavailableProofError(inv.Proofs()[0], errors.New("missing from map"))
+			return verrs.NewUnavailableProofError(inv.Proofs()[0], errors.New("missing from map"))
 		}
 
 		// check principal alignment
 		if inv.Issuer().DID() != prf.Audience().DID() {
-			return NewPrincipalAlignmentError(inv.Issuer(), prf)
+			return verrs.NewPrincipalAlignmentError(inv.Issuer(), prf)
 		}
 
 		for i, p := range inv.Proofs() {
@@ -268,14 +271,14 @@ func VerifyAuthorization(
 			if i+1 < len(inv.Proofs()) {
 				np, ok := prfs[inv.Proofs()[i+1]]
 				if !ok {
-					return NewUnavailableProofError(inv.Proofs()[i+1], errors.New("missing from map"))
+					return verrs.NewUnavailableProofError(inv.Proofs()[i+1], errors.New("missing from map"))
 				}
 				next = np
 			}
 
 			prf, ok := prfs[p]
 			if !ok {
-				return NewUnavailableProofError(p, errors.New("missing from map"))
+				return verrs.NewUnavailableProofError(p, errors.New("missing from map"))
 			}
 			issuer := prf.Issuer().DID()
 
@@ -283,7 +286,7 @@ func VerifyAuthorization(
 			if strings.HasPrefix(issuer.String(), "did:key:") {
 				verifier, err := parsePrincipal(issuer.String())
 				if err != nil {
-					return NewUnverifiableSignatureError(prf, err)
+					return verrs.NewUnverifiableSignatureError(prf, err)
 				}
 				if err := VerifyDelegationSignature(prf, verifier); err != nil {
 					return err
@@ -320,7 +323,7 @@ func VerifyAuthorization(
 					break
 				}
 				if verifyErr != nil {
-					return NewUnverifiableSignatureError(prf, verifyErr)
+					return verrs.NewUnverifiableSignatureError(prf, verifyErr)
 				}
 			}
 
@@ -329,30 +332,30 @@ func VerifyAuthorization(
 				// powerline is not allowed as root delegation.
 				// a priori there is no such thing as a null subject.
 				if prf.Subject() == nil {
-					return NewInvalidClaimError("root delegation subject is null")
+					return verrs.NewInvalidClaimError("root delegation subject is null")
 				}
 				if prf.Subject().DID() != inv.Subject().DID() {
-					return NewSubjectAlignmentError(inv.Subject(), prf)
+					return verrs.NewSubjectAlignmentError(inv.Subject(), prf)
 				}
 				// check root issuer/subject alignment
 				if !canIssue(ucan.Capability(prf), prf.Issuer()) {
-					return NewInvalidClaimError(fmt.Sprintf("%s cannot issue delegations for %s", prf.Issuer().DID(), prf.Subject().DID()))
+					return verrs.NewInvalidClaimError(fmt.Sprintf("%s cannot issue delegations for %s", prf.Issuer().DID(), prf.Subject().DID()))
 				}
 			} else {
 				// otherwise check subject and principal alignment
 				if prf.Subject() != nil && prf.Subject().DID() != inv.Subject().DID() {
-					return NewSubjectAlignmentError(inv.Subject(), prf)
+					return verrs.NewSubjectAlignmentError(inv.Subject(), prf)
 				}
 				if prf.Issuer().DID() != next.Audience().DID() {
-					return NewPrincipalAlignmentError(prf.Issuer(), next)
+					return verrs.NewPrincipalAlignmentError(prf.Issuer(), next)
 				}
 			}
 		}
 	} else {
 		// check invocation issuer/subject alignment
-		cap := delegation.NewCapability(inv.Subject(), inv.Command(), ucan.Policy{})
+		cap := delegation.NewCapability(inv.Subject(), inv.Command(), policy.Policy{})
 		if !canIssue(cap, inv.Issuer()) {
-			return NewInvalidClaimError(fmt.Sprintf("%s cannot issue invocations for %s", inv.Issuer().DID(), inv.Subject().DID()))
+			return verrs.NewInvalidClaimError(fmt.Sprintf("%s cannot issue invocations for %s", inv.Issuer().DID(), inv.Subject().DID()))
 		}
 	}
 
@@ -366,7 +369,7 @@ func VerifyInvocationSignature(inv ucan.Invocation, verifier ucan.Verifier) erro
 		return err
 	}
 	if !ok {
-		return NewInvalidSignatureError(inv, verifier)
+		return verrs.NewInvalidSignatureError(inv, verifier)
 	}
 	return nil
 }
@@ -378,7 +381,7 @@ func VerifyDelegationSignature(dlg ucan.Delegation, verifier ucan.Verifier) erro
 		return err
 	}
 	if !ok {
-		return NewInvalidSignatureError(dlg, verifier)
+		return verrs.NewInvalidSignatureError(dlg, verifier)
 	}
 	return nil
 }
@@ -395,16 +398,16 @@ func ParsePrincipal(str string) (principal.Verifier, error) {
 
 // ProofUnavailable is a [ProofResolverFunc] that always fails.
 func ProofUnavailable(ctx context.Context, p ucan.Link) (ucan.Delegation, error) {
-	return nil, NewUnavailableProofError(p, errors.New("no proof resolver configured"))
+	return nil, verrs.NewUnavailableProofError(p, errors.New("no proof resolver configured"))
 }
 
 // FailDIDKeyResolution is a [DIDResolverFunc] that always fails.
 func FailDIDKeyResolution(ctx context.Context, d did.DID) ([]did.DID, error) {
-	return []did.DID{}, NewDIDKeyResolutionError(d, errors.New("no DID resolver configured"))
+	return []did.DID{}, verrs.NewDIDKeyResolutionError(d, errors.New("no DID resolver configured"))
 }
 
 // NopValidateAuthorization is a [ValidateAuthorizationFunc] that does no
 // validation and returns nil.
-func NopValidateAuthorization(ctx context.Context, auth Authorization[Arguments]) error {
+func NopValidateAuthorization(ctx context.Context, auth Authorization[capability.Arguments]) error {
 	return nil
 }

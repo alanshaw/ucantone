@@ -7,7 +7,7 @@ import (
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ucan"
-	vdm "github.com/alanshaw/ucantone/validator/datamodel"
+	vdm "github.com/alanshaw/ucantone/validator/errors/datamodel"
 )
 
 const UnavailableProofErrorName = "UnavailableProof"
@@ -49,15 +49,6 @@ func NewTooEarlyError(t ucan.Delegation) vdm.ErrorModel {
 	return vdm.ErrorModel{
 		ErrorName: TooEarlyErrorName,
 		Message:   fmt.Sprintf("proof %s is not valid before %s", t.Link(), time.Unix(int64(*t.NotBefore()), 0).Format(time.RFC3339)),
-	}
-}
-
-const MalformedArgumentsErrorName = "MalformedArguments"
-
-func NewMalformedArgumentsError(cmd ucan.Command, cause error) vdm.ErrorModel {
-	return vdm.ErrorModel{
-		ErrorName: MalformedArgumentsErrorName,
-		Message:   fmt.Sprintf("malformed arguments for command %s: %s", cmd, cause.Error()),
 	}
 }
 
@@ -112,6 +103,15 @@ func NewSubjectAlignmentError(subject ucan.Subject, t ucan.Token) vdm.ErrorModel
 	return vdm.ErrorModel{
 		ErrorName: SubjectAlignmentErrorName,
 		Message:   fmt.Sprintf("%s %s subject is %s not %s", name, t.Link(), t.Subject().DID(), subject.DID()),
+	}
+}
+
+const MalformedArgumentsErrorName = "MalformedArguments"
+
+func NewMalformedArgumentsError(cmd ucan.Command, cause error) vdm.ErrorModel {
+	return vdm.ErrorModel{
+		ErrorName: MalformedArgumentsErrorName,
+		Message:   fmt.Sprintf("malformed arguments for command %s: %s", cmd, cause.Error()),
 	}
 }
 

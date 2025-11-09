@@ -10,8 +10,11 @@ import (
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/validator"
+	"github.com/alanshaw/ucantone/validator/capability"
+	verrs "github.com/alanshaw/ucantone/validator/errors"
 	fdm "github.com/alanshaw/ucantone/validator/internal/fixtures/datamodel"
 	"github.com/stretchr/testify/require"
 )
@@ -47,7 +50,7 @@ func TestFixtures(t *testing.T) {
 			opts := []validator.Option{
 				validator.WithProofResolver(newMapProofResolver(proofs)),
 			}
-			cap := validator.NewCapability[invocation.UnknownArguments](cmd, ucan.Policy{})
+			cap := capability.New[invocation.UnknownArguments](cmd, policy.Policy{})
 			authorization, err := validator.Access(t.Context(), vrf, cap, inv, opts...)
 			require.NoError(t, err, "validation should have passed for invocation with %s", vector.Description)
 
@@ -74,7 +77,7 @@ func TestFixtures(t *testing.T) {
 			opts := []validator.Option{
 				validator.WithProofResolver(newMapProofResolver(proofs)),
 			}
-			cap := validator.NewCapability[invocation.UnknownArguments](cmd, ucan.Policy{})
+			cap := capability.New[invocation.UnknownArguments](cmd, policy.Policy{})
 			_, err = validator.Access(t.Context(), vrf, cap, inv, opts...)
 			require.Error(t, err, "validation should not have passed for invocation because %s", vector.Description)
 			t.Log(err)
@@ -90,7 +93,7 @@ func newMapProofResolver(proofs map[ucan.Link]ucan.Delegation) validator.ProofRe
 	return func(_ context.Context, link ucan.Link) (ucan.Delegation, error) {
 		dlg, ok := proofs[link]
 		if !ok {
-			return nil, validator.NewUnavailableProofError(link, errors.New("not provided"))
+			return nil, verrs.NewUnavailableProofError(link, errors.New("not provided"))
 		}
 		return dlg, nil
 	}

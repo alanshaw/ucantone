@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/alanshaw/ucantone/ipld/datamodel"
+	"github.com/alanshaw/ucantone/ucan"
 	pdm "github.com/alanshaw/ucantone/ucan/delegation/policy/datamodel"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 	"github.com/gobwas/glob"
@@ -29,25 +30,29 @@ const (
 	OpAny                = "any"  // implemented by QuantificationStatement
 )
 
-type Statement interface {
-	Operation() string
-}
-
 // UCAN Delegation uses predicate logic statements extended with jq-inspired
 // selectors as a policy language. Policies are syntactically driven, and
 // constrain the args field of an eventual Invocation.
 //
 // https://github.com/ucan-wg/delegation/blob/main/README.md#policy
 type Policy struct {
-	// A Policy is always given as an array of predicates. This top-level array is
-	// implicitly treated as a logical "and", where args MUST pass validation of
-	// every top-level predicate.
-	Statements []Statement
+	statements []ucan.Statement
+}
+
+func New(statements ...ucan.Statement) Policy {
+	return Policy{statements}
+}
+
+// A Policy is always given as an array of predicates. This top-level array is
+// implicitly treated as a logical "and", where args MUST pass validation of
+// every top-level predicate.
+func (p Policy) Statements() []ucan.Statement {
+	return p.statements
 }
 
 func (p Policy) MarshalCBOR(w io.Writer) error {
 	var stmts []cbg.Deferred
-	for _, s := range p.Statements {
+	for _, s := range p.statements {
 		bytes, err := marshalCBORStatement(s)
 		if err != nil {
 			return err
@@ -69,7 +74,7 @@ func (p *Policy) UnmarshalCBOR(r io.Reader) error {
 		if err != nil {
 			return err
 		}
-		p.Statements = append(p.Statements, stmt)
+		p.statements = append(p.statements, stmt)
 	}
 	return nil
 }
@@ -125,7 +130,7 @@ func (cs ComparisonStatement) MarshalJSON() ([]byte, error) {
 
 // https://github.com/ucan-wg/delegation/blob/main/README.md#connectives
 type ConjunctionStatement struct {
-	Statements []Statement
+	Statements []ucan.Statement
 }
 
 func (ConjunctionStatement) Operation() string {
@@ -133,7 +138,7 @@ func (ConjunctionStatement) Operation() string {
 }
 
 func (cs ConjunctionStatement) MarshalCBOR(w io.Writer) error {
-	policy := Policy(cs)
+	policy := Policy{cs.Statements}
 	var b bytes.Buffer
 	err := policy.MarshalCBOR(&b)
 	if err != nil {
@@ -158,7 +163,7 @@ func (cs *ConjunctionStatement) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	cs.Statements = policy.Statements
+	cs.Statements = policy.Statements()
 	return nil
 }
 
@@ -168,7 +173,7 @@ func (cs ConjunctionStatement) MarshalJSON() ([]byte, error) {
 
 // https://github.com/ucan-wg/delegation/blob/main/README.md#connectives
 type DisjunctionStatement struct {
-	Statements []Statement
+	Statements []ucan.Statement
 }
 
 func (DisjunctionStatement) Operation() string {
@@ -176,7 +181,7 @@ func (DisjunctionStatement) Operation() string {
 }
 
 func (ds DisjunctionStatement) MarshalCBOR(w io.Writer) error {
-	policy := Policy(ds)
+	policy := Policy{ds.Statements}
 	var b bytes.Buffer
 	err := policy.MarshalCBOR(&b)
 	if err != nil {
@@ -201,7 +206,7 @@ func (ds *DisjunctionStatement) UnmarshalCBOR(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	ds.Statements = policy.Statements
+	ds.Statements = policy.Statements()
 	return nil
 }
 
@@ -211,7 +216,7 @@ func (ds DisjunctionStatement) MarshalJSON() ([]byte, error) {
 
 // https://github.com/ucan-wg/delegation/blob/main/README.md#connectives
 type NegationStatement struct {
-	Statement Statement
+	Statement ucan.Statement
 }
 
 func (NegationStatement) Operation() string {
@@ -301,7 +306,7 @@ func (ws WildcardStatement) MarshalJSON() ([]byte, error) {
 type QuantificationStatement struct {
 	op         string
 	Selector   selector.Selector
-	Statements []Statement
+	Statements []ucan.Statement
 }
 
 func (qs QuantificationStatement) Operation() string {
@@ -344,7 +349,7 @@ func (qs *QuantificationStatement) UnmarshalCBOR(r io.Reader) error {
 	}
 	qs.op = model.Op
 	qs.Selector = sel
-	qs.Statements = policy.Statements
+	qs.Statements = policy.Statements()
 	return nil
 }
 
@@ -372,15 +377,15 @@ func LessThanOrEqual(selector selector.Selector, value any) ComparisonStatement 
 	return ComparisonStatement{OpLessThanOrEqual, selector, value}
 }
 
-func Not(stmt Statement) NegationStatement {
+func Not(stmt ucan.Statement) NegationStatement {
 	return NegationStatement{stmt}
 }
 
-func And(stmts ...Statement) ConjunctionStatement {
+func And(stmts ...ucan.Statement) ConjunctionStatement {
 	return ConjunctionStatement{stmts}
 }
 
-func Or(stmts ...Statement) DisjunctionStatement {
+func Or(stmts ...ucan.Statement) DisjunctionStatement {
 	return DisjunctionStatement{stmts}
 }
 
@@ -388,15 +393,15 @@ func Like(selector selector.Selector, pattern string) WildcardStatement {
 	return WildcardStatement{selector, pattern, glob.MustCompile(pattern)}
 }
 
-func All(selector selector.Selector, stmts ...Statement) QuantificationStatement {
+func All(selector selector.Selector, stmts ...ucan.Statement) QuantificationStatement {
 	return QuantificationStatement{OpAll, selector, stmts}
 }
 
-func Any(selector selector.Selector, stmts ...Statement) QuantificationStatement {
+func Any(selector selector.Selector, stmts ...ucan.Statement) QuantificationStatement {
 	return QuantificationStatement{OpAny, selector, stmts}
 }
 
-func marshalCBORStatement(stmt Statement) ([]byte, error) {
+func marshalCBORStatement(stmt ucan.Statement) ([]byte, error) {
 	cms, ok := stmt.(cbg.CBORMarshaler)
 	if !ok {
 		return nil, errors.New("statement is not CBOR marshaler")
@@ -409,7 +414,7 @@ func marshalCBORStatement(stmt Statement) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func unmarshalCBORStatement(data []byte) (Statement, error) {
+func unmarshalCBORStatement(data []byte) (ucan.Statement, error) {
 	var statementModel pdm.StatementModel
 	// TODO: find a way to not read it twice
 	err := statementModel.UnmarshalCBOR(bytes.NewReader(data))

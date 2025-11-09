@@ -13,6 +13,7 @@ import (
 	cmd "github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/crypto/signature"
 	ddm "github.com/alanshaw/ucantone/ucan/delegation/datamodel"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/nonce"
 	"github.com/alanshaw/ucantone/varsig"
 	"github.com/alanshaw/ucantone/varsig/algorithm/ed25519"
@@ -300,12 +301,31 @@ func VerifySignature(dlg ucan.Delegation, verifier ucan.Verifier) (bool, error) 
 		meta = &cbg.Deferred{Raw: buf.Bytes()}
 	}
 
+	var pol policy.Policy
+	if p, ok := dlg.Policy().(policy.Policy); ok {
+		pol = p
+	} else {
+		mp, ok := dlg.Policy().(cbg.CBORMarshaler)
+		if !ok {
+			return false, errors.New("policy is not CBOR marshaler")
+		}
+		var buf bytes.Buffer
+		err := mp.MarshalCBOR(&buf)
+		if err != nil {
+			return false, fmt.Errorf("marshaling policy CBOR: %w", err)
+		}
+		err = pol.UnmarshalCBOR(&buf)
+		if err != nil {
+			return false, fmt.Errorf("unmarshaling policy CBOR: %w", err)
+		}
+	}
+
 	tokenPayload := &ddm.TokenPayloadModel1_0_0_rc1{
 		Iss:   dlg.Issuer().DID(),
 		Aud:   dlg.Audience().DID(),
 		Sub:   sub,
 		Cmd:   dlg.Command(),
-		Pol:   dlg.Policy(),
+		Pol:   pol,
 		Nonce: dlg.Nonce(),
 		Meta:  meta,
 		Nbf:   dlg.NotBefore(),

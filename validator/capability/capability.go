@@ -1,4 +1,4 @@
-package validator
+package capability
 
 import (
 	"errors"
@@ -11,11 +11,11 @@ import (
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
+	verrs "github.com/alanshaw/ucantone/validator/errors"
 	"github.com/ipfs/go-cid"
 )
 
 type Arguments interface {
-	ipld.Map[string, ipld.Any]
 	dagcbor.CBORMarshalable
 }
 
@@ -47,7 +47,7 @@ func (t *Task[A]) BindArguments() (A, error) {
 		args = reflect.New(typ.Elem()).Interface().(A)
 	}
 	if err := datamodel.Rebind(argsMap, args); err != nil {
-		return args, NewMalformedArgumentsError(t.Command(), err)
+		return args, verrs.NewMalformedArgumentsError(t.Command(), err)
 	}
 	return args, nil
 }
@@ -65,7 +65,7 @@ type Capability[A Arguments] struct {
 	pol ucan.Policy
 }
 
-func NewCapability[A Arguments](cmd ucan.Command, pol ucan.Policy) *Capability[A] {
+func New[A Arguments](cmd ucan.Command, pol ucan.Policy) *Capability[A] {
 	return &Capability[A]{cmd, pol}
 }
 
@@ -81,7 +81,7 @@ func (c *Capability[A]) Match(inv ucan.Invocation, proofs map[cid.Cid]ucan.Deleg
 	for _, p := range inv.Proofs() {
 		prf, ok := proofs[p]
 		if !ok {
-			return nil, NewUnavailableProofError(p, errors.New("missing from map"))
+			return nil, verrs.NewUnavailableProofError(p, errors.New("missing from map"))
 		}
 		ok, err = policy.Match(prf.Policy(), inv.Arguments())
 		if !ok {
@@ -115,5 +115,5 @@ func (c *Capability[A]) Invoke(issuer ucan.Signer, subject ucan.Subject, argumen
 	if err != nil {
 		return nil, err
 	}
-	return invocation.Invoke(issuer, subject, c.cmd, &m)
+	return invocation.Invoke(issuer, subject, c.cmd, &m, options...)
 }

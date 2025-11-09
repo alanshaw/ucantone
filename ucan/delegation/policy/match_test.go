@@ -17,18 +17,18 @@ func TestMatch(t *testing.T) {
 			sel := testutil.Must(selector.Parse("."))(t)
 			val := "test"
 
-			pol := policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "test")}}
+			pol := policy.New(policy.Equal(sel, "test"))
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
-			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "test2")}}
+			pol = policy.New(policy.Equal(sel, "test2"))
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
 			require.NotNil(t, err)
 			t.Log(err)
 
-			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, 138)}}
+			pol = policy.New(policy.Equal(sel, 138))
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
 			require.NotNil(t, err)
@@ -39,18 +39,18 @@ func TestMatch(t *testing.T) {
 			sel := testutil.Must(selector.Parse("."))(t)
 			val := 138
 
-			pol := policy.Policy{Statements: []policy.Statement{policy.Equal(sel, 138)}}
+			pol := policy.New(policy.Equal(sel, 138))
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
-			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, 1138)}}
+			pol = policy.New(policy.Equal(sel, 1138))
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
 			require.NotNil(t, err)
 			t.Log(err)
 
-			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "138")}}
+			pol = policy.New(policy.Equal(sel, "138"))
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
 			require.NotNil(t, err)
@@ -82,18 +82,18 @@ func TestMatch(t *testing.T) {
 			l1 := cid.MustParse("bafkreifau35r7vi37tvbvfy3hdwvgb4tlflqf7zcdzeujqcjk3rsphiwte")
 			val := l0
 
-			pol := policy.Policy{Statements: []policy.Statement{policy.Equal(sel, l0)}}
+			pol := policy.New(policy.Equal(sel, l0))
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
-			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, l1)}}
+			pol = policy.New(policy.Equal(sel, l1))
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
 			require.NotNil(t, err)
 			t.Log(err)
 
-			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "bafybeif4owy5gno5lwnixqm52rwqfodklf76hsetxdhffuxnplvijskzqq")}}
+			pol = policy.New(policy.Equal(sel, "bafybeif4owy5gno5lwnixqm52rwqfodklf76hsetxdhffuxnplvijskzqq"))
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
 			require.NotNil(t, err)
@@ -104,26 +104,26 @@ func TestMatch(t *testing.T) {
 			val := datamodel.NewMap(datamodel.WithEntry("foo", "bar"))
 
 			sel := testutil.Must(selector.Parse(".foo"))(t)
-			pol := policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "bar")}}
+			pol := policy.New(policy.Equal(sel, "bar"))
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
 			sel = testutil.Must(selector.Parse(`.["foo"]`))(t)
-			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "bar")}}
+			pol = policy.New(policy.Equal(sel, "bar"))
 			ok, err = policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
 			sel = testutil.Must(selector.Parse(".foo"))(t)
-			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "baz")}}
+			pol = policy.New(policy.Equal(sel, "baz"))
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
 			require.NotNil(t, err)
 			t.Log(err)
 
 			sel = testutil.Must(selector.Parse(".foobar"))(t)
-			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "bar")}}
+			pol = policy.New(policy.Equal(sel, "bar"))
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
 			require.NotNil(t, err)
@@ -134,13 +134,13 @@ func TestMatch(t *testing.T) {
 			val := []string{"foo"}
 
 			sel := testutil.Must(selector.Parse(".[0]"))(t)
-			pol := policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "foo")}}
+			pol := policy.New(policy.Equal(sel, "foo"))
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
 			sel = testutil.Must(selector.Parse(".[1]"))(t)
-			pol = policy.Policy{Statements: []policy.Statement{policy.Equal(sel, "foo")}}
+			pol = policy.New(policy.Equal(sel, "foo"))
 			ok, err = policy.Match(pol, val)
 			require.False(t, ok)
 			require.NotNil(t, err)
@@ -152,7 +152,7 @@ func TestMatch(t *testing.T) {
 		t.Run("gt int", func(t *testing.T) {
 			sel := testutil.Must(selector.Parse("."))(t)
 			val := 138
-			pol := policy.Policy{Statements: []policy.Statement{policy.GreaterThan(sel, 1)}}
+			pol := policy.New(policy.GreaterThan(sel, 1))
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
@@ -162,12 +162,12 @@ func TestMatch(t *testing.T) {
 			sel := testutil.Must(selector.Parse("."))(t)
 			val := 138
 
-			pol := policy.Policy{Statements: []policy.Statement{policy.GreaterThanOrEqual(sel, 1)}}
+			pol := policy.New(policy.GreaterThanOrEqual(sel, 1))
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
-			pol = policy.Policy{Statements: []policy.Statement{policy.GreaterThanOrEqual(sel, 138)}}
+			pol = policy.New(policy.GreaterThanOrEqual(sel, 138))
 			ok, err = policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
@@ -202,7 +202,7 @@ func TestMatch(t *testing.T) {
 		t.Run("lt int", func(t *testing.T) {
 			sel := testutil.Must(selector.Parse("."))(t)
 			val := 138
-			pol := policy.Policy{Statements: []policy.Statement{policy.LessThan(sel, 1138)}}
+			pol := policy.New(policy.LessThan(sel, 1138))
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
@@ -212,12 +212,12 @@ func TestMatch(t *testing.T) {
 			sel := testutil.Must(selector.Parse("."))(t)
 			val := 138
 
-			pol := policy.Policy{Statements: []policy.Statement{policy.LessThanOrEqual(sel, 1138)}}
+			pol := policy.New(policy.LessThanOrEqual(sel, 1138))
 			ok, err := policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)
 
-			pol = policy.Policy{Statements: []policy.Statement{policy.LessThanOrEqual(sel, 138)}}
+			pol = policy.New(policy.LessThanOrEqual(sel, 138))
 			ok, err = policy.Match(pol, val)
 			require.True(t, ok)
 			require.Nil(t, err)

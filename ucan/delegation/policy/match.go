@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 )
 
 // Match determines if the value matches the policy document. If the value fails
 // to match, the returned error will contain details of the failure.
-func Match(policy Policy, value any) (bool, error) {
-	for _, stmt := range policy.Statements {
+func Match(policy ucan.Policy, value any) (bool, error) {
+	for _, stmt := range policy.Statements() {
 		ok, err := MatchStatement(stmt, value)
 		if !ok {
 			return ok, err
@@ -20,7 +21,7 @@ func Match(policy Policy, value any) (bool, error) {
 	return true, nil
 }
 
-func MatchStatement(statement Statement, value any) (bool, error) {
+func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 	switch statement.Operation() {
 	case OpEqual:
 		if s, ok := statement.(ComparisonStatement); ok {

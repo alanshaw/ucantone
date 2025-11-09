@@ -11,11 +11,9 @@ import (
 )
 
 func TestRoundtripCBOR(t *testing.T) {
-	initial := policy.Policy{
-		Statements: []policy.Statement{
-			policy.Equal(testutil.Must(selector.Parse(".foo"))(t), "bar"),
-		},
-	}
+	initial := policy.New(
+		policy.Equal(testutil.Must(selector.Parse(".foo"))(t), "bar"),
+	)
 	var b bytes.Buffer
 	err := initial.MarshalCBOR(&b)
 	require.NoError(t, err)
@@ -23,6 +21,6 @@ func TestRoundtripCBOR(t *testing.T) {
 	var decoded policy.Policy
 	err = decoded.UnmarshalCBOR(&b)
 	require.NoError(t, err)
-	require.Len(t, decoded.Statements, 1)
-	require.Equal(t, policy.OpEqual, decoded.Statements[0].Operation())
+	require.Len(t, decoded.Statements(), 1)
+	require.Equal(t, policy.OpEqual, decoded.Statements()[0].Operation())
 }
