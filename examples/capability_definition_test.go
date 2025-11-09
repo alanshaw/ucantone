@@ -24,7 +24,7 @@ func TestCapabilityDefinition(t *testing.T) {
 
 	messageSendCapability := capability.New[*types.MessageSendArguments](
 		messageSendCommand,
-		policy.New(
+		capability.WithPolicy(
 			policy.Not(
 				policy.Equal(must(selector.Parse(".to")), []string{}),
 			),
@@ -72,7 +72,7 @@ func TestCapabilityDefinition(t *testing.T) {
 	// invocation and delegation in a Container and send a HTTP request...
 }
 
-func TestCapabilityDefinitioGenericMap(t *testing.T) {
+func TestCapabilityDefinitionGenericMap(t *testing.T) {
 	messageSendCommand, err := command.Parse("/message/send")
 	if err != nil {
 		panic(err)
@@ -80,7 +80,7 @@ func TestCapabilityDefinitioGenericMap(t *testing.T) {
 
 	messageSendCapability := capability.New[*datamodel.Map](
 		messageSendCommand,
-		policy.New(
+		capability.WithPolicy(
 			policy.Not(
 				policy.Equal(must(selector.Parse(".to")), []string{}),
 			),

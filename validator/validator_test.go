@@ -10,7 +10,6 @@ import (
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/validator"
 	"github.com/alanshaw/ucantone/validator/capability"
@@ -50,7 +49,7 @@ func TestFixtures(t *testing.T) {
 			opts := []validator.Option{
 				validator.WithProofResolver(newMapProofResolver(proofs)),
 			}
-			cap := capability.New[invocation.UnknownArguments](cmd, policy.Policy{})
+			cap := capability.New[invocation.UnknownArguments](cmd)
 			authorization, err := validator.Access(t.Context(), vrf, cap, inv, opts...)
 			require.NoError(t, err, "validation should have passed for invocation with %s", vector.Description)
 
@@ -77,7 +76,7 @@ func TestFixtures(t *testing.T) {
 			opts := []validator.Option{
 				validator.WithProofResolver(newMapProofResolver(proofs)),
 			}
-			cap := capability.New[invocation.UnknownArguments](cmd, policy.Policy{})
+			cap := capability.New[invocation.UnknownArguments](cmd)
 			_, err = validator.Access(t.Context(), vrf, cap, inv, opts...)
 			require.Error(t, err, "validation should not have passed for invocation because %s", vector.Description)
 			t.Log(err)
