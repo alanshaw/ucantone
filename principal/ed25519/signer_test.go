@@ -38,11 +38,7 @@ func TestGenerateFormatParse(t *testing.T) {
 
 	fmt.Println(s0.DID().String())
 
-	str, err := signer.Format(s0)
-	if err != nil {
-		t.Fatalf("formatting Ed25519 key: %v", err)
-	}
-
+	str := signer.Format(s0)
 	fmt.Println(str)
 
 	s1, err := ed.Parse(str)

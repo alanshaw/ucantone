@@ -66,6 +66,7 @@ func Wrap(key principal.Signer, id did.DID) (*WrappedSigner, error) {
 	return &WrappedSigner{key, vrf}, nil
 }
 
-func Format(signer principal.Signer) (string, error) {
-	return multibase.Encode(multibase.Base64pad, signer.Bytes())
+func Format(signer principal.Signer) string {
+	s, _ := multibase.Encode(multibase.Base64pad, signer.Bytes())
+	return s
 }
