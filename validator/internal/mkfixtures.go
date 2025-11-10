@@ -24,7 +24,6 @@ import (
 	"github.com/alanshaw/ucantone/varsig/common"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multihash"
-	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 // Principals are ed25519 private key bytes with varint(0x1300) prefix.
@@ -668,17 +667,11 @@ func makeInvalidProofSignatureFixture() fdm.InvalidModel {
 func makeInvalidInvocationSignatureFixture() fdm.InvalidModel {
 	h := must(varsig.Encode(common.Ed25519DagCbor))
 
-	var args cbg.Deferred
-	argsMap := datamodel.NewMap()
-	var argsBuf bytes.Buffer
-	must0(argsMap.MarshalCBOR(&argsBuf))
-	args.Raw = argsBuf.Bytes()
-
 	tokenPayload := &idm.TokenPayloadModel1_0_0_rc1{
 		Iss:   alice.DID(),
 		Sub:   carol.DID(),
 		Cmd:   cmd,
-		Args:  args,
+		Args:  datamodel.NewMap(),
 		Nonce: nonce[0],
 		Iat:   &iat,
 	}

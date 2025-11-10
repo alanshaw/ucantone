@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ipld"
@@ -31,8 +32,6 @@ type Invocation struct {
 	bytes []byte
 	sig   *signature.Signature
 	model *idm.EnvelopeModel
-	args  *datamodel.Map
-	meta  *datamodel.Map
 	task  *Task
 }
 
@@ -40,7 +39,10 @@ type Invocation struct {
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#arguments
 func (inv *Invocation) Arguments() ipld.Map[string, ipld.Any] {
-	return inv.args
+	if inv.model.SigPayload.TokenPayload1_0_0_rc1.Args == nil {
+		return datamodel.NewMap()
+	}
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Args
 }
 
 // The DID of the intended Executor if different from the Subject.
@@ -105,10 +107,10 @@ func (inv *Invocation) Link() cid.Cid {
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#metadata
 func (inv *Invocation) Metadata() ipld.Map[string, ipld.Any] {
-	if inv.meta == nil {
+	if inv.model.SigPayload.TokenPayload1_0_0_rc1.Meta == nil {
 		return nil
 	}
-	return inv.meta
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Meta
 }
 
 // The datamodel this invocation is built from.
@@ -153,64 +155,61 @@ func (inv *Invocation) Task() ucan.Task {
 	return inv.task
 }
 
+func (inv *Invocation) MarshalCBOR(w io.Writer) error {
+	_, err := w.Write(inv.Bytes())
+	return err
+}
+
+func (inv *Invocation) UnmarshalCBOR(r io.Reader) error {
+	*inv = Invocation{}
+	var w bytes.Buffer
+	model := idm.EnvelopeModel{}
+	err := model.UnmarshalCBOR(io.TeeReader(r, &w))
+	if err != nil {
+		return fmt.Errorf("unmarshaling invocation envelope CBOR: %w", err)
+	}
+	if model.SigPayload.TokenPayload1_0_0_rc1 == nil {
+		return errors.New("invalid or unsupported invocation token payload")
+	}
+	header, err := varsig.Decode(model.SigPayload.Header)
+	if err != nil {
+		return fmt.Errorf("decoding varsig header: %w", err)
+	}
+	sig := signature.NewSignature(header, model.Signature)
+	task, err := NewTask(
+		model.SigPayload.TokenPayload1_0_0_rc1.Sub,
+		model.SigPayload.TokenPayload1_0_0_rc1.Cmd,
+		model.SigPayload.TokenPayload1_0_0_rc1.Args,
+		model.SigPayload.TokenPayload1_0_0_rc1.Nonce,
+	)
+	if err != nil {
+		return fmt.Errorf("creating new task: %w", err)
+	}
+	root, err := cid.V1Builder{
+		Codec:  dagcbor.Code,
+		MhType: multihash.SHA2_256,
+	}.Sum(w.Bytes())
+	if err != nil {
+		return fmt.Errorf("hashing invocation bytes: %w", err)
+	}
+	inv.link = root
+	inv.bytes = w.Bytes()
+	inv.sig = sig
+	inv.model = &model
+	inv.task = task
+	return nil
+}
+
 var _ ucan.Invocation = (*Invocation)(nil)
 
 func Encode(inv ucan.Invocation) ([]byte, error) {
 	return inv.Bytes(), nil
 }
 
-func Decode(data []byte) (*Invocation, error) {
-	model := idm.EnvelopeModel{}
-	err := model.UnmarshalCBOR(bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("unmarshaling invocation envelope CBOR: %w", err)
-	}
-	if model.SigPayload.TokenPayload1_0_0_rc1 == nil {
-		return nil, errors.New("invalid or unsupported invocation token payload")
-	}
-	header, err := varsig.Decode(model.SigPayload.Header)
-	if err != nil {
-		return nil, fmt.Errorf("decoding varsig header: %w", err)
-	}
-	sig := signature.NewSignature(header, model.Signature)
-	var args datamodel.Map
-	err = args.UnmarshalCBOR(bytes.NewReader(model.SigPayload.TokenPayload1_0_0_rc1.Args.Raw))
-	if err != nil {
-		return nil, fmt.Errorf("unmarshaling arguments CBOR: %w", err)
-	}
-	var meta *datamodel.Map
-	if model.SigPayload.TokenPayload1_0_0_rc1.Meta != nil {
-		meta = &datamodel.Map{}
-		err = meta.UnmarshalCBOR(bytes.NewReader(model.SigPayload.TokenPayload1_0_0_rc1.Meta.Raw))
-		if err != nil {
-			return nil, fmt.Errorf("unmarshaling metadata CBOR: %w", err)
-		}
-	}
-	task, err := NewTask(
-		model.SigPayload.TokenPayload1_0_0_rc1.Sub,
-		model.SigPayload.TokenPayload1_0_0_rc1.Cmd,
-		&args,
-		model.SigPayload.TokenPayload1_0_0_rc1.Nonce,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating new task: %w", err)
-	}
-	root, err := cid.V1Builder{
-		Codec:  dagcbor.Code,
-		MhType: multihash.SHA2_256,
-	}.Sum(data)
-	if err != nil {
-		return nil, fmt.Errorf("hashing invocation bytes: %w", err)
-	}
-	return &Invocation{
-		link:  root,
-		bytes: data,
-		sig:   sig,
-		model: &model,
-		args:  &args,
-		meta:  meta,
-		task:  task,
-	}, nil
+func Decode(b []byte) (*Invocation, error) {
+	inv := Invocation{}
+	err := inv.UnmarshalCBOR(bytes.NewReader(b))
+	return &inv, err
 }
 
 func Invoke(
@@ -238,25 +237,9 @@ func Invoke(
 		return nil, fmt.Errorf("parsing command: %w", err)
 	}
 
-	var args cbg.Deferred
-	argsMap := datamodel.NewMap(datamodel.WithEntries(arguments.All()))
-	var argsBuf bytes.Buffer
-	err = argsMap.MarshalCBOR(&argsBuf)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling arguments CBOR: %w", err)
-	}
-	args.Raw = argsBuf.Bytes()
-
-	var meta *cbg.Deferred
-	var metaMap *datamodel.Map
+	var meta *datamodel.Map
 	if cfg.meta != nil {
-		metaMap = datamodel.NewMap(datamodel.WithEntries(cfg.meta.All()))
-		var buf bytes.Buffer
-		err := metaMap.MarshalCBOR(&buf)
-		if err != nil {
-			return nil, fmt.Errorf("marshaling metadata CBOR: %w", err)
-		}
-		meta = &cbg.Deferred{Raw: buf.Bytes()}
+		meta = datamodel.NewMap(datamodel.WithEntries(cfg.meta.All()))
 	}
 
 	nnc := cfg.nnc
@@ -289,7 +272,7 @@ func Invoke(
 		Sub:   subject.DID(),
 		Aud:   cfg.aud,
 		Cmd:   cmd,
-		Args:  args,
+		Args:  datamodel.NewMap(datamodel.WithEntries(arguments.All())),
 		Prf:   cfg.prf,
 		Meta:  meta,
 		Nonce: nnc,
@@ -345,8 +328,6 @@ func Invoke(
 		bytes: envBuf.Bytes(),
 		sig:   sig,
 		model: &model,
-		args:  argsMap,
-		meta:  metaMap,
 		task:  task,
 	}, nil
 }
@@ -371,16 +352,9 @@ func VerifySignature(inv ucan.Invocation, verifier ucan.Verifier) (bool, error) 
 	}
 	args.Raw = argsBuf.Bytes()
 
-	var meta *cbg.Deferred
-	var metaMap *datamodel.Map
+	var meta *datamodel.Map
 	if inv.Metadata() != nil {
-		metaMap = datamodel.NewMap(datamodel.WithEntries(inv.Metadata().All()))
-		var buf bytes.Buffer
-		err := metaMap.MarshalCBOR(&buf)
-		if err != nil {
-			return false, fmt.Errorf("marshaling metadata CBOR: %w", err)
-		}
-		meta = &cbg.Deferred{Raw: buf.Bytes()}
+		meta = datamodel.NewMap(datamodel.WithEntries(inv.Metadata().All()))
 	}
 
 	tokenPayload := &idm.TokenPayloadModel1_0_0_rc1{
@@ -388,7 +362,7 @@ func VerifySignature(inv ucan.Invocation, verifier ucan.Verifier) (bool, error) 
 		Sub:   sub,
 		Aud:   aud,
 		Cmd:   inv.Command(),
-		Args:  args,
+		Args:  datamodel.NewMap(datamodel.WithEntries(inv.Arguments().All())),
 		Prf:   inv.Proofs(),
 		Meta:  meta,
 		Nonce: inv.Nonce(),

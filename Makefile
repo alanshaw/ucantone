@@ -20,7 +20,7 @@ gen:
 	cd ./ucan/invocation/datamodel/gen && go run ./main.go
 	rm ./ucan/receipt/datamodel/cbor_gen.go || true
 	cd ./ucan/receipt/datamodel/gen && go run ./main.go
-	rm ./validator/datamodel/cbor_gen.go || true
-	cd ./validator/datamodel/gen && go run ./main.go
+	rm ./validator/errors/datamodel/cbor_gen.go || true
+	cd ./validator/errors/datamodel/gen && go run ./main.go
 	rm ./validator/internal/fixtures/datamodel/dag_json_gen.go || true
 	cd ./validator/internal/fixtures/datamodel/gen && go run ./main.go

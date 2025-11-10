@@ -2,19 +2,19 @@ package datamodel
 
 import (
 	"github.com/alanshaw/ucantone/did"
+	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"
 	edm "github.com/alanshaw/ucantone/ucan/envelope/datamodel"
 	"github.com/ipfs/go-cid"
-	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 const Tag = "ucan/inv@1.0.0-rc.1"
 
 type TaskModel struct {
-	Sub   did.DID      `cborgen:"sub"`
-	Cmd   ucan.Command `cborgen:"cmd"`
-	Args  cbg.Deferred `cborgen:"args"`
-	Nonce ucan.Nonce   `cborgen:"nonce"`
+	Sub   did.DID        `cborgen:"sub"`
+	Cmd   ucan.Command   `cborgen:"cmd"`
+	Args  *datamodel.Map `cborgen:"args"`
+	Nonce ucan.Nonce     `cborgen:"nonce"`
 }
 
 type TokenPayloadModel1_0_0_rc1 struct {
@@ -27,11 +27,11 @@ type TokenPayloadModel1_0_0_rc1 struct {
 	// The command to invoke.
 	Cmd ucan.Command `cborgen:"cmd"`
 	// The command arguments.
-	Args cbg.Deferred `cborgen:"args"`
+	Args *datamodel.Map `cborgen:"args"`
 	// Delegations that prove the chain of authority.
 	Prf []cid.Cid `cborgen:"prf"`
 	// Arbitrary metadata.
-	Meta *cbg.Deferred `cborgen:"meta,omitempty"`
+	Meta *datamodel.Map `cborgen:"meta,omitempty"`
 	// A unique, random nonce.
 	Nonce ucan.Nonce `cborgen:"nonce"`
 	// The timestamp at which the invocation becomes invalid.

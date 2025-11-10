@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ipld"
@@ -28,7 +29,6 @@ type Delegation struct {
 	bytes []byte
 	sig   *signature.Signature
 	model *ddm.EnvelopeModel
-	meta  *datamodel.Map
 }
 
 // Audience can be conceptualized as the receiver of a postal letter.
@@ -74,10 +74,10 @@ func (d *Delegation) Link() cid.Cid {
 //
 // https://github.com/ucan-wg/spec/blob/main/README.md#metadata
 func (d *Delegation) Metadata() ipld.Map[string, ipld.Any] {
-	if d.meta == nil {
+	if d.model.SigPayload.TokenPayload1_0_0_rc1.Meta == nil {
 		return nil
 	}
-	return d.meta
+	return d.model.SigPayload.TokenPayload1_0_0_rc1.Meta
 }
 
 // Nonce helps prevent replay attacks and ensures a unique CID per delegation.
@@ -120,48 +120,51 @@ func (d *Delegation) Subject() ucan.Principal {
 	return sub
 }
 
+func (d *Delegation) MarshalCBOR(w io.Writer) error {
+	_, err := w.Write(d.Bytes())
+	return err
+}
+
+func (d *Delegation) UnmarshalCBOR(r io.Reader) error {
+	*d = Delegation{}
+	var w bytes.Buffer
+	model := ddm.EnvelopeModel{}
+	err := model.UnmarshalCBOR(io.TeeReader(r, &w))
+	if err != nil {
+		return fmt.Errorf("unmarshaling delegation envelope CBOR: %w", err)
+	}
+	if model.SigPayload.TokenPayload1_0_0_rc1 == nil {
+		return errors.New("invalid or unsupported delegation token payload")
+	}
+	header, err := varsig.Decode(model.SigPayload.Header)
+	if err != nil {
+		return fmt.Errorf("decoding varsig header: %w", err)
+	}
+	sig := signature.NewSignature(header, model.Signature)
+	root, err := cid.V1Builder{
+		Codec:  dagcbor.Code,
+		MhType: multihash.SHA2_256,
+	}.Sum(w.Bytes())
+	if err != nil {
+		return fmt.Errorf("hashing delegation bytes: %w", err)
+	}
+	d.link = root
+	d.bytes = w.Bytes()
+	d.sig = sig
+	d.model = &model
+	return nil
+}
+
 var _ ucan.Delegation = (*Delegation)(nil)
 
 func Encode(dlg ucan.Delegation) ([]byte, error) {
 	return dlg.Bytes(), nil
 }
 
-func Decode(data []byte) (*Delegation, error) {
-	model := ddm.EnvelopeModel{}
-	err := model.UnmarshalCBOR(bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("unmarshaling delegation envelope CBOR: %w", err)
-	}
-	if model.SigPayload.TokenPayload1_0_0_rc1 == nil {
-		return nil, errors.New("invalid or unsupported delegation token payload")
-	}
-	header, err := varsig.Decode(model.SigPayload.Header)
-	if err != nil {
-		return nil, fmt.Errorf("decoding varsig header: %w", err)
-	}
-	sig := signature.NewSignature(header, model.Signature)
-	var meta *datamodel.Map
-	if model.SigPayload.TokenPayload1_0_0_rc1.Meta != nil {
-		meta = &datamodel.Map{}
-		err = meta.UnmarshalCBOR(bytes.NewReader(model.SigPayload.TokenPayload1_0_0_rc1.Meta.Raw))
-		if err != nil {
-			return nil, fmt.Errorf("unmarshaling metadata CBOR: %w", err)
-		}
-	}
-	root, err := cid.V1Builder{
-		Codec:  dagcbor.Code,
-		MhType: multihash.SHA2_256,
-	}.Sum(data)
-	if err != nil {
-		return nil, fmt.Errorf("hashing delegation bytes: %w", err)
-	}
-	return &Delegation{
-		link:  root,
-		bytes: data,
-		sig:   sig,
-		model: &model,
-		meta:  meta,
-	}, nil
+func Decode(b []byte) (*Delegation, error) {
+	d := Delegation{}
+	err := d.UnmarshalCBOR(bytes.NewReader(b))
+	return &d, err
 }
 
 func Delegate(
@@ -199,16 +202,9 @@ func Delegate(
 		return nil, fmt.Errorf("parsing command: %w", err)
 	}
 
-	var meta *cbg.Deferred
-	var metaMap *datamodel.Map
+	var meta *datamodel.Map
 	if cfg.meta != nil {
-		metaMap = datamodel.NewMap(datamodel.WithEntries(cfg.meta.All()))
-		var buf bytes.Buffer
-		err = metaMap.MarshalCBOR(&buf)
-		if err != nil {
-			return nil, fmt.Errorf("marshaling metadata CBOR: %w", err)
-		}
-		meta = &cbg.Deferred{Raw: buf.Bytes()}
+		meta = datamodel.NewMap(datamodel.WithEntries(cfg.meta.All()))
 	}
 
 	nnc := cfg.nnc
@@ -279,7 +275,6 @@ func Delegate(
 		bytes: envBuf.Bytes(),
 		sig:   sig,
 		model: &model,
-		meta:  metaMap,
 	}, nil
 }
 
@@ -289,16 +284,9 @@ func VerifySignature(dlg ucan.Delegation, verifier ucan.Verifier) (bool, error) 
 		sub = dlg.Subject().DID()
 	}
 
-	var meta *cbg.Deferred
-	var metaMap *datamodel.Map
+	var meta *datamodel.Map
 	if dlg.Metadata() != nil {
-		metaMap = datamodel.NewMap(datamodel.WithEntries(dlg.Metadata().All()))
-		var buf bytes.Buffer
-		err := metaMap.MarshalCBOR(&buf)
-		if err != nil {
-			return false, fmt.Errorf("marshaling metadata CBOR: %w", err)
-		}
-		meta = &cbg.Deferred{Raw: buf.Bytes()}
+		meta = datamodel.NewMap(datamodel.WithEntries(dlg.Metadata().All()))
 	}
 
 	var pol policy.Policy

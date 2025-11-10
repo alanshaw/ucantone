@@ -11,7 +11,6 @@ import (
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	cid "github.com/ipfs/go-cid"
 	multihash "github.com/multiformats/go-multihash/core"
-	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 type Task struct {
@@ -29,23 +28,15 @@ func NewTask(
 	arguments ipld.Map[string, ipld.Any],
 	nonce ucan.Nonce,
 ) (*Task, error) {
-	var args cbg.Deferred
-	argsMap := datamodel.NewMap(datamodel.WithEntries(arguments.All()))
-	var argsBuf bytes.Buffer
-	err := argsMap.MarshalCBOR(&argsBuf)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling arguments CBOR: %w", err)
-	}
-	args.Raw = argsBuf.Bytes()
-
 	taskModel := idm.TaskModel{
 		Sub:   subject.DID(),
 		Cmd:   command,
-		Args:  args,
+		Args:  datamodel.NewMap(datamodel.WithEntries(arguments.All())),
 		Nonce: nonce,
 	}
+
 	var taskBuf bytes.Buffer
-	err = taskModel.MarshalCBOR(&taskBuf)
+	err := taskModel.MarshalCBOR(&taskBuf)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling task CBOR: %w", err)
 	}

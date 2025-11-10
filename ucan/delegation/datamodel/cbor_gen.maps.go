@@ -8,6 +8,7 @@ import (
 	"math"
 	"sort"
 
+	datamodel "github.com/alanshaw/ucantone/ipld/datamodel"
 	command "github.com/alanshaw/ucantone/ucan/command"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -175,7 +176,7 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Meta (typegen.Deferred) (struct)
+	// t.Meta (datamodel.Map) (struct)
 	if t.Meta != nil {
 
 		if len("meta") > 8192 {
@@ -363,16 +364,25 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.Meta (typegen.Deferred) (struct)
+			// t.Meta (datamodel.Map) (struct)
 		case "meta":
 
 			{
 
-				t.Meta = new(cbg.Deferred)
-
-				if err := t.Meta.UnmarshalCBOR(cr); err != nil {
-					return xerrors.Errorf("failed to read deferred field: %w", err)
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
 				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.Meta = new(datamodel.Map)
+					if err := t.Meta.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.Meta pointer: %w", err)
+					}
+				}
+
 			}
 			// t.Nonce ([]uint8) (slice)
 		case "nonce":

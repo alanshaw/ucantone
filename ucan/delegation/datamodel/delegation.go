@@ -2,10 +2,10 @@ package datamodel
 
 import (
 	"github.com/alanshaw/ucantone/did"
+	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	edm "github.com/alanshaw/ucantone/ucan/envelope/datamodel"
-	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 const Tag = "ucan/dlg@1.0.0-rc.1"
@@ -25,7 +25,7 @@ type TokenPayloadModel1_0_0_rc1 struct {
 	// A unique, random nonce.
 	Nonce ucan.Nonce `cborgen:"nonce"`
 	// Arbitrary metadata.
-	Meta *cbg.Deferred `cborgen:"meta,omitempty"`
+	Meta *datamodel.Map `cborgen:"meta,omitempty"`
 	// "Not before" UTC Unix Timestamp in seconds (valid from).
 	Nbf *ucan.UTCUnixTimestamp `cborgen:"nbf,omitempty"`
 	// Expiration UTC Unix Timestamp in seconds (valid until).
