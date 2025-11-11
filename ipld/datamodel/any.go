@@ -2,11 +2,14 @@ package datamodel
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 
+	jsg "github.com/alanshaw/dag-json-gen"
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -178,7 +181,7 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 				// TODO: ensure all items are the same type?
 				if i == 0 {
 					typ := reflect.TypeOf(item.Value)
-					if typ == nil {
+					if typ == nil { // TODO: handle a list of nulls?
 						return fmt.Errorf("nil item in list")
 					}
 					items = reflect.MakeSlice(reflect.SliceOf(typ), 0, int(extra))
@@ -195,8 +198,161 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 	return fmt.Errorf("unsupported CBOR type: %d", maj)
 }
 
-func (a *Any) MarshalJSON() ([]byte, error) {
-	return json.Marshal(a.Value)
+func (a *Any) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if a == nil || a.Value == nil {
+		return jw.WriteNull()
+	}
+	switch v := a.Value.(type) {
+	case *Map:
+		return v.MarshalDagJSON(w)
+	case int64:
+		return jw.WriteInt64(v)
+	case int:
+		return jw.WriteInt64(int64(v))
+	case bool:
+		return jw.WriteBool(v)
+	case cid.Cid:
+		return jw.WriteCid(v)
+	case string:
+		return jw.WriteString(v)
+	case []byte:
+		return jw.WriteBytes(v)
+	}
+
+	rt := reflect.TypeOf(a.Value)
+	switch rt.Kind() {
+	case reflect.Slice:
+		if err := jw.WriteArrayOpen(); err != nil {
+			return err
+		}
+		s := reflect.ValueOf(a.Value)
+		for i := range s.Len() {
+			a := Any{Value: s.Index(i).Interface()}
+			if err := a.MarshalDagJSON(w); err != nil {
+				return fmt.Errorf("marshalling slice index: %d: %w", i, err)
+			}
+			if i < s.Len()-1 {
+				if err := jw.WriteComma(); err != nil {
+					return err
+				}
+			}
+		}
+		return jw.WriteArrayClose()
+	}
+
+	return fmt.Errorf("unsupported type: %T", a.Value)
+}
+
+func (a *Any) UnmarshalDagJSON(r io.Reader) (err error) {
+	*a = Any{}
+	jr := jsg.NewDagJsonReader(r)
+	t, err := jr.PeekType()
+	if err != nil {
+		return err
+	}
+	switch t {
+	case "null":
+		return jr.ReadNull()
+	case "boolean":
+		v, err := jr.ReadBool()
+		if err != nil {
+			return err
+		}
+		a.Value = v
+	case "string":
+		v, err := jr.ReadString(jsg.MaxLength)
+		if err != nil {
+			return err
+		}
+		a.Value = v
+	case "number":
+		v, err := jr.ReadNumberAsInt64()
+		if err != nil {
+			return err
+		}
+		a.Value = v
+	case "array":
+		if err := jr.ReadArrayOpen(); err != nil {
+			return err
+		}
+		close, err := jr.PeekArrayClose()
+		if err != nil {
+			return err
+		}
+		if close {
+			if err := jr.ReadArrayClose(); err != nil {
+				return err
+			}
+			a.Value = []any{}
+		} else {
+			var items reflect.Value
+			for i := range jsg.MaxLength {
+				item := Any{}
+				if err := item.UnmarshalDagJSON(jr); err != nil {
+					return err
+				}
+				// TODO: ensure all items are the same type?
+				if i == 0 {
+					typ := reflect.TypeOf(item.Value)
+					if typ == nil { // TODO: handle a list of nulls?
+						return fmt.Errorf("nil item in list")
+					}
+					items = reflect.MakeSlice(reflect.SliceOf(typ), 0, 1)
+				}
+				items = reflect.Append(items, reflect.ValueOf(item.Value))
+
+				close, err := jr.ReadArrayCloseOrComma()
+				if err != nil {
+					return err
+				}
+				if close {
+					break
+				}
+				if i == jsg.MaxLength-1 {
+					return errors.New("IPLD array too large")
+				}
+			}
+			a.Value = items.Interface()
+		}
+	case "object":
+		m := Map{}
+		if err := m.UnmarshalDagJSON(jr); err != nil {
+			return err
+		}
+		keys := slices.Collect(m.Keys())
+		if len(keys) == 1 && keys[0] == "/" {
+			switch v := m.values["/"].Value.(type) {
+			case string:
+				c, err := cid.Parse(v)
+				if err != nil {
+					return err
+				}
+				a.Value = c
+			case *Map:
+				skeys := slices.Collect(v.Keys())
+				if len(skeys) == 1 && skeys[0] == "bytes" {
+					switch bv := v.values["bytes"].Value.(type) {
+					case string:
+						decoded, err := base64.RawStdEncoding.DecodeString(bv)
+						if err != nil {
+							return err
+						}
+						a.Value = decoded
+					default:
+						a.Value = &m
+					}
+				} else {
+					a.Value = &m
+				}
+			default:
+				a.Value = &m
+			}
+		} else {
+			a.Value = &m
+		}
+	}
+	return nil
 }
 
 func peekCborHeader(r io.Reader) (byte, uint64, io.Reader, error) {

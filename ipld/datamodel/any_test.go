@@ -35,10 +35,20 @@ func TestAny(t *testing.T) {
 			err := initial.MarshalCBOR(&buf)
 			require.NoError(t, err)
 
-			var decoded datamodel.Any
-			err = decoded.UnmarshalCBOR(&buf)
+			var decodedCBOR datamodel.Any
+			err = decodedCBOR.UnmarshalCBOR(&buf)
 			require.NoError(t, err)
-			require.Equal(t, v, decoded.Value)
+			require.Equal(t, v, decodedCBOR.Value)
+
+			err = initial.MarshalDagJSON(&buf)
+			require.NoError(t, err)
+
+			t.Log(buf.String())
+
+			var decodedJSON datamodel.Any
+			err = decodedJSON.UnmarshalDagJSON(&buf)
+			require.NoError(t, err)
+			require.Equal(t, v, decodedJSON.Value)
 		})
 	}
 }

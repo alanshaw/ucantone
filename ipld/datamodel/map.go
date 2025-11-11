@@ -1,15 +1,15 @@
 package datamodel
 
 import (
-	"encoding/base64"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"iter"
+	"maps"
 	"slices"
 	"sort"
-	"strings"
 
+	jsg "github.com/alanshaw/dag-json-gen"
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -18,7 +18,6 @@ import (
 // Map is a CBOR backed implementation of [ipld.Map]. Keys are strings and
 // values may be any of the types supported by [ipld.Any].
 type Map struct {
-	keys   []string
 	values map[string]*Any
 }
 
@@ -52,9 +51,8 @@ func NewMap(options ...MapOption) *Map {
 
 func (m *Map) All() iter.Seq2[string, ipld.Any] {
 	return func(yield func(string, ipld.Any) bool) {
-		for _, k := range m.keys {
-			v := m.values[k].Value
-			if !yield(k, v) {
+		for k, v := range maps.All(m.values) {
+			if !yield(k, v.Value) {
 				return
 			}
 		}
@@ -70,22 +68,12 @@ func (m *Map) Get(k string) (ipld.Any, bool) {
 }
 
 func (m *Map) Keys() iter.Seq[string] {
-	return func(yield func(string) bool) {
-		for _, k := range m.keys {
-			if !yield(k) {
-				return
-			}
-		}
-	}
+	return maps.Keys(m.values)
 }
 
 func (m *Map) Set(k string, v ipld.Any) {
 	a := Any{Value: v}
-	_, ok := m.values[k]
 	m.values[k] = &a
-	if !ok {
-		m.keys = append(m.keys, k)
-	}
 }
 
 func (m *Map) Values() iter.Seq[ipld.Any] {
@@ -106,12 +94,11 @@ func (m *Map) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(m.keys))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(m.values))); err != nil {
 		return err
 	}
 
-	keys := make([]string, len(m.keys))
-	copy(keys, m.keys)
+	keys := slices.Collect(maps.Keys(m.values))
 	sort.Slice(keys, func(i, j int) bool {
 		fi := keys[i]
 		fj := keys[j]
@@ -180,8 +167,6 @@ func (m *Map) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		name := string(nameBuf[:nameLen])
-		m.keys = append(m.keys, name)
-
 		var a Any
 		if err := a.UnmarshalCBOR(cr); err != nil {
 			return fmt.Errorf(`unmarshaling map value for key "%s": %w`, name, err)
@@ -192,58 +177,76 @@ func (m *Map) UnmarshalCBOR(r io.Reader) (err error) {
 	return nil
 }
 
-func (m *Map) MarshalJSON() ([]byte, error) {
-	var b strings.Builder
-	_, err := b.WriteString("{")
-	if err != nil {
-		return nil, err
+func (m *Map) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
 	}
-	keys := make([]string, len(m.keys))
-	copy(keys, m.keys)
+	keys := slices.Collect(maps.Keys(m.values))
 	slices.Sort(keys)
 	for i, k := range keys {
-		kBytes, err := json.Marshal(k)
-		if err != nil {
-			return nil, err
+		if err := jw.WriteString(k); err != nil {
+			return err
 		}
-		_, err = b.WriteString(fmt.Sprintf("%s:", string(kBytes)))
-		if err != nil {
-			return nil, err
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
 		}
-
-		switch v := m.values[k].Value.(type) {
-		case []byte:
-			_, err = b.WriteString(formatDAGJSONBytes(v))
-			if err != nil {
-				return nil, err
-			}
-		default:
-			vBytes, err := json.Marshal(v)
-			if err != nil {
-				return nil, err
-			}
-			_, err = b.Write(vBytes)
-			if err != nil {
-				return nil, err
-			}
+		if err := m.values[k].MarshalDagJSON(jw); err != nil {
+			return err
 		}
-
 		if i < len(keys)-1 {
-			_, err = b.WriteString(",")
-			if err != nil {
-				return nil, err
+			if err := jw.WriteComma(); err != nil {
+				return err
 			}
 		}
 	}
-	_, err = b.WriteString("}")
-	if err != nil {
-		return nil, err
-	}
-	return []byte(b.String()), nil
+	return jw.WriteObjectClose()
 }
 
-func formatDAGJSONBytes(bytes []byte) string {
-	return fmt.Sprintf(`{"/":{"bytes":"%s"}}`, base64.StdEncoding.EncodeToString(bytes))
+func (m *Map) UnmarshalDagJSON(r io.Reader) (err error) {
+	*m = Map{values: map[string]*Any{}}
+	jr := jsg.NewDagJsonReader(r)
+	if err := jr.ReadObjectOpen(); err != nil {
+		return err
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return err
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return err
+		}
+	} else {
+		for i := range jsg.MaxLength {
+			key, err := jr.ReadString(jsg.MaxLength)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return errors.New("IPLD map key too large")
+				}
+				return err
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return err
+			}
+			var a Any
+			if err := a.UnmarshalDagJSON(jr); err != nil {
+				return fmt.Errorf(`unmarshaling map value for key "%s": %w`, key, err)
+			}
+			m.values[key] = &a
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return err
+			}
+			if close {
+				break
+			}
+			if i == jsg.MaxLength-1 {
+				return errors.New("IPLD map too large")
+			}
+		}
+	}
+	return nil
 }
 
 var _ ipld.Map[string, ipld.Any] = (*Map)(nil)
