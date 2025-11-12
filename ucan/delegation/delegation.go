@@ -80,6 +80,11 @@ func (d *Delegation) Metadata() ipld.Map[string, ipld.Any] {
 	return d.model.SigPayload.TokenPayload1_0_0_rc1.Meta
 }
 
+// The datamodel this delegation is built from.
+func (d *Delegation) Model() *ddm.EnvelopeModel {
+	return d.model
+}
+
 // Nonce helps prevent replay attacks and ensures a unique CID per delegation.
 //
 // https://github.com/ucan-wg/spec/blob/main/README.md#nonce
@@ -155,12 +160,53 @@ func (d *Delegation) UnmarshalCBOR(r io.Reader) error {
 	return nil
 }
 
+func (d *Delegation) MarshalDagJSON(w io.Writer) error {
+	return d.Model().MarshalDagJSON(w)
+}
+
+func (d *Delegation) UnmarshalDagJSON(r io.Reader) error {
+	*d = Delegation{}
+	model := ddm.EnvelopeModel{}
+	err := model.UnmarshalDagJSON(r)
+	if err != nil {
+		return fmt.Errorf("unmarshaling delegation envelope JSON: %w", err)
+	}
+	if model.SigPayload.TokenPayload1_0_0_rc1 == nil {
+		return errors.New("invalid or unsupported delegation token payload")
+	}
+	header, err := varsig.Decode(model.SigPayload.Header)
+	if err != nil {
+		return fmt.Errorf("decoding varsig header: %w", err)
+	}
+	sig := signature.NewSignature(header, model.Signature)
+	// marshal to CBOR so we can calculate canonical CID
+	var w bytes.Buffer
+	err = model.MarshalCBOR(&w)
+	if err != nil {
+		return fmt.Errorf("marshaling to CBOR: %w", err)
+	}
+	root, err := cid.V1Builder{
+		Codec:  dagcbor.Code,
+		MhType: multihash.SHA2_256,
+	}.Sum(w.Bytes())
+	if err != nil {
+		return fmt.Errorf("hashing delegation bytes: %w", err)
+	}
+	d.link = root
+	d.bytes = w.Bytes()
+	d.sig = sig
+	d.model = &model
+	return nil
+}
+
 var _ ucan.Delegation = (*Delegation)(nil)
 
+// Encode delegation to CBOR.
 func Encode(dlg ucan.Delegation) ([]byte, error) {
 	return dlg.Bytes(), nil
 }
 
+// Encode delegation from CBOR.
 func Decode(b []byte) (*Delegation, error) {
 	d := Delegation{}
 	err := d.UnmarshalCBOR(bytes.NewReader(b))

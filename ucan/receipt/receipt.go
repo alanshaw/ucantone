@@ -82,10 +82,12 @@ func (rcpt *Receipt) UnmarshalCBOR(r io.Reader) error {
 
 var _ ucan.Receipt = (*Receipt)(nil)
 
+// Encode receipt to CBOR.
 func Encode(rcpt ucan.Receipt) ([]byte, error) {
 	return rcpt.Bytes(), nil
 }
 
+// Decode receipt from CBOR.
 func Decode(b []byte) (*Receipt, error) {
 	rcpt := Receipt{}
 	err := rcpt.UnmarshalCBOR(bytes.NewReader(b))

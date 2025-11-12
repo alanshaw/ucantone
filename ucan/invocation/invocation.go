@@ -20,7 +20,6 @@ import (
 	"github.com/alanshaw/ucantone/varsig/common"
 	cid "github.com/ipfs/go-cid"
 	multihash "github.com/multiformats/go-multihash/core"
-	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 // UCAN Invocation defines a format for expressing the intention to execute
@@ -200,12 +199,63 @@ func (inv *Invocation) UnmarshalCBOR(r io.Reader) error {
 	return nil
 }
 
+func (inv *Invocation) MarshalDagJSON(w io.Writer) error {
+	return inv.Model().MarshalDagJSON(w)
+}
+
+func (inv *Invocation) UnmarshalDagJSON(r io.Reader) error {
+	*inv = Invocation{}
+	model := idm.EnvelopeModel{}
+	err := model.UnmarshalDagJSON(r)
+	if err != nil {
+		return fmt.Errorf("unmarshaling invocation envelope JSON: %w", err)
+	}
+	if model.SigPayload.TokenPayload1_0_0_rc1 == nil {
+		return errors.New("invalid or unsupported invocation token payload")
+	}
+	header, err := varsig.Decode(model.SigPayload.Header)
+	if err != nil {
+		return fmt.Errorf("decoding varsig header: %w", err)
+	}
+	sig := signature.NewSignature(header, model.Signature)
+	task, err := NewTask(
+		model.SigPayload.TokenPayload1_0_0_rc1.Sub,
+		model.SigPayload.TokenPayload1_0_0_rc1.Cmd,
+		model.SigPayload.TokenPayload1_0_0_rc1.Args,
+		model.SigPayload.TokenPayload1_0_0_rc1.Nonce,
+	)
+	if err != nil {
+		return fmt.Errorf("creating new task: %w", err)
+	}
+	// marshal to CBOR so we can calculate canonical CID
+	var w bytes.Buffer
+	err = model.MarshalCBOR(&w)
+	if err != nil {
+		return fmt.Errorf("marshaling to CBOR: %w", err)
+	}
+	root, err := cid.V1Builder{
+		Codec:  dagcbor.Code,
+		MhType: multihash.SHA2_256,
+	}.Sum(w.Bytes())
+	if err != nil {
+		return fmt.Errorf("hashing invocation bytes: %w", err)
+	}
+	inv.link = root
+	inv.bytes = w.Bytes()
+	inv.sig = sig
+	inv.model = &model
+	inv.task = task
+	return nil
+}
+
 var _ ucan.Invocation = (*Invocation)(nil)
 
+// Encode invocation to CBOR.
 func Encode(inv ucan.Invocation) ([]byte, error) {
 	return inv.Bytes(), nil
 }
 
+// Decode invocation from CBOR.
 func Decode(b []byte) (*Invocation, error) {
 	inv := Invocation{}
 	err := inv.UnmarshalCBOR(bytes.NewReader(b))
@@ -342,15 +392,6 @@ func VerifySignature(inv ucan.Invocation, verifier ucan.Verifier) (bool, error) 
 		a := inv.Audience().DID()
 		aud = &a
 	}
-
-	var args cbg.Deferred
-	argsMap := datamodel.NewMap(datamodel.WithEntries(inv.Arguments().All()))
-	var argsBuf bytes.Buffer
-	err := argsMap.MarshalCBOR(&argsBuf)
-	if err != nil {
-		return false, fmt.Errorf("marshaling arguments CBOR: %w", err)
-	}
-	args.Raw = argsBuf.Bytes()
 
 	var meta *datamodel.Map
 	if inv.Metadata() != nil {
