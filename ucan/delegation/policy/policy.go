@@ -13,18 +13,18 @@ import (
 )
 
 const (
-	OpEqual              = "=="   // implemented by ComparisonStatement
-	OpNotEqual           = "!="   // implemented by ComparisonStatement
-	OpGreaterThan        = ">"    // implemented by ComparisonStatement
-	OpGreaterThanOrEqual = ">="   // implemented by ComparisonStatement
-	OpLessThan           = "<"    // implemented by ComparisonStatement
-	OpLessThanOrEqual    = "<="   // implemented by ComparisonStatement
-	OpAnd                = "and"  // implemented by ConjunctionStatement
-	OpOr                 = "or"   // implemented by DisjunctionStatement
-	OpNot                = "not"  // implemented by NegationStatement
-	OpLike               = "like" // implemented by WildcardStatement
-	OpAll                = "all"  // implemented by QuantificationStatement
-	OpAny                = "any"  // implemented by QuantificationStatement
+	OpEqual              = "=="
+	OpNotEqual           = "!="
+	OpGreaterThan        = ">"
+	OpGreaterThanOrEqual = ">="
+	OpLessThan           = "<"
+	OpLessThanOrEqual    = "<="
+	OpAnd                = "and"
+	OpOr                 = "or"
+	OpNot                = "not"
+	OpLike               = "like"
+	OpAll                = "all"
+	OpAny                = "any"
 )
 
 // UCAN Delegation uses predicate logic statements extended with jq-inspired

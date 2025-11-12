@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	jsg "github.com/alanshaw/dag-json-gen"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
@@ -101,7 +102,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) error {
 	switch op {
 	case "==", "!=", ">", ">=", "<", "<=":
 		// TODO: can probably do this upfront for each type
-		b, err := encodeStatementBegin(3, op) // TODO: remove the magic number (number of fields)
+		b, err := cborEncodeStatementBegin(3, op) // TODO: remove the magic number (number of fields)
 		if err != nil {
 			return err
 		}
@@ -113,7 +114,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) error {
 		t.Value = m.Value
 	case "and":
 		// TODO: can probably do this upfront for each type
-		b, err := encodeStatementBegin(2, op) // TODO: remove the magic number (number of fields)
+		b, err := cborEncodeStatementBegin(2, op) // TODO: remove the magic number (number of fields)
 		if err != nil {
 			return err
 		}
@@ -124,7 +125,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) error {
 		t.Statements = m.Statements
 	case "or":
 		// TODO: can probably do this upfront for each type
-		b, err := encodeStatementBegin(2, op) // TODO: remove the magic number (number of fields)
+		b, err := cborEncodeStatementBegin(2, op) // TODO: remove the magic number (number of fields)
 		if err != nil {
 			return err
 		}
@@ -135,7 +136,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) error {
 		t.Statements = m.Statements
 	case "not":
 		// TODO: can probably do this upfront for each type
-		b, err := encodeStatementBegin(2, op) // TODO: remove the magic number (number of fields)
+		b, err := cborEncodeStatementBegin(2, op) // TODO: remove the magic number (number of fields)
 		if err != nil {
 			return err
 		}
@@ -146,7 +147,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) error {
 		t.Statement = m.Statement
 	case "like":
 		// TODO: can probably do this upfront for each type
-		b, err := encodeStatementBegin(3, op) // TODO: remove the magic number (number of fields)
+		b, err := cborEncodeStatementBegin(3, op) // TODO: remove the magic number (number of fields)
 		if err != nil {
 			return err
 		}
@@ -158,7 +159,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) error {
 		t.Pattern = m.Pattern
 	case "all", "any":
 		// TODO: can probably do this upfront for each type
-		b, err := encodeStatementBegin(3, op) // TODO: remove the magic number (number of fields)
+		b, err := cborEncodeStatementBegin(3, op) // TODO: remove the magic number (number of fields)
 		if err != nil {
 			return err
 		}
@@ -175,14 +176,140 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) error {
 }
 
 func (t *StatementModel) MarshalDagJSON(w io.Writer) error {
-	panic("not implemented")
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		return jw.WriteNull()
+	}
+
+	switch t.Op {
+	case "==", "!=", ">", ">=", "<", "<=":
+		m := ComparisonModel{t.Op, t.Selector, t.Value}
+		if err := m.MarshalDagJSON(w); err != nil {
+			return err
+		}
+	case "and":
+		m := ConjunctionModel{t.Op, t.Statements}
+		if err := m.MarshalDagJSON(w); err != nil {
+			return err
+		}
+	case "or":
+		m := DisjunctionModel{t.Op, t.Statements}
+		if err := m.MarshalDagJSON(w); err != nil {
+			return err
+		}
+	case "not":
+		m := NegationModel{t.Op, t.Statement}
+		if err := m.MarshalDagJSON(w); err != nil {
+			return err
+		}
+	case "like":
+		m := WildcardModel{t.Op, t.Selector, t.Pattern}
+		if err := m.MarshalDagJSON(w); err != nil {
+			return err
+		}
+	case "all", "any":
+		m := QuantificationModel{t.Op, t.Selector, t.Statements}
+		if err := m.MarshalDagJSON(w); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown statement: %s", t.Op)
+	}
+	return nil
 }
 
 func (t *StatementModel) UnmarshalDagJSON(r io.Reader) error {
-	panic("not implemented")
+	*t = StatementModel{}
+
+	cr := jsg.NewDagJsonReader(r)
+
+	if err := cr.ReadArrayOpen(); err != nil {
+		return err
+	}
+
+	op, err := cr.ReadString(jsg.MaxLength)
+	if err != nil {
+		return err
+	}
+	t.Op = op
+
+	switch op {
+	case "==", "!=", ">", ">=", "<", "<=":
+		// TODO: can probably do this upfront for each type
+		b, err := dagJSONEncodeStatementBegin(op)
+		if err != nil {
+			return err
+		}
+		m := ComparisonModel{}
+		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+			return err
+		}
+		t.Selector = m.Selector
+		t.Value = m.Value
+	case "and":
+		// TODO: can probably do this upfront for each type
+		b, err := dagJSONEncodeStatementBegin(op)
+		if err != nil {
+			return err
+		}
+		m := ConjunctionModel{}
+		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+			return err
+		}
+		t.Statements = m.Statements
+	case "or":
+		// TODO: can probably do this upfront for each type
+		b, err := dagJSONEncodeStatementBegin(op)
+		if err != nil {
+			return err
+		}
+		m := DisjunctionModel{}
+		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+			return err
+		}
+		t.Statements = m.Statements
+	case "not":
+		// TODO: can probably do this upfront for each type
+		b, err := dagJSONEncodeStatementBegin(op)
+		if err != nil {
+			return err
+		}
+		m := NegationModel{}
+		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+			return err
+		}
+		t.Statement = m.Statement
+	case "like":
+		// TODO: can probably do this upfront for each type
+		b, err := dagJSONEncodeStatementBegin(op)
+		if err != nil {
+			return err
+		}
+		m := WildcardModel{}
+		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+			return err
+		}
+		t.Selector = m.Selector
+		t.Pattern = m.Pattern
+	case "all", "any":
+		// TODO: can probably do this upfront for each type
+		b, err := dagJSONEncodeStatementBegin(op)
+		if err != nil {
+			return err
+		}
+		m := QuantificationModel{}
+		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+			return err
+		}
+		t.Selector = m.Selector
+		t.Statements = m.Statements
+	default:
+		return fmt.Errorf("unknown statement: %s", t.Op)
+	}
+	return nil
 }
 
-func encodeStatementBegin(numFields uint64, op string) ([]byte, error) {
+func cborEncodeStatementBegin(numFields uint64, op string) ([]byte, error) {
 	var buf bytes.Buffer
 	cw := cbg.NewCborWriter(&buf)
 	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajArray, numFields)); err != nil {
@@ -192,6 +319,18 @@ func encodeStatementBegin(numFields uint64, op string) ([]byte, error) {
 		return nil, err
 	}
 	if _, err := cw.WriteString(op); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func dagJSONEncodeStatementBegin(op string) ([]byte, error) {
+	var buf bytes.Buffer
+	jw := jsg.NewDagJsonWriter(&buf)
+	if err := jw.WriteArrayOpen(); err != nil {
+		return nil, err
+	}
+	if err := jw.WriteString(op); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil

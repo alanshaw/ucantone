@@ -106,6 +106,9 @@ func (d *DID) UnmarshalDagJSON(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	if str == nil {
+		return nil
+	}
 	parsed, err := Parse(*str)
 	if err != nil {
 		return err
