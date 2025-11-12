@@ -1,8 +1,10 @@
 package receipt
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
@@ -34,31 +36,33 @@ func (rcpt *Receipt) Ran() cid.Cid {
 	return rcpt.ran
 }
 
-var _ ucan.Receipt = (*Receipt)(nil)
-
-func Encode(rcpt ucan.Receipt) ([]byte, error) {
-	return rcpt.Bytes(), nil
+func (rcpt *Receipt) MarshalCBOR(w io.Writer) error {
+	_, err := w.Write(rcpt.Bytes())
+	return err
 }
 
-func Decode(data []byte) (*Receipt, error) {
-	inv, err := invocation.Decode(data)
+func (rcpt *Receipt) UnmarshalCBOR(r io.Reader) error {
+	*rcpt = Receipt{}
+
+	inv := invocation.Invocation{}
+	err := inv.UnmarshalCBOR(r)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	invArgs, ok := inv.Arguments().(dagcbor.CBORMarshaler)
 	if !ok {
-		return nil, errors.New("invocation arguments are not CBOR unmarahsler")
+		return errors.New("invocation arguments are not CBOR unmarahsler")
 	}
 
 	if inv.Command() != Command {
-		return nil, fmt.Errorf("invalid receipt command %s, expected %s", inv.Command().String(), Command.String())
+		return fmt.Errorf("invalid receipt command %s, expected %s", inv.Command().String(), Command.String())
 	}
 
 	var receiptArgs rdm.ArgsModel
 	err = datamodel.Rebind(invArgs, &receiptArgs)
 	if err != nil {
-		return nil, fmt.Errorf("decoding receipt arguments: %w", err)
+		return fmt.Errorf("decoding receipt arguments: %w", err)
 	}
 
 	var out result.Result[ipld.Any, ipld.Any]
@@ -67,10 +71,25 @@ func Decode(data []byte) (*Receipt, error) {
 	} else if receiptArgs.Out.Err != nil {
 		out = result.Error[ipld.Any](receiptArgs.Out.Err.Value)
 	} else {
-		return nil, errors.New("invalid result, neither ok nor error")
+		return errors.New("invalid result, neither ok nor error")
 	}
 
-	return &Receipt{Invocation: *inv, ran: receiptArgs.Ran, out: out}, nil
+	rcpt.Invocation = inv
+	rcpt.ran = receiptArgs.Ran
+	rcpt.out = out
+	return nil
+}
+
+var _ ucan.Receipt = (*Receipt)(nil)
+
+func Encode(rcpt ucan.Receipt) ([]byte, error) {
+	return rcpt.Bytes(), nil
+}
+
+func Decode(b []byte) (*Receipt, error) {
+	rcpt := Receipt{}
+	err := rcpt.UnmarshalCBOR(bytes.NewReader(b))
+	return &rcpt, err
 }
 
 // Issue creates a new receipt: an attestation that a task was run and it
