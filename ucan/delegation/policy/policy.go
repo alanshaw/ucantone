@@ -1,18 +1,15 @@
 package policy
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
+	"reflect"
 
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"
 	pdm "github.com/alanshaw/ucantone/ucan/delegation/policy/datamodel"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 	"github.com/gobwas/glob"
-	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 const (
@@ -36,429 +33,373 @@ const (
 //
 // https://github.com/ucan-wg/delegation/blob/main/README.md#policy
 type Policy struct {
-	statements []ucan.Statement
+	statements []Statement
 }
 
-func New(statements ...ucan.Statement) Policy {
-	return Policy{statements}
+func New(statements ...ucan.Statement) (Policy, error) {
+	stmts := make([]Statement, 0, len(statements))
+	for _, s := range statements {
+		if ss, ok := s.(Statement); ok {
+			stmts = append(stmts, ss)
+		} else {
+			ss, err := toStatement(s)
+			if err != nil {
+				return Policy{}, err
+			}
+			stmts = append(stmts, ss)
+		}
+	}
+	return Policy{stmts}, nil
 }
 
 // A Policy is always given as an array of predicates. This top-level array is
 // implicitly treated as a logical "and", where args MUST pass validation of
 // every top-level predicate.
 func (p Policy) Statements() []ucan.Statement {
-	return p.statements
+	stmts := make([]ucan.Statement, 0, len(p.statements))
+	for _, s := range p.statements {
+		stmts = append(stmts, s)
+	}
+	return stmts
 }
 
 func (p Policy) MarshalCBOR(w io.Writer) error {
-	var stmts []cbg.Deferred
+	statements := make([]pdm.StatementModel, 0, len(p.statements))
 	for _, s := range p.statements {
-		bytes, err := marshalCBORStatement(s)
-		if err != nil {
-			return err
-		}
-		stmts = append(stmts, cbg.Deferred{Raw: bytes})
+		statements = append(statements, s.model)
 	}
-	model := pdm.PolicyModel{Statements: stmts}
+	model := pdm.PolicyModel{Statements: statements}
 	return model.MarshalCBOR(w)
 }
 
 func (p *Policy) UnmarshalCBOR(r io.Reader) error {
+	*p = Policy{}
 	var policyModel pdm.PolicyModel
 	err := policyModel.UnmarshalCBOR(r)
 	if err != nil {
 		return err
 	}
-	for _, s := range policyModel.Statements {
-		stmt, err := unmarshalCBORStatement(s.Raw)
+	for i, m := range policyModel.Statements {
+		s, err := newStatement(m)
 		if err != nil {
-			return err
+			return fmt.Errorf(`unmarshaling policy statement %d with operator "%s": %w`, i, m.Op, err)
 		}
-		p.statements = append(p.statements, stmt)
+		p.statements = append(p.statements, s)
 	}
 	return nil
 }
 
-// https://github.com/ucan-wg/delegation/blob/main/README.md#comparisons
-type ComparisonStatement struct {
-	op       string
-	Selector selector.Selector
-	Value    any
-}
-
-func (cs ComparisonStatement) Operation() string {
-	return cs.op
-}
-
-func (cs ComparisonStatement) MarshalCBOR(w io.Writer) error {
-	model := pdm.ComparisonModel{
-		Op:       cs.op,
-		Selector: cs.Selector.String(),
-		Value:    datamodel.NewAny(cs.Value),
+func (p Policy) MarshalDagJSON(w io.Writer) error {
+	statements := make([]pdm.StatementModel, 0, len(p.statements))
+	for _, s := range p.statements {
+		statements = append(statements, s.model)
 	}
-	return model.MarshalCBOR(w)
+	model := pdm.PolicyModel{Statements: statements}
+	return model.MarshalDagJSON(w)
 }
 
-func (cs *ComparisonStatement) UnmarshalCBOR(r io.Reader) error {
-	*cs = ComparisonStatement{}
-	var model pdm.ComparisonModel
-	err := model.UnmarshalCBOR(r)
+func (p *Policy) UnmarshalDagJSON(r io.Reader) error {
+	*p = Policy{}
+	var policyModel pdm.PolicyModel
+	err := policyModel.UnmarshalDagJSON(r)
 	if err != nil {
 		return err
 	}
-	if model.Op != OpEqual &&
-		model.Op != OpNotEqual &&
-		model.Op != OpGreaterThan &&
-		model.Op != OpGreaterThanOrEqual &&
-		model.Op != OpLessThan &&
-		model.Op != OpLessThanOrEqual {
-		return fmt.Errorf("unexpected comparison statement operation: %s", model.Op)
+	for i, m := range policyModel.Statements {
+		s, err := newStatement(m)
+		if err != nil {
+			return fmt.Errorf(`unmarshaling policy statement %d with operator "%s": %w`, i, m.Op, err)
+		}
+		p.statements = append(p.statements, s)
 	}
-	sel, err := selector.Parse(model.Selector)
-	if err != nil {
-		return err
-	}
-	cs.op = model.Op
-	cs.Selector = sel
-	cs.Value = model.Value.Value
 	return nil
 }
 
-func (cs ComparisonStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]any{cs.op, cs.Selector, cs.Value})
+type Statement struct {
+	model      pdm.StatementModel
+	statement  *Statement
+	statements []*Statement
+	selector   selector.Selector
+	glob       glob.Glob
 }
 
-// https://github.com/ucan-wg/delegation/blob/main/README.md#connectives
-type ConjunctionStatement struct {
-	Statements []ucan.Statement
-}
-
-func (ConjunctionStatement) Operation() string {
-	return OpAnd
-}
-
-func (cs ConjunctionStatement) MarshalCBOR(w io.Writer) error {
-	policy := Policy{cs.Statements}
-	var b bytes.Buffer
-	err := policy.MarshalCBOR(&b)
-	if err != nil {
-		return err
-	}
-	model := pdm.ConjunctionModel{Op: OpAnd, Statements: cbg.Deferred{Raw: b.Bytes()}}
-	return model.MarshalCBOR(w)
-}
-
-func (cs *ConjunctionStatement) UnmarshalCBOR(r io.Reader) error {
-	*cs = ConjunctionStatement{}
-	var model pdm.ConjunctionModel
-	err := model.UnmarshalCBOR(r)
-	if err != nil {
-		return err
-	}
-	if model.Op != OpAnd {
-		return fmt.Errorf("unexpected conjunction statement operation: %s", model.Op)
-	}
-	var policy Policy
-	err = policy.UnmarshalCBOR(bytes.NewReader(model.Statements.Raw))
-	if err != nil {
-		return err
-	}
-	cs.Statements = policy.Statements()
-	return nil
-}
-
-func (cs ConjunctionStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]any{OpAnd, cs.Statements})
-}
-
-// https://github.com/ucan-wg/delegation/blob/main/README.md#connectives
-type DisjunctionStatement struct {
-	Statements []ucan.Statement
-}
-
-func (DisjunctionStatement) Operation() string {
-	return OpOr
-}
-
-func (ds DisjunctionStatement) MarshalCBOR(w io.Writer) error {
-	policy := Policy{ds.Statements}
-	var b bytes.Buffer
-	err := policy.MarshalCBOR(&b)
-	if err != nil {
-		return err
-	}
-	model := pdm.DisjunctionModel{Op: OpOr, Statements: cbg.Deferred{Raw: b.Bytes()}}
-	return model.MarshalCBOR(w)
-}
-
-func (ds *DisjunctionStatement) UnmarshalCBOR(r io.Reader) error {
-	*ds = DisjunctionStatement{}
-	var model pdm.DisjunctionModel
-	err := model.UnmarshalCBOR(r)
-	if err != nil {
-		return err
-	}
-	if model.Op != OpOr {
-		return fmt.Errorf("unexpected disjunction statement operation: %s", model.Op)
-	}
-	policy := Policy{}
-	err = policy.UnmarshalCBOR(bytes.NewReader(model.Statements.Raw))
-	if err != nil {
-		return err
-	}
-	ds.Statements = policy.Statements()
-	return nil
-}
-
-func (ds DisjunctionStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]any{OpOr, ds.Statements})
-}
-
-// https://github.com/ucan-wg/delegation/blob/main/README.md#connectives
-type NegationStatement struct {
-	Statement ucan.Statement
-}
-
-func (NegationStatement) Operation() string {
-	return OpNot
-}
-
-func (ns NegationStatement) MarshalCBOR(w io.Writer) error {
-	bytes, err := marshalCBORStatement(ns.Statement)
-	if err != nil {
-		return err
-	}
-	model := pdm.NegationModel{Op: OpNot, Statement: cbg.Deferred{Raw: bytes}}
-	return model.MarshalCBOR(w)
-}
-
-func (ns *NegationStatement) UnmarshalCBOR(r io.Reader) error {
-	*ns = NegationStatement{}
-	var model pdm.NegationModel
-	err := model.UnmarshalCBOR(r)
-	if err != nil {
-		return err
-	}
-	if model.Op != OpNot {
-		return fmt.Errorf("unexpected negation statement operation: %s", model.Op)
-	}
-	stmt, err := unmarshalCBORStatement(model.Statement.Raw)
-	if err != nil {
-		return err
-	}
-	ns.Statement = stmt
-	return nil
-}
-
-func (ns NegationStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]any{OpNot, ns.Statement})
-}
-
-// https://github.com/ucan-wg/delegation/blob/main/README.md#glob-matching
-type WildcardStatement struct {
-	Selector selector.Selector
-	Pattern  string
-	Glob     glob.Glob
-}
-
-func (WildcardStatement) Operation() string {
-	return OpLike
-}
-
-func (ws WildcardStatement) MarshalCBOR(w io.Writer) error {
-	model := pdm.WildcardModel{
-		Op:       OpLike,
-		Selector: ws.Selector.String(),
-		Pattern:  ws.Pattern,
-	}
-	return model.MarshalCBOR(w)
-}
-
-func (ws *WildcardStatement) UnmarshalCBOR(r io.Reader) error {
-	*ws = WildcardStatement{}
-	var model pdm.WildcardModel
-	err := model.UnmarshalCBOR(r)
-	if err != nil {
-		return err
-	}
-	if model.Op != OpLike {
-		return fmt.Errorf("unexpected wildcard statement operation: %s", model.Op)
-	}
-	sel, err := selector.Parse(model.Selector)
-	if err != nil {
-		return err
-	}
-	glb, err := glob.Compile(model.Pattern)
-	if err != nil {
-		return err
-	}
-	ws.Selector = sel
-	ws.Pattern = model.Pattern
-	ws.Glob = glb
-	return nil
-}
-
-func (ws WildcardStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]any{OpLike, ws.Selector, ws.Pattern})
-}
-
-// https://github.com/ucan-wg/delegation/blob/main/README.md#quantification
-type QuantificationStatement struct {
-	op         string
-	Selector   selector.Selector
-	Statements []ucan.Statement
-}
-
-func (qs QuantificationStatement) Operation() string {
-	return qs.op
-}
-
-func (qs QuantificationStatement) MarshalCBOR(w io.Writer) error {
-	policy := Policy{qs.Statements}
-	var b bytes.Buffer
-	err := policy.MarshalCBOR(&b)
-	if err != nil {
-		return err
-	}
-	model := pdm.QuantificationModel{
-		Op:         qs.op,
-		Selector:   qs.Selector.String(),
-		Statements: cbg.Deferred{Raw: b.Bytes()},
-	}
-	return model.MarshalCBOR(w)
-}
-
-func (qs *QuantificationStatement) UnmarshalCBOR(r io.Reader) error {
-	*qs = QuantificationStatement{}
-	var model pdm.QuantificationModel
-	err := model.UnmarshalCBOR(r)
-	if err != nil {
-		return err
-	}
-	if model.Op != OpAny && model.Op != OpAll {
-		return fmt.Errorf("unexpected quantification statement operation: %s", model.Op)
-	}
-	sel, err := selector.Parse(model.Selector)
-	if err != nil {
-		return err
-	}
-	var policy Policy
-	err = policy.UnmarshalCBOR(bytes.NewReader(model.Statements.Raw))
-	if err != nil {
-		return err
-	}
-	qs.op = model.Op
-	qs.Selector = sel
-	qs.Statements = policy.Statements()
-	return nil
-}
-
-func (qs QuantificationStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]any{qs.op, qs.Selector, qs.Statements})
-}
-
-func Equal(selector selector.Selector, value any) ComparisonStatement {
-	return ComparisonStatement{OpEqual, selector, value}
-}
-
-func GreaterThan(selector selector.Selector, value any) ComparisonStatement {
-	return ComparisonStatement{OpGreaterThan, selector, value}
-}
-
-func GreaterThanOrEqual(selector selector.Selector, value any) ComparisonStatement {
-	return ComparisonStatement{OpGreaterThanOrEqual, selector, value}
-}
-
-func LessThan(selector selector.Selector, value any) ComparisonStatement {
-	return ComparisonStatement{OpLessThan, selector, value}
-}
-
-func LessThanOrEqual(selector selector.Selector, value any) ComparisonStatement {
-	return ComparisonStatement{OpLessThanOrEqual, selector, value}
-}
-
-func Not(stmt ucan.Statement) NegationStatement {
-	return NegationStatement{stmt}
-}
-
-func And(stmts ...ucan.Statement) ConjunctionStatement {
-	return ConjunctionStatement{stmts}
-}
-
-func Or(stmts ...ucan.Statement) DisjunctionStatement {
-	return DisjunctionStatement{stmts}
-}
-
-func Like(selector selector.Selector, pattern string) WildcardStatement {
-	return WildcardStatement{selector, pattern, glob.MustCompile(pattern)}
-}
-
-func All(selector selector.Selector, stmts ...ucan.Statement) QuantificationStatement {
-	return QuantificationStatement{OpAll, selector, stmts}
-}
-
-func Any(selector selector.Selector, stmts ...ucan.Statement) QuantificationStatement {
-	return QuantificationStatement{OpAny, selector, stmts}
-}
-
-func marshalCBORStatement(stmt ucan.Statement) ([]byte, error) {
-	cms, ok := stmt.(cbg.CBORMarshaler)
-	if !ok {
-		return nil, errors.New("statement is not CBOR marshaler")
-	}
-	var b bytes.Buffer
-	err := cms.MarshalCBOR(&b)
-	if err != nil {
-		return nil, err
-	}
-	return b.Bytes(), nil
-}
-
-func unmarshalCBORStatement(data []byte) (ucan.Statement, error) {
-	var statementModel pdm.StatementModel
-	// TODO: find a way to not read it twice
-	err := statementModel.UnmarshalCBOR(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	switch statementModel.Op {
-	case OpEqual, OpNotEqual, OpGreaterThan, OpGreaterThanOrEqual, OpLessThan, OpLessThanOrEqual:
-		stmt := ComparisonStatement{}
-		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
-			return nil, err
+func newStatement(m pdm.StatementModel) (Statement, error) {
+	s := Statement{model: m}
+	switch m.Op {
+	case OpEqual, OpNotEqual, OpGreaterThan, OpGreaterThanOrEqual, OpLessThan, OpLessThanOrEqual, OpAll, OpAny, OpLike:
+		sel, err := selector.Parse(m.Selector)
+		if err != nil {
+			return Statement{}, fmt.Errorf(`parsing selector for "%s" operation: %w`, m.Op, err)
 		}
-		return stmt, nil
-	case OpAnd:
-		stmt := ConjunctionStatement{}
-		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
-			return nil, err
-		}
-		return stmt, nil
-	case OpOr:
-		stmt := DisjunctionStatement{}
-		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
-			return nil, err
-		}
-		return stmt, nil
-	case OpNot:
-		stmt := NegationStatement{}
-		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
-			return nil, err
-		}
-		return stmt, nil
-	case OpLike:
-		stmt := WildcardStatement{}
-		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
-			return nil, err
-		}
-		return stmt, nil
-	case OpAny, OpAll:
-		stmt := QuantificationStatement{}
-		if err := stmt.UnmarshalCBOR(bytes.NewReader(data)); err != nil {
-			return nil, err
-		}
-		return stmt, nil
+		s.selector = sel
 	default:
-		return nil, fmt.Errorf("unknown statement operation: %s", statementModel.Op)
+		return Statement{}, fmt.Errorf("unknown statement: %s", m.Op)
 	}
+	if m.Op == OpLike {
+		g, err := glob.Compile(m.Pattern)
+		if err != nil {
+			return Statement{}, fmt.Errorf(`compiling glob for "%s" operation: %w`, m.Op, err)
+		}
+		s.glob = g
+	}
+	switch m.Op {
+	case OpNot:
+		stmt, err := newStatement(*m.Statement)
+		if err != nil {
+			return Statement{}, fmt.Errorf(`creating statement for "%s" operation: %w`, m.Op, err)
+		}
+		s.statement = &stmt
+	case OpAnd, OpOr, OpAny, OpAll:
+		stmts := make([]*Statement, 0, len(m.Statements))
+		for i, m := range m.Statements {
+			ss, err := newStatement(*m)
+			if err != nil {
+				return Statement{}, fmt.Errorf(`creating statement %d of "%s" operation: %w`, i, m.Op, err)
+			}
+			stmts = append(stmts, &ss)
+		}
+		s.statements = stmts
+	}
+	return s, nil
+}
+
+func (s Statement) Operator() string {
+	return s.model.Op
+}
+
+func (s Statement) Selector() string {
+	return s.model.Selector
+}
+
+func (s Statement) Argument() any {
+	switch s.model.Op {
+	case OpEqual, OpNotEqual, OpGreaterThan, OpGreaterThanOrEqual, OpLessThan, OpLessThanOrEqual:
+		return s.model.Value.Value
+	case OpAnd, OpOr, OpAll, OpAny:
+		return s.statements
+	case OpNot:
+		return s.statement
+	case OpLike:
+		return s.model.Pattern
+	default:
+		return fmt.Errorf("unknown statement: %s", s.model.Op)
+	}
+}
+
+func (s Statement) MarshalCBOR(w io.Writer) error {
+	return s.model.MarshalCBOR(w)
+}
+
+func (s *Statement) UnmarshalCBOR(r io.Reader) error {
+	model := pdm.StatementModel{}
+	if err := model.UnmarshalCBOR(r); err != nil {
+		return err
+	}
+	stmt, err := newStatement(model)
+	if err != nil {
+		return err
+	}
+	*s = stmt
+	return nil
+}
+
+func (s Statement) MarshalDagJSON(w io.Writer) error {
+	return s.model.MarshalDagJSON(w)
+}
+
+func (s *Statement) UnmarshalDagJSON(r io.Reader) error {
+	model := pdm.StatementModel{}
+	if err := model.UnmarshalDagJSON(r); err != nil {
+		return err
+	}
+	stmt, err := newStatement(model)
+	if err != nil {
+		return err
+	}
+	*s = stmt
+	return nil
+}
+
+func Equal(sel string, value any) (Statement, error) {
+	return newStatement(pdm.StatementModel{
+		Op:       OpEqual,
+		Selector: sel,
+		Value:    &datamodel.Any{Value: value},
+	})
+}
+
+func NotEqual(sel string, value any) (Statement, error) {
+	return newStatement(pdm.StatementModel{
+		Op:       OpNotEqual,
+		Selector: sel,
+		Value:    &datamodel.Any{Value: value},
+	})
+}
+
+func GreaterThan(sel string, value any) (Statement, error) {
+	return newStatement(pdm.StatementModel{
+		Op:       OpGreaterThan,
+		Selector: sel,
+		Value:    &datamodel.Any{Value: value},
+	})
+}
+
+func GreaterThanOrEqual(sel string, value any) (Statement, error) {
+	return newStatement(pdm.StatementModel{
+		Op:       OpGreaterThanOrEqual,
+		Selector: sel,
+		Value:    &datamodel.Any{Value: value},
+	})
+}
+
+func LessThan(sel string, value any) (Statement, error) {
+	return newStatement(pdm.StatementModel{
+		Op:       OpLessThan,
+		Selector: sel,
+		Value:    &datamodel.Any{Value: value},
+	})
+}
+
+func LessThanOrEqual(sel string, value any) (Statement, error) {
+	return newStatement(pdm.StatementModel{
+		Op:       OpLessThanOrEqual,
+		Selector: sel,
+		Value:    &datamodel.Any{Value: value},
+	})
+}
+
+func Not(stmt ucan.Statement) (Statement, error) {
+	s, err := toStatement(stmt)
+	if err != nil {
+		return Statement{}, err
+	}
+	return newStatement(pdm.StatementModel{
+		Op:        OpNot,
+		Statement: &s.model,
+	})
+}
+
+func And(stmts ...ucan.Statement) (Statement, error) {
+	models := make([]*pdm.StatementModel, 0, len(stmts))
+	for _, s := range stmts {
+		m, err := toStatement(s)
+		if err != nil {
+			return Statement{}, err
+		}
+		models = append(models, &m.model)
+	}
+	return newStatement(pdm.StatementModel{
+		Op:         OpAnd,
+		Statements: models,
+	})
+}
+
+func Or(stmts ...ucan.Statement) (Statement, error) {
+	models := make([]*pdm.StatementModel, 0, len(stmts))
+	for _, s := range stmts {
+		m, err := toStatement(s)
+		if err != nil {
+			return Statement{}, err
+		}
+		models = append(models, &m.model)
+	}
+	return newStatement(pdm.StatementModel{
+		Op:         OpOr,
+		Statements: models,
+	})
+}
+
+func Like(sel string, pattern string) (Statement, error) {
+	return newStatement(pdm.StatementModel{
+		Op:       OpLike,
+		Selector: sel,
+		Pattern:  pattern,
+	})
+}
+
+func All(sel string, stmts ...ucan.Statement) (Statement, error) {
+	models := make([]*pdm.StatementModel, 0, len(stmts))
+	for _, s := range stmts {
+		m, err := toStatement(s)
+		if err != nil {
+			return Statement{}, err
+		}
+		models = append(models, &m.model)
+	}
+	return newStatement(pdm.StatementModel{
+		Op:         OpAll,
+		Selector:   sel,
+		Statements: models,
+	})
+}
+
+func Any(sel string, stmts ...ucan.Statement) (Statement, error) {
+	models := make([]*pdm.StatementModel, 0, len(stmts))
+	for _, s := range stmts {
+		m, err := toStatement(s)
+		if err != nil {
+			return Statement{}, err
+		}
+		models = append(models, &m.model)
+	}
+	return newStatement(pdm.StatementModel{
+		Op:         OpAny,
+		Selector:   sel,
+		Statements: models,
+	})
+}
+
+// toStatement converts a [ucan.Statement] to a [Statement]
+func toStatement(stmt ucan.Statement) (Statement, error) {
+	if s, ok := stmt.(Statement); ok {
+		return s, nil
+	}
+	model := pdm.StatementModel{
+		Op:       stmt.Operator(),
+		Selector: stmt.Selector(),
+	}
+	switch stmt.Operator() {
+	case OpEqual, OpNotEqual, OpGreaterThan, OpGreaterThanOrEqual, OpLessThan, OpLessThanOrEqual:
+		model.Value = &datamodel.Any{Value: stmt.Argument()}
+	case OpAnd, OpOr, OpAll, OpAny:
+		rt := reflect.TypeOf(stmt.Argument())
+		switch rt.Kind() {
+		case reflect.Slice:
+			val := reflect.ValueOf(stmt.Argument())
+			models := make([]*pdm.StatementModel, 0, val.Len())
+			for i := range val.Len() {
+				ns, ok := val.Index(i).Interface().(ucan.Statement)
+				if !ok {
+					return Statement{}, fmt.Errorf(`"%s" statement argument %d is not a statement`, stmt.Operator(), i)
+				}
+				s, err := toStatement(ns)
+				if err != nil {
+					return Statement{}, fmt.Errorf(`encoding "%s" statement argument: %w`, stmt.Operator(), err)
+				}
+				models = append(models, &s.model)
+			}
+			model.Statements = models
+		default:
+			return Statement{}, fmt.Errorf(`unexpected argument type for operator "%s": %s`, stmt.Operator(), rt.Kind())
+		}
+	case OpNot:
+		ns, ok := stmt.Argument().(ucan.Statement)
+		if !ok {
+			return Statement{}, fmt.Errorf(`"%s" statement argument is not a statement`, stmt.Operator())
+		}
+		s, err := toStatement(ns)
+		if err != nil {
+			return Statement{}, fmt.Errorf(`encoding "%s" statement argument: %w`, stmt.Operator(), err)
+		}
+		model.Statement = &s.model
+	case OpLike:
+		pattern, ok := stmt.Argument().(string)
+		if !ok {
+			return Statement{}, fmt.Errorf(`"%s" statement argument is not a string`, stmt.Operator())
+		}
+		model.Pattern = pattern
+	default:
+		return Statement{}, fmt.Errorf("unknown statement: %s", stmt.Operator())
+	}
+	return newStatement(model)
 }

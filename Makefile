@@ -14,8 +14,9 @@ gen:
 	cd ./testutil/datamodel/gen && go run ./main.go
 	rm ./ucan/container/datamodel/cbor_gen.go || true
 	cd ./ucan/container/datamodel/gen && go run ./main.go
-	rm ./ucan/delegation/datamodel/cbor_gen.*.go || true
+	rm ./ucan/delegation/datamodel/*_gen.*.go || true
 	cd ./ucan/delegation/datamodel/gen && go run ./main.go
+	cd ./ucan/delegation/policy/datamodel/gen && go run ./main.go
 	rm ./ucan/invocation/datamodel/cbor_gen.*.go || true
 	cd ./ucan/invocation/datamodel/gen && go run ./main.go
 	rm ./ucan/receipt/datamodel/cbor_gen.go || true

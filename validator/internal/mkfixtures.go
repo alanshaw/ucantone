@@ -15,7 +15,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	ddm "github.com/alanshaw/ucantone/ucan/delegation/datamodel"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy/builder"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	verrs "github.com/alanshaw/ucantone/validator/errors"
@@ -284,14 +284,13 @@ func makeValidPowerlineFixture() fdm.ValidModel {
 }
 
 func makeValidPolicyMatchFixture() fdm.ValidModel {
+	pol := must(builder.Build(builder.Equal(".answer", 42)))
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
 		cmd,
 		delegation.WithSubject(bob),
-		delegation.WithPolicy(
-			policy.Equal(must(selector.Parse(".answer")), 42),
-		),
+		delegation.WithPolicy(pol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -729,14 +728,13 @@ func makeInvalidPowerlineFixture() fdm.InvalidModel {
 }
 
 func makeInvalidPolicyViolationFixture() fdm.InvalidModel {
+	pol := must(builder.Build(builder.Equal(".answer", 42)))
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
 		cmd,
 		delegation.WithSubject(bob),
-		delegation.WithPolicy(
-			policy.Equal(must(selector.Parse(".answer")), 42),
-		),
+		delegation.WithPolicy(pol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))

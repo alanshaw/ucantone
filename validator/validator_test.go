@@ -49,7 +49,9 @@ func TestFixtures(t *testing.T) {
 			opts := []validator.Option{
 				validator.WithProofResolver(newMapProofResolver(proofs)),
 			}
-			cap := capability.New[invocation.UnknownArguments](cmd)
+			cap, err := capability.New[invocation.UnknownArguments](cmd)
+			require.NoError(t, err)
+
 			authorization, err := validator.Access(t.Context(), vrf, cap, inv, opts...)
 			require.NoError(t, err, "validation should have passed for invocation with %s", vector.Description)
 
@@ -76,7 +78,9 @@ func TestFixtures(t *testing.T) {
 			opts := []validator.Option{
 				validator.WithProofResolver(newMapProofResolver(proofs)),
 			}
-			cap := capability.New[invocation.UnknownArguments](cmd)
+			cap, err := capability.New[invocation.UnknownArguments](cmd)
+			require.NoError(t, err)
+
 			_, err = validator.Access(t.Context(), vrf, cap, inv, opts...)
 			require.Error(t, err, "validation should not have passed for invocation because %s", vector.Description)
 			t.Log(err)

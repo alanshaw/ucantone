@@ -65,12 +65,15 @@ type Capability[A Arguments] struct {
 	pol ucan.Policy
 }
 
-func New[A Arguments](cmd ucan.Command, options ...Option) *Capability[A] {
+func New[A Arguments](cmd ucan.Command, options ...Option) (*Capability[A], error) {
 	cfg := capabilityConfig{pol: policy.Policy{}}
 	for _, opt := range options {
-		opt(&cfg)
+		err := opt(&cfg)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return &Capability[A]{cmd, cfg.pol}
+	return &Capability[A]{cmd, cfg.pol}, nil
 }
 
 // Match an invocation against the capability, resulting in a match, which is

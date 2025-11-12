@@ -104,8 +104,10 @@ type Token interface {
 // connectives (and, or, not) which MUST take the form [operator, argument].
 //
 // https://github.com/ucan-wg/delegation/blob/main/README.md#policy
-type Statement = interface {
-	Operation() string
+type Statement interface {
+	Operator() string
+	Selector() string
+	Argument() any
 }
 
 // UCAN Delegation uses predicate logic statements extended with jq-inspired

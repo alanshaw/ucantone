@@ -10,8 +10,7 @@ import (
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy/builder"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/validator/capability"
 )
@@ -20,14 +19,15 @@ func TestCapabilityDefinition(t *testing.T) {
 	// Defining a capability with a CBOR marshalling struct type is useful because
 	// you get a typed Delegate and Invoke method (see below).
 	// i.e. the args parameter for those methods is the type you define here.
-	messageSendCapability := capability.New[*types.MessageSendArguments](
+	messageSendCapability, err := capability.New[*types.MessageSendArguments](
 		must(command.Parse("/message/send")),
 		capability.WithPolicy(
-			policy.Not(
-				policy.Equal(must(selector.Parse(".to")), []string{}),
-			),
+			must(builder.Build(builder.NotEqual(".to", []string{}))),
 		),
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	// mailer is an email service that can send emails
 	mailer, err := ed25519.Generate()
@@ -76,14 +76,15 @@ func TestCapabilityDefinitionGenericMap(t *testing.T) {
 	// calling Delegate or Invoke, since the args type is just the generic map
 	// i.e. no information about what keys can be added and no type information
 	// for values.
-	messageSendCapability := capability.New[*datamodel.Map](
+	messageSendCapability, err := capability.New[*datamodel.Map](
 		must(command.Parse("/message/send")),
 		capability.WithPolicy(
-			policy.Not(
-				policy.Equal(must(selector.Parse(".to")), []string{}),
-			),
+			must(builder.Build(builder.NotEqual(".to", []string{}))),
 		),
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	// mailer is an email service that can send emails
 	mailer, err := ed25519.Generate()

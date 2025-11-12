@@ -22,7 +22,7 @@ var _ = sort.Sort
 func (t *PolicyModel) MarshalCBOR(w io.Writer) error {
 	cw := cbg.NewCborWriter(w)
 
-	// t.Statements ([]typegen.Deferred) (slice)
+	// t.Statements ([]datamodel.StatementModel) (slice)
 	if len(t.Statements) > 8192 {
 		return xerrors.Errorf("Slice value in field t.Statements was too long")
 	}
@@ -47,7 +47,7 @@ func (t *PolicyModel) UnmarshalCBOR(r io.Reader) (err error) {
 	var extra uint64
 	_ = maj
 	_ = extra
-	// t.Statements ([]typegen.Deferred) (slice)
+	// t.Statements ([]datamodel.StatementModel) (slice)
 
 	maj, extra, err = cr.ReadHeader()
 	if err != nil {
@@ -63,7 +63,7 @@ func (t *PolicyModel) UnmarshalCBOR(r io.Reader) (err error) {
 	}
 
 	if extra > 0 {
-		t.Statements = make([]cbg.Deferred, extra)
+		t.Statements = make([]StatementModel, extra)
 	}
 
 	for i := 0; i < int(extra); i++ {
@@ -78,112 +78,11 @@ func (t *PolicyModel) UnmarshalCBOR(r io.Reader) (err error) {
 			{
 
 				if err := t.Statements[i].UnmarshalCBOR(cr); err != nil {
-					return xerrors.Errorf("failed to read deferred field: %w", err)
+					return xerrors.Errorf("unmarshaling t.Statements[i]: %w", err)
 				}
+
 			}
 
-		}
-	}
-	return nil
-}
-
-var lengthBufStatementModel = []byte{131}
-
-func (t *StatementModel) MarshalCBOR(w io.Writer) error {
-	if t == nil {
-		_, err := w.Write(cbg.CborNull)
-		return err
-	}
-
-	cw := cbg.NewCborWriter(w)
-
-	if _, err := cw.Write(lengthBufStatementModel); err != nil {
-		return err
-	}
-
-	// t.Op (string) (string)
-	if len(t.Op) > 8192 {
-		return xerrors.Errorf("Value in field t.Op was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.Op))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string(t.Op)); err != nil {
-		return err
-	}
-
-	// t.Arg0 (typegen.Deferred) (struct)
-	if err := t.Arg0.MarshalCBOR(cw); err != nil {
-		return err
-	}
-
-	// t.Arg1 (typegen.Deferred) (struct)
-	if err := t.Arg1.MarshalCBOR(cw); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (t *StatementModel) UnmarshalCBOR(r io.Reader) (err error) {
-	*t = StatementModel{}
-
-	cr := cbg.NewCborReader(r)
-
-	maj, extra, err := cr.ReadHeader()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-	}()
-
-	if maj != cbg.MajArray {
-		return fmt.Errorf("cbor input should be of type array")
-	}
-
-	if extra > 3 {
-		return fmt.Errorf("cbor input has too many fields %d > 3", extra)
-	}
-
-	if extra < 1 {
-		return fmt.Errorf("cbor input has too few fields %d < 1", extra)
-	}
-
-	fieldCount := extra
-
-	// t.Op (string) (string)
-
-	{
-		sval, err := cbg.ReadStringWithMax(cr, 8192)
-		if err != nil {
-			return err
-		}
-
-		t.Op = string(sval)
-	}
-	// t.Arg0 (typegen.Deferred) (struct)
-	if fieldCount < 2 {
-		return nil
-	}
-
-	{
-
-		if err := t.Arg0.UnmarshalCBOR(cr); err != nil {
-			return xerrors.Errorf("failed to read deferred field: %w", err)
-		}
-	}
-	// t.Arg1 (typegen.Deferred) (struct)
-	if fieldCount < 3 {
-		return nil
-	}
-
-	{
-
-		if err := t.Arg1.UnmarshalCBOR(cr); err != nil {
-			return xerrors.Errorf("failed to read deferred field: %w", err)
 		}
 	}
 	return nil
@@ -433,9 +332,19 @@ func (t *ConjunctionModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Statements (typegen.Deferred) (struct)
-	if err := t.Statements.MarshalCBOR(cw); err != nil {
+	// t.Statements ([]*datamodel.StatementModel) (slice)
+	if len(t.Statements) > 8192 {
+		return xerrors.Errorf("Slice value in field t.Statements was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Statements))); err != nil {
 		return err
+	}
+	for _, v := range t.Statements {
+		if err := v.MarshalCBOR(cw); err != nil {
+			return err
+		}
+
 	}
 	return nil
 }
@@ -473,12 +382,52 @@ func (t *ConjunctionModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 		t.Op = string(sval)
 	}
-	// t.Statements (typegen.Deferred) (struct)
+	// t.Statements ([]*datamodel.StatementModel) (slice)
 
-	{
+	maj, extra, err = cr.ReadHeader()
+	if err != nil {
+		return err
+	}
 
-		if err := t.Statements.UnmarshalCBOR(cr); err != nil {
-			return xerrors.Errorf("failed to read deferred field: %w", err)
+	if extra > 8192 {
+		return fmt.Errorf("t.Statements: array too large (%d)", extra)
+	}
+
+	if maj != cbg.MajArray {
+		return fmt.Errorf("expected cbor array")
+	}
+
+	if extra > 0 {
+		t.Statements = make([]*StatementModel, extra)
+	}
+
+	for i := 0; i < int(extra); i++ {
+		{
+			var maj byte
+			var extra uint64
+			var err error
+			_ = maj
+			_ = extra
+			_ = err
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.Statements[i] = new(StatementModel)
+					if err := t.Statements[i].UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.Statements[i] pointer: %w", err)
+					}
+				}
+
+			}
+
 		}
 	}
 	return nil
@@ -510,9 +459,19 @@ func (t *DisjunctionModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Statements (typegen.Deferred) (struct)
-	if err := t.Statements.MarshalCBOR(cw); err != nil {
+	// t.Statements ([]*datamodel.StatementModel) (slice)
+	if len(t.Statements) > 8192 {
+		return xerrors.Errorf("Slice value in field t.Statements was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Statements))); err != nil {
 		return err
+	}
+	for _, v := range t.Statements {
+		if err := v.MarshalCBOR(cw); err != nil {
+			return err
+		}
+
 	}
 	return nil
 }
@@ -550,12 +509,52 @@ func (t *DisjunctionModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 		t.Op = string(sval)
 	}
-	// t.Statements (typegen.Deferred) (struct)
+	// t.Statements ([]*datamodel.StatementModel) (slice)
 
-	{
+	maj, extra, err = cr.ReadHeader()
+	if err != nil {
+		return err
+	}
 
-		if err := t.Statements.UnmarshalCBOR(cr); err != nil {
-			return xerrors.Errorf("failed to read deferred field: %w", err)
+	if extra > 8192 {
+		return fmt.Errorf("t.Statements: array too large (%d)", extra)
+	}
+
+	if maj != cbg.MajArray {
+		return fmt.Errorf("expected cbor array")
+	}
+
+	if extra > 0 {
+		t.Statements = make([]*StatementModel, extra)
+	}
+
+	for i := 0; i < int(extra); i++ {
+		{
+			var maj byte
+			var extra uint64
+			var err error
+			_ = maj
+			_ = extra
+			_ = err
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.Statements[i] = new(StatementModel)
+					if err := t.Statements[i].UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.Statements[i] pointer: %w", err)
+					}
+				}
+
+			}
+
 		}
 	}
 	return nil
@@ -587,7 +586,7 @@ func (t *NegationModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Statement (typegen.Deferred) (struct)
+	// t.Statement (datamodel.StatementModel) (struct)
 	if err := t.Statement.MarshalCBOR(cw); err != nil {
 		return err
 	}
@@ -627,13 +626,24 @@ func (t *NegationModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 		t.Op = string(sval)
 	}
-	// t.Statement (typegen.Deferred) (struct)
+	// t.Statement (datamodel.StatementModel) (struct)
 
 	{
 
-		if err := t.Statement.UnmarshalCBOR(cr); err != nil {
-			return xerrors.Errorf("failed to read deferred field: %w", err)
+		b, err := cr.ReadByte()
+		if err != nil {
+			return err
 		}
+		if b != cbg.CborNull[0] {
+			if err := cr.UnreadByte(); err != nil {
+				return err
+			}
+			t.Statement = new(StatementModel)
+			if err := t.Statement.UnmarshalCBOR(cr); err != nil {
+				return xerrors.Errorf("unmarshaling t.Statement pointer: %w", err)
+			}
+		}
+
 	}
 	return nil
 }
@@ -676,9 +686,19 @@ func (t *QuantificationModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Statements (typegen.Deferred) (struct)
-	if err := t.Statements.MarshalCBOR(cw); err != nil {
+	// t.Statements ([]*datamodel.StatementModel) (slice)
+	if len(t.Statements) > 8192 {
+		return xerrors.Errorf("Slice value in field t.Statements was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Statements))); err != nil {
 		return err
+	}
+	for _, v := range t.Statements {
+		if err := v.MarshalCBOR(cw); err != nil {
+			return err
+		}
+
 	}
 	return nil
 }
@@ -726,12 +746,52 @@ func (t *QuantificationModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 		t.Selector = string(sval)
 	}
-	// t.Statements (typegen.Deferred) (struct)
+	// t.Statements ([]*datamodel.StatementModel) (slice)
 
-	{
+	maj, extra, err = cr.ReadHeader()
+	if err != nil {
+		return err
+	}
 
-		if err := t.Statements.UnmarshalCBOR(cr); err != nil {
-			return xerrors.Errorf("failed to read deferred field: %w", err)
+	if extra > 8192 {
+		return fmt.Errorf("t.Statements: array too large (%d)", extra)
+	}
+
+	if maj != cbg.MajArray {
+		return fmt.Errorf("expected cbor array")
+	}
+
+	if extra > 0 {
+		t.Statements = make([]*StatementModel, extra)
+	}
+
+	for i := 0; i < int(extra); i++ {
+		{
+			var maj byte
+			var extra uint64
+			var err error
+			_ = maj
+			_ = extra
+			_ = err
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.Statements[i] = new(StatementModel)
+					if err := t.Statements[i].UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.Statements[i] pointer: %w", err)
+					}
+				}
+
+			}
+
 		}
 	}
 	return nil

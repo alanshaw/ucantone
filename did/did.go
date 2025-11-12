@@ -1,11 +1,12 @@
 package did
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
 
+	jsg "github.com/alanshaw/dag-json-gen"
 	mbase "github.com/multiformats/go-multibase"
 	varint "github.com/multiformats/go-varint"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -43,27 +44,16 @@ func (d DID) String() string {
 }
 
 func (d DID) MarshalJSON() ([]byte, error) {
-	if d.str == "" {
-		return json.Marshal(nil)
+	var buf bytes.Buffer
+	err := d.MarshalDagJSON(&buf)
+	if err != nil {
+		return nil, err
 	}
-	return json.Marshal(d.str)
+	return buf.Bytes(), nil
 }
 
 func (d *DID) UnmarshalJSON(b []byte) error {
-	var str string
-	err := json.Unmarshal(b, &str)
-	if err != nil {
-		return fmt.Errorf("parsing string: %w", err)
-	}
-	if str == "" {
-		return nil
-	}
-	parsed, err := Parse(str)
-	if err != nil {
-		return fmt.Errorf("parsing DID: %w", err)
-	}
-	*d = parsed
-	return nil
+	return d.UnmarshalDagJSON(bytes.NewReader(b))
 }
 
 func (d DID) MarshalCBOR(w io.Writer) error {
@@ -99,6 +89,28 @@ func (d *DID) UnmarshalCBOR(r io.Reader) error {
 		}
 		*d = parsed
 	}
+	return nil
+}
+
+func (d DID) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if d.str == "" {
+		return jw.WriteNull()
+	}
+	return jw.WriteString(d.str)
+}
+
+func (d *DID) UnmarshalDagJSON(r io.Reader) error {
+	jr := jsg.NewDagJsonReader(r)
+	str, err := jr.ReadStringOrNull(jsg.MaxLength)
+	if err != nil {
+		return err
+	}
+	parsed, err := Parse(*str)
+	if err != nil {
+		return err
+	}
+	*d = parsed
 	return nil
 }
 

@@ -175,7 +175,10 @@ func Delegate(
 ) (*Delegation, error) {
 	cfg := delegationConfig{}
 	for _, opt := range options {
-		opt(&cfg)
+		err := opt(&cfg)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if issuer.SignatureCode() != ed25519.Code {
