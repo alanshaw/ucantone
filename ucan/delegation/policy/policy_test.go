@@ -24,3 +24,12 @@ func TestRoundtripCBOR(t *testing.T) {
 	require.Len(t, decoded.Statements(), 1)
 	require.Equal(t, policy.OpEqual, decoded.Statements()[0].Operator())
 }
+
+func TestParse(t *testing.T) {
+	initial, err := policy.Parse(`[
+		["==", ".foo", "bar"],
+		["like", ".baz", "boz"]
+	]`)
+	require.NoError(t, err)
+	require.Len(t, initial.Statements(), 2)
+}

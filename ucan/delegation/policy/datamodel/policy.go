@@ -221,7 +221,12 @@ func (t *StatementModel) MarshalDagJSON(w io.Writer) error {
 func (t *StatementModel) UnmarshalDagJSON(r io.Reader) error {
 	*t = StatementModel{}
 
-	cr := jsg.NewDagJsonReader(r)
+	def := jsg.Deferred{}
+	if err := def.UnmarshalDagJSON(r); err != nil {
+		return err
+	}
+
+	cr := jsg.NewDagJsonReader(bytes.NewReader(def.Raw))
 
 	if err := cr.ReadArrayOpen(); err != nil {
 		return err
@@ -235,70 +240,40 @@ func (t *StatementModel) UnmarshalDagJSON(r io.Reader) error {
 
 	switch op {
 	case "==", "!=", ">", ">=", "<", "<=":
-		// TODO: can probably do this upfront for each type
-		b, err := dagJSONEncodeStatementBegin(op)
-		if err != nil {
-			return err
-		}
 		m := ComparisonModel{}
-		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+		if err := m.UnmarshalDagJSON(bytes.NewReader(def.Raw)); err != nil {
 			return err
 		}
 		t.Selector = m.Selector
 		t.Value = m.Value
 	case "and":
-		// TODO: can probably do this upfront for each type
-		b, err := dagJSONEncodeStatementBegin(op)
-		if err != nil {
-			return err
-		}
 		m := ConjunctionModel{}
-		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+		if err := m.UnmarshalDagJSON(bytes.NewReader(def.Raw)); err != nil {
 			return err
 		}
 		t.Statements = m.Statements
 	case "or":
-		// TODO: can probably do this upfront for each type
-		b, err := dagJSONEncodeStatementBegin(op)
-		if err != nil {
-			return err
-		}
 		m := DisjunctionModel{}
-		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+		if err := m.UnmarshalDagJSON(bytes.NewReader(def.Raw)); err != nil {
 			return err
 		}
 		t.Statements = m.Statements
 	case "not":
-		// TODO: can probably do this upfront for each type
-		b, err := dagJSONEncodeStatementBegin(op)
-		if err != nil {
-			return err
-		}
 		m := NegationModel{}
-		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+		if err := m.UnmarshalDagJSON(bytes.NewReader(def.Raw)); err != nil {
 			return err
 		}
 		t.Statement = m.Statement
 	case "like":
-		// TODO: can probably do this upfront for each type
-		b, err := dagJSONEncodeStatementBegin(op)
-		if err != nil {
-			return err
-		}
 		m := WildcardModel{}
-		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+		if err := m.UnmarshalDagJSON(bytes.NewReader(def.Raw)); err != nil {
 			return err
 		}
 		t.Selector = m.Selector
 		t.Pattern = m.Pattern
 	case "all", "any":
-		// TODO: can probably do this upfront for each type
-		b, err := dagJSONEncodeStatementBegin(op)
-		if err != nil {
-			return err
-		}
 		m := QuantificationModel{}
-		if err := m.UnmarshalDagJSON(io.MultiReader(bytes.NewReader(b), cr)); err != nil {
+		if err := m.UnmarshalDagJSON(bytes.NewReader(def.Raw)); err != nil {
 			return err
 		}
 		t.Selector = m.Selector
@@ -319,18 +294,6 @@ func cborEncodeStatementBegin(numFields uint64, op string) ([]byte, error) {
 		return nil, err
 	}
 	if _, err := cw.WriteString(op); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func dagJSONEncodeStatementBegin(op string) ([]byte, error) {
-	var buf bytes.Buffer
-	jw := jsg.NewDagJsonWriter(&buf)
-	if err := jw.WriteArrayOpen(); err != nil {
-		return nil, err
-	}
-	if err := jw.WriteString(op); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil

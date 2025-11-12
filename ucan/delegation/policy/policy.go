@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
 
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"
@@ -400,4 +401,13 @@ func toStatement(stmt ucan.Statement) (Statement, error) {
 		return Statement{}, fmt.Errorf("unknown statement: %s", stmt.Operator())
 	}
 	return newStatement(model)
+}
+
+func Parse(input string) (Policy, error) {
+	pol := Policy{}
+	err := pol.UnmarshalDagJSON(strings.NewReader(input))
+	if err != nil {
+		return Policy{}, err
+	}
+	return pol, nil
 }
