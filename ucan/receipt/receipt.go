@@ -1,7 +1,6 @@
 package receipt
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	rdm "github.com/alanshaw/ucantone/ucan/receipt/datamodel"
 	cid "github.com/ipfs/go-cid"
-	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 const Command = command.Command("/ucan/assert/receipt")
@@ -63,21 +61,11 @@ func Decode(data []byte) (*Receipt, error) {
 		return nil, fmt.Errorf("decoding receipt arguments: %w", err)
 	}
 
-	var out result.Result[any, any]
+	var out result.Result[ipld.Any, ipld.Any]
 	if receiptArgs.Out.Ok != nil {
-		var a datamodel.Any
-		err := a.UnmarshalCBOR(bytes.NewReader(receiptArgs.Out.Ok.Raw))
-		if err != nil {
-			return nil, fmt.Errorf("unmarshaling ok result CBOR: %w", err)
-		}
-		out = result.OK[any, any](a.Value)
+		out = result.OK[ipld.Any, ipld.Any](receiptArgs.Out.Ok.Value)
 	} else if receiptArgs.Out.Err != nil {
-		var a datamodel.Any
-		err := a.UnmarshalCBOR(bytes.NewReader(receiptArgs.Out.Err.Raw))
-		if err != nil {
-			return nil, fmt.Errorf("unmarshaling error result CBOR: %w", err)
-		}
-		out = result.Error[any](a.Value)
+		out = result.Error[ipld.Any](receiptArgs.Out.Err.Value)
 	} else {
 		return nil, errors.New("invalid result, neither ok nor error")
 	}
@@ -96,20 +84,12 @@ func Issue[O, X ipld.Any](
 	outModel, err := result.MatchResultR2(
 		out,
 		func(o O) (rsdm.ResultModel, error) {
-			var b bytes.Buffer
-			err := datamodel.NewAny(o).MarshalCBOR(&b)
-			if err != nil {
-				return rsdm.ResultModel{}, fmt.Errorf("marshaling result ok value: %w", err)
-			}
-			return rsdm.ResultModel{Ok: &cbg.Deferred{Raw: b.Bytes()}}, nil
+			a := datamodel.NewAny(o)
+			return rsdm.ResultModel{Ok: a}, nil
 		},
 		func(x X) (rsdm.ResultModel, error) {
-			var b bytes.Buffer
-			err := datamodel.NewAny(x).MarshalCBOR(&b)
-			if err != nil {
-				return rsdm.ResultModel{}, fmt.Errorf("marshaling result error value: %w", err)
-			}
-			return rsdm.ResultModel{Err: &cbg.Deferred{Raw: b.Bytes()}}, nil
+			a := datamodel.NewAny(x)
+			return rsdm.ResultModel{Err: a}, nil
 		},
 	)
 	if err != nil {

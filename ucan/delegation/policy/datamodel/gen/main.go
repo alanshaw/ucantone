@@ -18,7 +18,6 @@ func main() {
 	); err != nil {
 		panic(err)
 	}
-
 	if err := jsg.WriteTupleEncodersToFile("../dag_json_gen.go", "datamodel",
 		pdm.PolicyModel{},
 		pdm.ComparisonModel{},

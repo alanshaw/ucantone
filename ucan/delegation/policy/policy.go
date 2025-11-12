@@ -132,8 +132,6 @@ func newStatement(m pdm.StatementModel) (Statement, error) {
 			return Statement{}, fmt.Errorf(`parsing selector for "%s" operation: %w`, m.Op, err)
 		}
 		s.selector = sel
-	default:
-		return Statement{}, fmt.Errorf("unknown statement: %s", m.Op)
 	}
 	if m.Op == OpLike {
 		g, err := glob.Compile(m.Pattern)

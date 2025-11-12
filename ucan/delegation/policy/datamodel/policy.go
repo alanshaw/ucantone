@@ -11,7 +11,7 @@ import (
 )
 
 type PolicyModel struct {
-	Statements []StatementModel `cborgen:"transparent"`
+	Statements []StatementModel `cborgen:"transparent" dagjsongen:"transparent"`
 }
 
 type StatementModel struct {

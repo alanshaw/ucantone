@@ -8,6 +8,7 @@ import (
 	"math"
 	"sort"
 
+	datamodel "github.com/alanshaw/ucantone/ipld/datamodel"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
@@ -39,7 +40,7 @@ func (t *ResultModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Ok (typegen.Deferred) (struct)
+	// t.Ok (datamodel.Any) (struct)
 	if t.Ok != nil {
 
 		if len("ok") > 8192 {
@@ -58,7 +59,7 @@ func (t *ResultModel) MarshalCBOR(w io.Writer) error {
 		}
 	}
 
-	// t.Err (typegen.Deferred) (struct)
+	// t.Err (datamodel.Any) (struct)
 	if t.Err != nil {
 
 		if len("error") > 8192 {
@@ -120,27 +121,45 @@ func (t *ResultModel) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Ok (typegen.Deferred) (struct)
+		// t.Ok (datamodel.Any) (struct)
 		case "ok":
 
 			{
 
-				t.Ok = new(cbg.Deferred)
-
-				if err := t.Ok.UnmarshalCBOR(cr); err != nil {
-					return xerrors.Errorf("failed to read deferred field: %w", err)
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
 				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.Ok = new(datamodel.Any)
+					if err := t.Ok.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.Ok pointer: %w", err)
+					}
+				}
+
 			}
-			// t.Err (typegen.Deferred) (struct)
+			// t.Err (datamodel.Any) (struct)
 		case "error":
 
 			{
 
-				t.Err = new(cbg.Deferred)
-
-				if err := t.Err.UnmarshalCBOR(cr); err != nil {
-					return xerrors.Errorf("failed to read deferred field: %w", err)
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
 				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.Err = new(datamodel.Any)
+					if err := t.Err.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.Err pointer: %w", err)
+					}
+				}
+
 			}
 
 		default:

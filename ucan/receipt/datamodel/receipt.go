@@ -7,8 +7,8 @@ import (
 
 type ArgsModel struct {
 	// Ran is the CID of the executed task the receipt is for.
-	Ran cid.Cid `cborgen:"ran"`
+	Ran cid.Cid `cborgen:"ran" dagjsongen:"ran"`
 	// Out is the attested result of the execution of the task.
-	Out rdm.ResultModel `cborgen:"out"`
+	Out rdm.ResultModel `cborgen:"out" dagjsongen:"out"`
 	// TODO: add Run
 }

@@ -21,13 +21,6 @@ var _ = errors.Is
 
 func (t *PolicyModel) MarshalDagJSON(w io.Writer) error {
 	jw := jsg.NewDagJsonWriter(w)
-	if t == nil {
-		err := jw.WriteNull()
-		return err
-	}
-	if err := jw.WriteArrayOpen(); err != nil {
-		return fmt.Errorf("PolicyModel: %w", err)
-	}
 
 	// t.Statements ([]datamodel.StatementModel) (slice)
 	if len(t.Statements) > 8192 {
@@ -51,9 +44,6 @@ func (t *PolicyModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("t.Statements: %w", err)
 	}
 
-	if err := jw.WriteArrayClose(); err != nil {
-		return fmt.Errorf("PolicyModel: %w", err)
-	}
 	return nil
 }
 
@@ -61,68 +51,47 @@ func (t *PolicyModel) UnmarshalDagJSON(r io.Reader) (err error) {
 	*t = PolicyModel{}
 
 	jr := jsg.NewDagJsonReader(r)
-	defer func() {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
+
+	// t.Statements ([]datamodel.StatementModel) (slice)
+
+	{
+
+		if err := jr.ReadArrayOpen(); err != nil {
+			return fmt.Errorf("t.Statements: %w", err)
 		}
-	}()
-	if err := jr.ReadArrayOpen(); err != nil {
-		return fmt.Errorf("PolicyModel: %w", err)
-	}
-	close, err := jr.PeekArrayClose()
-	if err != nil {
-		return fmt.Errorf("PolicyModel: %w", err)
-	}
-	if close {
-		if err := jr.ReadArrayClose(); err != nil {
-			return fmt.Errorf("PolicyModel: %w", err)
+
+		close, err := jr.PeekArrayClose()
+		if err != nil {
+			return fmt.Errorf("t.Statements: %w", err)
 		}
-	} else {
-
-		// t.Statements ([]datamodel.StatementModel) (slice)
-
-		{
-
-			if err := jr.ReadArrayOpen(); err != nil {
+		if close {
+			if err := jr.ReadArrayClose(); err != nil {
 				return fmt.Errorf("t.Statements: %w", err)
 			}
 
-			close, err := jr.PeekArrayClose()
-			if err != nil {
-				return fmt.Errorf("t.Statements: %w", err)
-			}
-			if close {
-				if err := jr.ReadArrayClose(); err != nil {
+		} else {
+			for i := 0; i < 8192; i++ {
+				item := make([]StatementModel, 1)
+
+				if err := item[0].UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling item[0]: %w", err)
+				}
+
+				t.Statements = append(t.Statements, item[0])
+
+				close, err := jr.ReadArrayCloseOrComma()
+				if err != nil {
 					return fmt.Errorf("t.Statements: %w", err)
 				}
-
-			} else {
-				for i := 0; i < 8192; i++ {
-					item := make([]StatementModel, 1)
-
-					if err := item[0].UnmarshalDagJSON(jr); err != nil {
-						return fmt.Errorf("unmarshaling item[0]: %w", err)
-					}
-
-					t.Statements = append(t.Statements, item[0])
-
-					close, err := jr.ReadArrayCloseOrComma()
-					if err != nil {
-						return fmt.Errorf("t.Statements: %w", err)
-					}
-					if close {
-						break
-					}
-					if i == 8192-1 {
-						return fmt.Errorf("t.Statements: slice too large")
-					}
+				if close {
+					break
+				}
+				if i == 8192-1 {
+					return fmt.Errorf("t.Statements: slice too large")
 				}
 			}
+		}
 
-		}
-		if err := jr.ReadArrayClose(); err != nil {
-			return fmt.Errorf("PolicyModel: %w", err)
-		}
 	}
 	return nil
 }

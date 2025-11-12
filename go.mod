@@ -3,7 +3,7 @@ module github.com/alanshaw/ucantone
 go 1.25
 
 require (
-	github.com/alanshaw/dag-json-gen v0.0.2
+	github.com/alanshaw/dag-json-gen v0.0.3
 	github.com/gobwas/glob v0.2.3
 	github.com/ipfs/go-cid v0.5.0
 	github.com/multiformats/go-multibase v0.2.0

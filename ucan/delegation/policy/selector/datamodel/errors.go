@@ -1,11 +1,11 @@
 package datamodel
 
 type ParseErrorModel struct {
-	Name    string `cborgen:"name"`
-	Message string `cborgen:"message"`
-	Source  string `cborgen:"source"`
-	Column  int64  `cborgen:"column"`
-	Token   string `cborgen:"token"`
+	Name    string `cborgen:"name" dagjsongen:"name"`
+	Message string `cborgen:"message" dagjsongen:"message"`
+	Source  string `cborgen:"source" dagjsongen:"source"`
+	Column  int64  `cborgen:"column" dagjsongen:"column"`
+	Token   string `cborgen:"token" dagjsongen:"token"`
 }
 
 func (pe ParseErrorModel) Error() string {
@@ -15,9 +15,9 @@ func (pe ParseErrorModel) Error() string {
 var _ error = (*ParseErrorModel)(nil)
 
 type ResolutionErrorModel struct {
-	Name    string   `cborgen:"name"`
-	Message string   `cborgen:"message"`
-	At      []string `cborgen:"at"`
+	Name    string   `cborgen:"name" dagjsongen:"name"`
+	Message string   `cborgen:"message" dagjsongen:"message"`
+	At      []string `cborgen:"at" dagjsongen:"at"`
 }
 
 func (u ResolutionErrorModel) Error() string {

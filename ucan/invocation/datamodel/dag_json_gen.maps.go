@@ -10,6 +10,7 @@ import (
 	"sort"
 
 	jsg "github.com/alanshaw/dag-json-gen"
+	did "github.com/alanshaw/ucantone/did"
 	datamodel "github.com/alanshaw/ucantone/ipld/datamodel"
 	command "github.com/alanshaw/ucantone/ucan/command"
 	cid "github.com/ipfs/go-cid"
@@ -20,6 +21,216 @@ var _ = math.E
 var _ = sort.Sort
 var _ = errors.Is
 
+func (t *TaskModel) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+	written := 0
+
+	// t.Args (datamodel.Map) (struct)
+	if len("args") > 8192 {
+		return fmt.Errorf("String in field \"args\" was too long")
+	}
+	if err := jw.WriteString(string("args")); err != nil {
+		return fmt.Errorf("\"args\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.Args.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("t.Args: %w", err)
+	}
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Cmd (command.Command) (string)
+	if len("cmd") > 8192 {
+		return fmt.Errorf("String in field \"cmd\" was too long")
+	}
+	if err := jw.WriteString(string("cmd")); err != nil {
+		return fmt.Errorf("\"cmd\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Cmd) > 8192 {
+		return fmt.Errorf("String in field t.Cmd was too long")
+	}
+	if err := jw.WriteString(string(t.Cmd)); err != nil {
+		return fmt.Errorf("t.Cmd: %w", err)
+	}
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Nonce ([]uint8) (slice)
+	if len("nonce") > 8192 {
+		return fmt.Errorf("String in field \"nonce\" was too long")
+	}
+	if err := jw.WriteString(string("nonce")); err != nil {
+		return fmt.Errorf("\"nonce\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Nonce) > 2097152 {
+		return fmt.Errorf("Byte array in field t.Nonce was too long")
+	}
+
+	if err := jw.WriteBytes(t.Nonce); err != nil {
+		return fmt.Errorf("t.Nonce: %w", err)
+	}
+
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Sub (did.DID) (struct)
+	if len("sub") > 8192 {
+		return fmt.Errorf("String in field \"sub\" was too long")
+	}
+	if err := jw.WriteString(string("sub")); err != nil {
+		return fmt.Errorf("\"sub\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.Sub.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("t.Sub: %w", err)
+	}
+	written++
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *TaskModel) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = TaskModel{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("TaskModel: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("TaskModel: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("TaskModel: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("TaskModel: string too large")
+				}
+				return fmt.Errorf("TaskModel: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("TaskModel: %w", err)
+			}
+			switch name {
+
+			// t.Args (datamodel.Map) (struct)
+			case "args":
+
+				{
+					null, err := jr.PeekNull()
+					if err != nil {
+						return fmt.Errorf("t.Args: %w", err)
+					}
+					if null {
+						if err := jr.ReadNull(); err != nil {
+							return fmt.Errorf("t.Args: %w", err)
+						}
+					} else {
+						t.Args = new(datamodel.Map)
+						if err := t.Args.UnmarshalDagJSON(jr); err != nil {
+							return fmt.Errorf("unmarshaling t.Args pointer: %w", err)
+						}
+					}
+				}
+
+				// t.Cmd (command.Command) (string)
+			case "cmd":
+				{
+					sval, err := jr.ReadString(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("t.Cmd: string too long")
+						}
+						return fmt.Errorf("t.Cmd: %w", err)
+					}
+					t.Cmd = command.Command(sval)
+				}
+
+				// t.Nonce ([]uint8) (slice)
+			case "nonce":
+
+				{
+					bval, err := jr.ReadBytes(2097152)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("t.Nonce: byte array too large")
+						}
+						return fmt.Errorf("t.Nonce: %w", err)
+					}
+					if len(bval) > 0 {
+						t.Nonce = []uint8(bval)
+					}
+				}
+
+				// t.Sub (did.DID) (struct)
+			case "sub":
+
+				if err := t.Sub.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Sub: %w", err)
+				}
+
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("TaskModel: ignoring field %s: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("TaskModel: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("TaskModel: map too large")
+			}
+		}
+	}
+
+	return nil
+}
 func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 	jw := jsg.NewDagJsonWriter(w)
 	if t == nil {
@@ -31,20 +242,76 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 	}
 	written := 0
 
-	// t.Aud (did.DID) (struct)
-	if len("aud") > 8192 {
-		return fmt.Errorf("String in field \"aud\" was too long")
+	// t.Args (datamodel.Map) (struct)
+	if len("args") > 8192 {
+		return fmt.Errorf("String in field \"args\" was too long")
 	}
-	if err := jw.WriteString(string("aud")); err != nil {
-		return fmt.Errorf("\"aud\": %w", err)
+	if err := jw.WriteString(string("args")); err != nil {
+		return fmt.Errorf("\"args\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
-	if err := t.Aud.MarshalDagJSON(jw); err != nil {
-		return fmt.Errorf("t.Aud: %w", err)
+	if err := t.Args.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("t.Args: %w", err)
 	}
 	written++
+	if t.Aud != nil {
+		if written > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// t.Aud (did.DID) (struct)
+	if t.Aud != nil {
+		if len("aud") > 8192 {
+			return fmt.Errorf("String in field \"aud\" was too long")
+		}
+		if err := jw.WriteString(string("aud")); err != nil {
+			return fmt.Errorf("\"aud\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+		if err := t.Aud.MarshalDagJSON(jw); err != nil {
+			return fmt.Errorf("t.Aud: %w", err)
+		}
+		written++
+	}
+	if t.Cause != nil {
+		if written > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// t.Cause (cid.Cid) (struct)
+	if t.Cause != nil {
+		if len("cause") > 8192 {
+			return fmt.Errorf("String in field \"cause\" was too long")
+		}
+		if err := jw.WriteString(string("cause")); err != nil {
+			return fmt.Errorf("\"cause\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+
+		if t.Cause == nil {
+			if err := jw.WriteNull(); err != nil {
+				return fmt.Errorf("t.Cause: %w", err)
+			}
+		} else {
+			if err := jw.WriteCid(*t.Cause); err != nil {
+				return fmt.Errorf("t.Cause: %w", err)
+			}
+		}
+
+		written++
+	}
 	if written > 0 {
 		if err := jw.WriteComma(); err != nil {
 			return err
@@ -96,6 +363,38 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 	}
 
 	written++
+	if t.Iat != nil {
+		if written > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// t.Iat (uint64) (uint64)
+	if t.Iat != nil {
+		if len("iat") > 8192 {
+			return fmt.Errorf("String in field \"iat\" was too long")
+		}
+		if err := jw.WriteString(string("iat")); err != nil {
+			return fmt.Errorf("\"iat\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+
+		if t.Iat == nil {
+			if err := jw.WriteNull(); err != nil {
+				return fmt.Errorf("t.Iat: %w", err)
+			}
+		} else {
+			if err := jw.WriteUint64(uint64(*t.Iat)); err != nil {
+				return fmt.Errorf("t.Iat: %w", err)
+			}
+		}
+
+		written++
+	}
 	if written > 0 {
 		if err := jw.WriteComma(); err != nil {
 			return err
@@ -140,38 +439,6 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 		}
 		written++
 	}
-	if t.Nbf != nil {
-		if written > 0 {
-			if err := jw.WriteComma(); err != nil {
-				return err
-			}
-		}
-	}
-
-	// t.Nbf (uint64) (uint64)
-	if t.Nbf != nil {
-		if len("nbf") > 8192 {
-			return fmt.Errorf("String in field \"nbf\" was too long")
-		}
-		if err := jw.WriteString(string("nbf")); err != nil {
-			return fmt.Errorf("\"nbf\": %w", err)
-		}
-		if err := jw.WriteObjectColon(); err != nil {
-			return err
-		}
-
-		if t.Nbf == nil {
-			if err := jw.WriteNull(); err != nil {
-				return fmt.Errorf("t.Nbf: %w", err)
-			}
-		} else {
-			if err := jw.WriteUint64(uint64(*t.Nbf)); err != nil {
-				return fmt.Errorf("t.Nbf: %w", err)
-			}
-		}
-
-		written++
-	}
 	if written > 0 {
 		if err := jw.WriteComma(); err != nil {
 			return err
@@ -203,19 +470,39 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Pol (policy.Policy) (struct)
-	if len("pol") > 8192 {
-		return fmt.Errorf("String in field \"pol\" was too long")
+	// t.Prf ([]cid.Cid) (slice)
+	if len("prf") > 8192 {
+		return fmt.Errorf("String in field \"prf\" was too long")
 	}
-	if err := jw.WriteString(string("pol")); err != nil {
-		return fmt.Errorf("\"pol\": %w", err)
+	if err := jw.WriteString(string("prf")); err != nil {
+		return fmt.Errorf("\"prf\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
-	if err := t.Pol.MarshalDagJSON(jw); err != nil {
-		return fmt.Errorf("t.Pol: %w", err)
+	if len(t.Prf) > 8192 {
+		return fmt.Errorf("Slice value in field t.Prf was too long")
 	}
+
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("t.Prf: %w", err)
+	}
+	for i, v := range t.Prf {
+		if i > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return fmt.Errorf("t.Prf: %w", err)
+			}
+		}
+
+		if err := jw.WriteCid(v); err != nil {
+			return fmt.Errorf("v: %w", err)
+		}
+
+	}
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("t.Prf: %w", err)
+	}
+
 	written++
 	if written > 0 {
 		if err := jw.WriteComma(); err != nil {
@@ -276,11 +563,56 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Aud (did.DID) (struct)
+			// t.Args (datamodel.Map) (struct)
+			case "args":
+
+				{
+					null, err := jr.PeekNull()
+					if err != nil {
+						return fmt.Errorf("t.Args: %w", err)
+					}
+					if null {
+						if err := jr.ReadNull(); err != nil {
+							return fmt.Errorf("t.Args: %w", err)
+						}
+					} else {
+						t.Args = new(datamodel.Map)
+						if err := t.Args.UnmarshalDagJSON(jr); err != nil {
+							return fmt.Errorf("unmarshaling t.Args pointer: %w", err)
+						}
+					}
+				}
+
+				// t.Aud (did.DID) (struct)
 			case "aud":
 
-				if err := t.Aud.UnmarshalDagJSON(jr); err != nil {
-					return fmt.Errorf("unmarshaling t.Aud: %w", err)
+				{
+					null, err := jr.PeekNull()
+					if err != nil {
+						return fmt.Errorf("t.Aud: %w", err)
+					}
+					if null {
+						if err := jr.ReadNull(); err != nil {
+							return fmt.Errorf("t.Aud: %w", err)
+						}
+					} else {
+						t.Aud = new(did.DID)
+						if err := t.Aud.UnmarshalDagJSON(jr); err != nil {
+							return fmt.Errorf("unmarshaling t.Aud pointer: %w", err)
+						}
+					}
+				}
+
+				// t.Cause (cid.Cid) (struct)
+			case "cause":
+				{
+
+					c, err := jr.ReadCidOrNull()
+					if err != nil {
+						return fmt.Errorf("t.Cause: %w", err)
+					}
+					t.Cause = c
+
 				}
 
 				// t.Cmd (command.Command) (string)
@@ -307,6 +639,21 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalDagJSON(r io.Reader) (err error) {
 					if nval != nil {
 						typed := uint64(*nval)
 						t.Exp = &typed
+					}
+
+				}
+
+				// t.Iat (uint64) (uint64)
+			case "iat":
+				{
+
+					nval, err := jr.ReadNumberAsUint64OrNull()
+					if err != nil {
+						return fmt.Errorf("t.Iat: %w", err)
+					}
+					if nval != nil {
+						typed := uint64(*nval)
+						t.Iat = &typed
 					}
 
 				}
@@ -338,21 +685,6 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalDagJSON(r io.Reader) (err error) {
 					}
 				}
 
-				// t.Nbf (uint64) (uint64)
-			case "nbf":
-				{
-
-					nval, err := jr.ReadNumberAsUint64OrNull()
-					if err != nil {
-						return fmt.Errorf("t.Nbf: %w", err)
-					}
-					if nval != nil {
-						typed := uint64(*nval)
-						t.Nbf = &typed
-					}
-
-				}
-
 				// t.Nonce ([]uint8) (slice)
 			case "nonce":
 
@@ -369,11 +701,50 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalDagJSON(r io.Reader) (err error) {
 					}
 				}
 
-				// t.Pol (policy.Policy) (struct)
-			case "pol":
+				// t.Prf ([]cid.Cid) (slice)
+			case "prf":
+				{
 
-				if err := t.Pol.UnmarshalDagJSON(jr); err != nil {
-					return fmt.Errorf("unmarshaling t.Pol: %w", err)
+					if err := jr.ReadArrayOpen(); err != nil {
+						return fmt.Errorf("t.Prf: %w", err)
+					}
+
+					close, err := jr.PeekArrayClose()
+					if err != nil {
+						return fmt.Errorf("t.Prf: %w", err)
+					}
+					if close {
+						if err := jr.ReadArrayClose(); err != nil {
+							return fmt.Errorf("t.Prf: %w", err)
+						}
+
+					} else {
+						for i := 0; i < 8192; i++ {
+							item := make([]cid.Cid, 1)
+							{
+
+								c, err := jr.ReadCid()
+								if err != nil {
+									return fmt.Errorf("item[0]: %w", err)
+								}
+								item[0] = c
+
+							}
+							t.Prf = append(t.Prf, item[0])
+
+							close, err := jr.ReadArrayCloseOrComma()
+							if err != nil {
+								return fmt.Errorf("t.Prf: %w", err)
+							}
+							if close {
+								break
+							}
+							if i == 8192-1 {
+								return fmt.Errorf("t.Prf: slice too large")
+							}
+						}
+					}
+
 				}
 
 				// t.Sub (did.DID) (struct)
@@ -445,11 +816,11 @@ func (t *SigPayloadModel) MarshalDagJSON(w io.Writer) error {
 
 	// t.TokenPayload1_0_0_rc1 (datamodel.TokenPayloadModel1_0_0_rc1) (struct)
 	if t.TokenPayload1_0_0_rc1 != nil {
-		if len("ucan/dlg@1.0.0-rc.1") > 8192 {
-			return fmt.Errorf("String in field \"ucan/dlg@1.0.0-rc.1\" was too long")
+		if len("ucan/inv@1.0.0-rc.1") > 8192 {
+			return fmt.Errorf("String in field \"ucan/inv@1.0.0-rc.1\" was too long")
 		}
-		if err := jw.WriteString(string("ucan/dlg@1.0.0-rc.1")); err != nil {
-			return fmt.Errorf("\"ucan/dlg@1.0.0-rc.1\": %w", err)
+		if err := jw.WriteString(string("ucan/inv@1.0.0-rc.1")); err != nil {
+			return fmt.Errorf("\"ucan/inv@1.0.0-rc.1\": %w", err)
 		}
 		if err := jw.WriteObjectColon(); err != nil {
 			return err
@@ -515,7 +886,7 @@ func (t *SigPayloadModel) UnmarshalDagJSON(r io.Reader) (err error) {
 				}
 
 				// t.TokenPayload1_0_0_rc1 (datamodel.TokenPayloadModel1_0_0_rc1) (struct)
-			case "ucan/dlg@1.0.0-rc.1":
+			case "ucan/inv@1.0.0-rc.1":
 
 				{
 					null, err := jr.PeekNull()
