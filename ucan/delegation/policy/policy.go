@@ -53,6 +53,21 @@ func New(statements ...ucan.Statement) (Policy, error) {
 	return Policy{stmts}, nil
 }
 
+type StatementBuilderFunc func() (Statement, error)
+
+// Build a policy from the passed policy builder functions.
+func Build(statements ...StatementBuilderFunc) (Policy, error) {
+	stmts := make([]Statement, 0, len(statements))
+	for _, ctor := range statements {
+		s, err := ctor()
+		if err != nil {
+			return Policy{}, err
+		}
+		stmts = append(stmts, s)
+	}
+	return Policy{stmts}, nil
+}
+
 // A Policy is always given as an array of predicates. This top-level array is
 // implicitly treated as a logical "and", where args MUST pass validation of
 // every top-level predicate.
@@ -219,133 +234,149 @@ func (s *Statement) UnmarshalDagJSON(r io.Reader) error {
 	return nil
 }
 
-func Equal(sel string, value any) (Statement, error) {
-	return newStatement(pdm.StatementModel{
-		Op:       OpEqual,
-		Selector: sel,
-		Value:    &datamodel.Any{Value: value},
-	})
-}
-
-func NotEqual(sel string, value any) (Statement, error) {
-	return newStatement(pdm.StatementModel{
-		Op:       OpNotEqual,
-		Selector: sel,
-		Value:    &datamodel.Any{Value: value},
-	})
-}
-
-func GreaterThan(sel string, value any) (Statement, error) {
-	return newStatement(pdm.StatementModel{
-		Op:       OpGreaterThan,
-		Selector: sel,
-		Value:    &datamodel.Any{Value: value},
-	})
-}
-
-func GreaterThanOrEqual(sel string, value any) (Statement, error) {
-	return newStatement(pdm.StatementModel{
-		Op:       OpGreaterThanOrEqual,
-		Selector: sel,
-		Value:    &datamodel.Any{Value: value},
-	})
-}
-
-func LessThan(sel string, value any) (Statement, error) {
-	return newStatement(pdm.StatementModel{
-		Op:       OpLessThan,
-		Selector: sel,
-		Value:    &datamodel.Any{Value: value},
-	})
-}
-
-func LessThanOrEqual(sel string, value any) (Statement, error) {
-	return newStatement(pdm.StatementModel{
-		Op:       OpLessThanOrEqual,
-		Selector: sel,
-		Value:    &datamodel.Any{Value: value},
-	})
-}
-
-func Not(stmt ucan.Statement) (Statement, error) {
-	s, err := toStatement(stmt)
-	if err != nil {
-		return Statement{}, err
+func Equal(sel string, value any) StatementBuilderFunc {
+	return func() (Statement, error) {
+		return newStatement(pdm.StatementModel{
+			Op:       OpEqual,
+			Selector: sel,
+			Value:    &datamodel.Any{Value: value},
+		})
 	}
-	return newStatement(pdm.StatementModel{
-		Op:        OpNot,
-		Statement: &s.model,
-	})
 }
 
-func And(stmts ...ucan.Statement) (Statement, error) {
-	models := make([]*pdm.StatementModel, 0, len(stmts))
-	for _, s := range stmts {
-		m, err := toStatement(s)
+func NotEqual(sel string, value any) StatementBuilderFunc {
+	return func() (Statement, error) {
+		return newStatement(pdm.StatementModel{
+			Op:       OpNotEqual,
+			Selector: sel,
+			Value:    &datamodel.Any{Value: value},
+		})
+	}
+}
+
+func GreaterThan(sel string, value any) StatementBuilderFunc {
+	return func() (Statement, error) {
+		return newStatement(pdm.StatementModel{
+			Op:       OpGreaterThan,
+			Selector: sel,
+			Value:    &datamodel.Any{Value: value},
+		})
+	}
+}
+
+func GreaterThanOrEqual(sel string, value any) StatementBuilderFunc {
+	return func() (Statement, error) {
+		return newStatement(pdm.StatementModel{
+			Op:       OpGreaterThanOrEqual,
+			Selector: sel,
+			Value:    &datamodel.Any{Value: value},
+		})
+	}
+}
+
+func LessThan(sel string, value any) StatementBuilderFunc {
+	return func() (Statement, error) {
+		return newStatement(pdm.StatementModel{
+			Op:       OpLessThan,
+			Selector: sel,
+			Value:    &datamodel.Any{Value: value},
+		})
+	}
+}
+
+func LessThanOrEqual(sel string, value any) StatementBuilderFunc {
+	return func() (Statement, error) {
+		return newStatement(pdm.StatementModel{
+			Op:       OpLessThanOrEqual,
+			Selector: sel,
+			Value:    &datamodel.Any{Value: value},
+		})
+	}
+}
+
+func Not(stmt StatementBuilderFunc) StatementBuilderFunc {
+	return func() (Statement, error) {
+		s, err := stmt()
 		if err != nil {
 			return Statement{}, err
 		}
-		models = append(models, &m.model)
+		return newStatement(pdm.StatementModel{
+			Op:        OpNot,
+			Statement: &s.model,
+		})
 	}
-	return newStatement(pdm.StatementModel{
-		Op:         OpAnd,
-		Statements: models,
-	})
 }
 
-func Or(stmts ...ucan.Statement) (Statement, error) {
-	models := make([]*pdm.StatementModel, 0, len(stmts))
-	for _, s := range stmts {
-		m, err := toStatement(s)
+func And(stmts ...StatementBuilderFunc) StatementBuilderFunc {
+	return func() (Statement, error) {
+		models := make([]*pdm.StatementModel, 0, len(stmts))
+		for _, ctor := range stmts {
+			s, err := ctor()
+			if err != nil {
+				return Statement{}, err
+			}
+			models = append(models, &s.model)
+		}
+		return newStatement(pdm.StatementModel{
+			Op:         OpAnd,
+			Statements: models,
+		})
+	}
+}
+
+func Or(stmts ...StatementBuilderFunc) StatementBuilderFunc {
+	return func() (Statement, error) {
+		models := make([]*pdm.StatementModel, 0, len(stmts))
+		for _, ctor := range stmts {
+			s, err := ctor()
+			if err != nil {
+				return Statement{}, err
+			}
+			models = append(models, &s.model)
+		}
+		return newStatement(pdm.StatementModel{
+			Op:         OpOr,
+			Statements: models,
+		})
+	}
+}
+
+func Like(sel string, pattern string) StatementBuilderFunc {
+	return func() (Statement, error) {
+		return newStatement(pdm.StatementModel{
+			Op:       OpLike,
+			Selector: sel,
+			Pattern:  pattern,
+		})
+	}
+}
+
+func All(sel string, stmt StatementBuilderFunc) StatementBuilderFunc {
+	return func() (Statement, error) {
+		s, err := stmt()
 		if err != nil {
 			return Statement{}, err
 		}
-		models = append(models, &m.model)
+		return newStatement(pdm.StatementModel{
+			Op:        OpAll,
+			Selector:  sel,
+			Statement: &s.model,
+		})
 	}
-	return newStatement(pdm.StatementModel{
-		Op:         OpOr,
-		Statements: models,
-	})
 }
 
-func Like(sel string, pattern string) (Statement, error) {
-	return newStatement(pdm.StatementModel{
-		Op:       OpLike,
-		Selector: sel,
-		Pattern:  pattern,
-	})
-}
-
-func All(sel string, stmts ...ucan.Statement) (Statement, error) {
-	models := make([]*pdm.StatementModel, 0, len(stmts))
-	for _, s := range stmts {
-		m, err := toStatement(s)
+func Any(sel string, stmt StatementBuilderFunc) StatementBuilderFunc {
+	return func() (Statement, error) {
+		s, err := stmt()
 		if err != nil {
 			return Statement{}, err
 		}
-		models = append(models, &m.model)
+		return newStatement(pdm.StatementModel{
+			Op:        OpAny,
+			Selector:  sel,
+			Statement: &s.model,
+		})
 	}
-	return newStatement(pdm.StatementModel{
-		Op:         OpAll,
-		Selector:   sel,
-		Statements: models,
-	})
-}
-
-func Any(sel string, stmts ...ucan.Statement) (Statement, error) {
-	models := make([]*pdm.StatementModel, 0, len(stmts))
-	for _, s := range stmts {
-		m, err := toStatement(s)
-		if err != nil {
-			return Statement{}, err
-		}
-		models = append(models, &m.model)
-	}
-	return newStatement(pdm.StatementModel{
-		Op:         OpAny,
-		Selector:   sel,
-		Statements: models,
-	})
 }
 
 // toStatement converts a [ucan.Statement] to a [Statement]
@@ -403,6 +434,7 @@ func toStatement(stmt ucan.Statement) (Statement, error) {
 	return newStatement(model)
 }
 
+// Parse a policy encoded as a DAG-jSON string.
 func Parse(input string) (Policy, error) {
 	pol := Policy{}
 	err := pol.UnmarshalDagJSON(strings.NewReader(input))

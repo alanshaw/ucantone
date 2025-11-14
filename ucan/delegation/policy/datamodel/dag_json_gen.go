@@ -798,31 +798,13 @@ func (t *QuantificationModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("t.Selector: %w", err)
 	}
 	if err := jw.WriteComma(); err != nil {
-		return fmt.Errorf("Statements: %w", err)
+		return fmt.Errorf("Statement: %w", err)
 	}
 
-	// t.Statements ([]*datamodel.StatementModel) (slice)
-	if len(t.Statements) > 8192 {
-		return fmt.Errorf("Slice value in field t.Statements was too long")
+	// t.Statement (datamodel.StatementModel) (struct)
+	if err := t.Statement.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("t.Statement: %w", err)
 	}
-
-	if err := jw.WriteArrayOpen(); err != nil {
-		return fmt.Errorf("t.Statements: %w", err)
-	}
-	for i, v := range t.Statements {
-		if i > 0 {
-			if err := jw.WriteComma(); err != nil {
-				return fmt.Errorf("t.Statements: %w", err)
-			}
-		}
-		if err := v.MarshalDagJSON(jw); err != nil {
-			return fmt.Errorf("v: %w", err)
-		}
-	}
-	if err := jw.WriteArrayClose(); err != nil {
-		return fmt.Errorf("t.Statements: %w", err)
-	}
-
 	if err := jw.WriteArrayClose(); err != nil {
 		return fmt.Errorf("QuantificationModel: %w", err)
 	}
@@ -895,60 +877,25 @@ func (t *QuantificationModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 		}
 
-		// t.Statements ([]*datamodel.StatementModel) (slice)
+		// t.Statement (datamodel.StatementModel) (struct)
 
 		{
-
-			if err := jr.ReadArrayOpen(); err != nil {
-				return fmt.Errorf("t.Statements: %w", err)
-			}
-
-			close, err := jr.PeekArrayClose()
+			null, err := jr.PeekNull()
 			if err != nil {
-				return fmt.Errorf("t.Statements: %w", err)
+				return fmt.Errorf("t.Statement: %w", err)
 			}
-			if close {
-				if err := jr.ReadArrayClose(); err != nil {
-					return fmt.Errorf("t.Statements: %w", err)
+			if null {
+				if err := jr.ReadNull(); err != nil {
+					return fmt.Errorf("t.Statement: %w", err)
 				}
-
 			} else {
-				for i := 0; i < 8192; i++ {
-					item := make([]*StatementModel, 1)
-
-					{
-						null, err := jr.PeekNull()
-						if err != nil {
-							return fmt.Errorf("item[0]: %w", err)
-						}
-						if null {
-							if err := jr.ReadNull(); err != nil {
-								return fmt.Errorf("item[0]: %w", err)
-							}
-						} else {
-							item[0] = new(StatementModel)
-							if err := item[0].UnmarshalDagJSON(jr); err != nil {
-								return fmt.Errorf("unmarshaling item[0] pointer: %w", err)
-							}
-						}
-					}
-
-					t.Statements = append(t.Statements, item[0])
-
-					close, err := jr.ReadArrayCloseOrComma()
-					if err != nil {
-						return fmt.Errorf("t.Statements: %w", err)
-					}
-					if close {
-						break
-					}
-					if i == 8192-1 {
-						return fmt.Errorf("t.Statements: slice too large")
-					}
+				t.Statement = new(StatementModel)
+				if err := t.Statement.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Statement pointer: %w", err)
 				}
 			}
-
 		}
+
 		if err := jr.ReadArrayClose(); err != nil {
 			return fmt.Errorf("QuantificationModel: %w", err)
 		}

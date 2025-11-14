@@ -227,10 +227,9 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 			} else {
 				return nil, nil, NewResolutionError(fmt.Sprintf("can not iterate over type: %s", reflect.TypeOf(cur)), at)
 			}
-
 		} else if seg.Field != "" {
 			at = append(at, seg.Field)
-			if m, ok := cur.(ipld.Map[string, any]); ok {
+			if m, ok := cur.(ipld.Map[string, ipld.Any]); ok {
 				v, ok := m.Get(seg.Field)
 				if !ok && !seg.Optional {
 					return nil, nil, NewResolutionError(fmt.Sprintf("object has no field named: %s", seg.Field), at)
@@ -268,6 +267,16 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 				return nil, nil, NewResolutionError(fmt.Sprintf("can not access field: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
 			}
 		}
+	}
+
+	// if cur is a slice, we need to return it as a many
+	if reflect.TypeOf(cur).Kind() == reflect.Slice {
+		v := reflect.ValueOf(cur)
+		many := make([]any, 0, v.Len())
+		for i := range v.Len() {
+			many = append(many, v.Index(i).Interface())
+		}
+		return nil, many, nil
 	}
 
 	return cur, nil, nil

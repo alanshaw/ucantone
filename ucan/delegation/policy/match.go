@@ -2,6 +2,7 @@ package policy
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -91,10 +92,13 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 	case OpNot:
 		ss, ok := statement.Argument().(ucan.Statement)
 		if !ok {
-			return false, fmt.Errorf(`matching "%s": "%s" operator argument is not a statement`, s.Selector(), s.Operator())
+			return false, fmt.Errorf(`"%s" operator argument is not a statement`, s.Operator())
 		}
 		ok, _ = MatchStatement(ss, value)
-		return !ok, nil
+		if ok {
+			return false, NewMatchError(statement, errors.New("not true is false"))
+		}
+		return true, nil
 	case OpAnd:
 		for _, s := range s.statements {
 			ok, err := MatchStatement(s, value)
@@ -133,7 +137,7 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 			return false, err
 		}
 		if many == nil {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is empty or not a list`, s.Selector(), many))
+			return false, NewMatchError(statement, fmt.Errorf(`"%v" is empty or not a list`, many))
 		}
 		for _, n := range many {
 			ss := make([]Statement, 0, len(s.statements))
@@ -161,7 +165,7 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 				return true, nil
 			}
 		}
-		return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is empty or not a list`, s.Selector(), many))
+		return false, NewMatchError(statement, fmt.Errorf(`"%v" is empty or not a list`, many))
 	}
 	panic(fmt.Errorf("unknown statement operator: %s", statement.Operator()))
 }

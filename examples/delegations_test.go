@@ -6,7 +6,7 @@ import (
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy/builder"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 )
 
 func TestDelegations(t *testing.T) {
@@ -39,7 +39,7 @@ func TestDelegations(t *testing.T) {
 
 	// alice delegates bob capability to use the email service, but only allows
 	// bob to send to example.com email addresses
-	policy, err := builder.Build(builder.All(".to", builder.Like(".", "*.example.com")))
+	policy, err := policy.Build(policy.All(".to", policy.Like(".", "*.example.com")))
 	if err != nil {
 		panic(err)
 	}

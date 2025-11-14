@@ -56,7 +56,7 @@ func (t *StatementModel) MarshalCBOR(w io.Writer) error {
 			return err
 		}
 	case "all", "any":
-		m := QuantificationModel{t.Op, t.Selector, t.Statements}
+		m := QuantificationModel{t.Op, t.Selector, t.Statement}
 		if err := m.MarshalCBOR(w); err != nil {
 			return err
 		}
@@ -168,7 +168,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) error {
 			return err
 		}
 		t.Selector = m.Selector
-		t.Statements = m.Statements
+		t.Statement = m.Statement
 	default:
 		return fmt.Errorf("unknown statement: %s", t.Op)
 	}
@@ -208,7 +208,7 @@ func (t *StatementModel) MarshalDagJSON(w io.Writer) error {
 			return err
 		}
 	case "all", "any":
-		m := QuantificationModel{t.Op, t.Selector, t.Statements}
+		m := QuantificationModel{t.Op, t.Selector, t.Statement}
 		if err := m.MarshalDagJSON(w); err != nil {
 			return err
 		}
@@ -277,7 +277,7 @@ func (t *StatementModel) UnmarshalDagJSON(r io.Reader) error {
 			return err
 		}
 		t.Selector = m.Selector
-		t.Statements = m.Statements
+		t.Statement = m.Statement
 	default:
 		return fmt.Errorf("unknown statement: %s", t.Op)
 	}
@@ -327,7 +327,7 @@ type NegationModel struct {
 }
 
 type QuantificationModel struct {
-	Op         string
-	Selector   string
-	Statements []*StatementModel
+	Op        string
+	Selector  string
+	Statement *StatementModel // TODO: should be just one statement
 }

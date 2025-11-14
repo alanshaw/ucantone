@@ -686,19 +686,9 @@ func (t *QuantificationModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Statements ([]*datamodel.StatementModel) (slice)
-	if len(t.Statements) > 8192 {
-		return xerrors.Errorf("Slice value in field t.Statements was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Statements))); err != nil {
+	// t.Statement (datamodel.StatementModel) (struct)
+	if err := t.Statement.MarshalCBOR(cw); err != nil {
 		return err
-	}
-	for _, v := range t.Statements {
-		if err := v.MarshalCBOR(cw); err != nil {
-			return err
-		}
-
 	}
 	return nil
 }
@@ -746,53 +736,24 @@ func (t *QuantificationModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 		t.Selector = string(sval)
 	}
-	// t.Statements ([]*datamodel.StatementModel) (slice)
+	// t.Statement (datamodel.StatementModel) (struct)
 
-	maj, extra, err = cr.ReadHeader()
-	if err != nil {
-		return err
-	}
+	{
 
-	if extra > 8192 {
-		return fmt.Errorf("t.Statements: array too large (%d)", extra)
-	}
-
-	if maj != cbg.MajArray {
-		return fmt.Errorf("expected cbor array")
-	}
-
-	if extra > 0 {
-		t.Statements = make([]*StatementModel, extra)
-	}
-
-	for i := 0; i < int(extra); i++ {
-		{
-			var maj byte
-			var extra uint64
-			var err error
-			_ = maj
-			_ = extra
-			_ = err
-
-			{
-
-				b, err := cr.ReadByte()
-				if err != nil {
-					return err
-				}
-				if b != cbg.CborNull[0] {
-					if err := cr.UnreadByte(); err != nil {
-						return err
-					}
-					t.Statements[i] = new(StatementModel)
-					if err := t.Statements[i].UnmarshalCBOR(cr); err != nil {
-						return xerrors.Errorf("unmarshaling t.Statements[i] pointer: %w", err)
-					}
-				}
-
-			}
-
+		b, err := cr.ReadByte()
+		if err != nil {
+			return err
 		}
+		if b != cbg.CborNull[0] {
+			if err := cr.UnreadByte(); err != nil {
+				return err
+			}
+			t.Statement = new(StatementModel)
+			if err := t.Statement.UnmarshalCBOR(cr); err != nil {
+				return xerrors.Errorf("unmarshaling t.Statement pointer: %w", err)
+			}
+		}
+
 	}
 	return nil
 }

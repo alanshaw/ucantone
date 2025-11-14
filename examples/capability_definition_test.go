@@ -10,7 +10,7 @@ import (
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy/builder"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/validator/capability"
 )
@@ -22,7 +22,7 @@ func TestCapabilityDefinition(t *testing.T) {
 	messageSendCapability, err := capability.New[*types.MessageSendArguments](
 		must(command.Parse("/message/send")),
 		capability.WithPolicy(
-			must(builder.Build(builder.NotEqual(".to", []string{}))),
+			must(policy.Build(policy.NotEqual(".to", []string{}))),
 		),
 	)
 	if err != nil {
@@ -79,7 +79,7 @@ func TestCapabilityDefinitionGenericMap(t *testing.T) {
 	messageSendCapability, err := capability.New[*datamodel.Map](
 		must(command.Parse("/message/send")),
 		capability.WithPolicy(
-			must(builder.Build(builder.NotEqual(".to", []string{}))),
+			must(policy.Build(policy.NotEqual(".to", []string{}))),
 		),
 	)
 	if err != nil {

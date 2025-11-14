@@ -9,7 +9,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/container"
 	"github.com/alanshaw/ucantone/ucan/delegation"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy/builder"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 )
 
@@ -25,7 +25,7 @@ func TestContainer(t *testing.T) {
 		panic(err)
 	}
 
-	policy, err := builder.Build(builder.All(".to", builder.Like(".", "*.example.com")))
+	pol, err := policy.Build(policy.All(".to", policy.Like(".", "*.example.com")))
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +37,7 @@ func TestContainer(t *testing.T) {
 		alice,
 		must(command.Parse("/message/send")),
 		delegation.WithSubject(mailer),
-		delegation.WithPolicy(policy),
+		delegation.WithPolicy(pol),
 	)
 	if err != nil {
 		panic(err)
