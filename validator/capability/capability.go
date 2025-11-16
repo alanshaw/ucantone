@@ -26,7 +26,7 @@ type Task[A Arguments] struct {
 func NewTask[A Arguments](
 	subject ucan.Subject,
 	command ucan.Command,
-	arguments ipld.Map[string, ipld.Any],
+	arguments ipld.Map,
 	nonce ucan.Nonce,
 ) (*Task[A], error) {
 	task, err := invocation.NewTask(subject, command, arguments, nonce)

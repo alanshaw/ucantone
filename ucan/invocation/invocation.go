@@ -37,7 +37,7 @@ type Invocation struct {
 // Parameters expected by the command.
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#arguments
-func (inv *Invocation) Arguments() ipld.Map[string, ipld.Any] {
+func (inv *Invocation) Arguments() ipld.Map {
 	if inv.model.SigPayload.TokenPayload1_0_0_rc1.Args == nil {
 		return datamodel.NewMap()
 	}
@@ -105,7 +105,7 @@ func (inv *Invocation) Link() cid.Cid {
 // Arbitrary metadata or extensible fields.
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#metadata
-func (inv *Invocation) Metadata() ipld.Map[string, ipld.Any] {
+func (inv *Invocation) Metadata() ipld.Map {
 	if inv.model.SigPayload.TokenPayload1_0_0_rc1.Meta == nil {
 		return nil
 	}
@@ -266,7 +266,7 @@ func Invoke(
 	issuer ucan.Signer,
 	subject ucan.Subject,
 	command ucan.Command,
-	arguments ipld.Map[string, ipld.Any],
+	arguments ipld.Map,
 	options ...Option,
 ) (*Invocation, error) {
 	cfg := invocationConfig{}

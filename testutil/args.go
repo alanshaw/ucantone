@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func RandomArgs(t *testing.T) ipld.Map[string, any] {
+func RandomArgs(t *testing.T) ipld.Map {
 	var list []string
 	for range RandomBytes(t, 1)[0] {
 		list = append(list, RandomCID(t).String())

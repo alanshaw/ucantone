@@ -305,7 +305,7 @@ func TestSelect(t *testing.T) {
 		require.NotEmpty(t, one)
 		require.Empty(t, many)
 
-		user, ok := one.(ipld.Map[string, any])
+		user, ok := one.(ipld.Map)
 		require.True(t, ok)
 		require.Equal(t, alice, user)
 	})

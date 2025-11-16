@@ -73,7 +73,7 @@ func (d *Delegation) Link() cid.Cid {
 // A map of arbitrary metadata, facts, and proofs of knowledge.
 //
 // https://github.com/ucan-wg/spec/blob/main/README.md#metadata
-func (d *Delegation) Metadata() ipld.Map[string, ipld.Any] {
+func (d *Delegation) Metadata() ipld.Map {
 	if d.model.SigPayload.TokenPayload1_0_0_rc1.Meta == nil {
 		return nil
 	}

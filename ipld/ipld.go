@@ -19,23 +19,24 @@ import (
 //   - Link ([cid.Cid])
 type Any = any
 
-// Map is an IPLD map that supports any of the IPLD types for keys/values.
-type Map[K, V Any] interface {
+// Map is an IPLD map that supports any of the IPLD types for values. Keys MUST
+// be strings.
+type Map interface {
 	// All is an iterator over all the key/value pairs in this map.
-	All() iter.Seq2[K, V]
+	All() iter.Seq2[string, Any]
 	// Get a value for the given key. It returns false if the key does not exist
 	// in the map.
-	Get(k K) (V, bool)
+	Get(k string) (Any, bool)
 	// Keys is an iterator over the keys in this map.
-	Keys() iter.Seq[K]
+	Keys() iter.Seq[string]
 	// Values is an iterator over the values in this map.
-	Values() iter.Seq[V]
+	Values() iter.Seq[Any]
 }
 
 // MutableMap is a [Map] that supports changes.
-type MutableMap[K, V Any] interface {
+type MutableMap interface {
 	// Set a value for the given key.
-	Set(k K, v V)
+	Set(k string, v Any)
 }
 
 // Block is content addressed and encoded IPLD data.

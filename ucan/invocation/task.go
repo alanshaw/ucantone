@@ -18,14 +18,14 @@ type Task struct {
 	bytes []byte
 	sub   ucan.Subject
 	cmd   ucan.Command
-	args  ipld.Map[string, ipld.Any]
+	args  ipld.Map
 	nnc   ucan.Nonce
 }
 
 func NewTask(
 	subject ucan.Subject,
 	command ucan.Command,
-	arguments ipld.Map[string, ipld.Any],
+	arguments ipld.Map,
 	nonce ucan.Nonce,
 ) (*Task, error) {
 	taskModel := idm.TaskModel{
@@ -51,7 +51,7 @@ func NewTask(
 	return &Task{link, taskBuf.Bytes(), subject, command, arguments, nonce}, nil
 }
 
-func (t *Task) Arguments() ipld.Map[string, ipld.Any] {
+func (t *Task) Arguments() ipld.Map {
 	return t.args
 }
 

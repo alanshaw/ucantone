@@ -249,5 +249,5 @@ func (m *Map) UnmarshalDagJSON(r io.Reader) (err error) {
 	return nil
 }
 
-var _ ipld.Map[string, ipld.Any] = (*Map)(nil)
-var _ ipld.MutableMap[string, ipld.Any] = (*Map)(nil)
+var _ ipld.Map = (*Map)(nil)
+var _ ipld.MutableMap = (*Map)(nil)

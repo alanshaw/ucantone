@@ -87,7 +87,7 @@ type Token interface {
 	// Arbitrary metadata.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#metadata
-	Metadata() ipld.Map[string, ipld.Any]
+	Metadata() ipld.Map
 	// A unique, random nonce.
 	//
 	// https://github.com/ucan-wg/spec/blob/main/README.md#nonce
@@ -171,7 +171,7 @@ type Task interface {
 	// Parameters expected by the command.
 	//
 	// https://github.com/ucan-wg/invocation/blob/main/README.md#arguments
-	Arguments() ipld.Map[string, ipld.Any]
+	Arguments() ipld.Map
 	// A unique, random nonce. It ensures that multiple (non-idempotent)
 	// invocations are unique. The nonce SHOULD be empty (0x) for commands that
 	// are idempotent (such as deterministic Wasm modules or standards-abiding
