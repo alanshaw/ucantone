@@ -132,7 +132,7 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 		if !ok {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), one, OpLike))
 		}
-		if s.glob.Match(v) {
+		if !s.glob.Match(v) {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not like "%v"`, s.Selector(), one, s.model.Pattern))
 		}
 		return true, nil

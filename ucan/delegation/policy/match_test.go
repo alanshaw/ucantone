@@ -356,6 +356,54 @@ func TestMatch(t *testing.T) {
 			value: 138,
 			match: false,
 		},
+		{
+			name:   "wildcard match",
+			policy: policy.Like(".", `Alice\*, Bob*, Carol.`),
+			value:  "Alice*, Bob, Carol.",
+			match:  true,
+		},
+		{
+			name:   "wildcard match",
+			policy: policy.Like(".", `Alice\*, Bob*, Carol.`),
+			value:  "Alice*, Bob, Dan, Erin, Carol.",
+			match:  true,
+		},
+		{
+			name:   "wildcard match",
+			policy: policy.Like(".", `Alice\*, Bob*, Carol.`),
+			value:  "Alice*, Bob  , Carol.",
+			match:  true,
+		},
+		{
+			name:   "wildcard match",
+			policy: policy.Like(".", `Alice\*, Bob*, Carol.`),
+			value:  "Alice*, Bob*, Carol.",
+			match:  true,
+		},
+		{
+			name:   "wildcard no match",
+			policy: policy.Like(".", `Alice\*, Bob*, Carol.`),
+			value:  "Alice*, Bob, Carol",
+			match:  false,
+		},
+		{
+			name:   "wildcard no match",
+			policy: policy.Like(".", `Alice\*, Bob*, Carol.`),
+			value:  "Alice*, Bob*, Carol!",
+			match:  false,
+		},
+		{
+			name:   "wildcard no match",
+			policy: policy.Like(".", `Alice\*, Bob*, Carol.`),
+			value:  "Alice, Bob, Carol.",
+			match:  false,
+		},
+		{
+			name:   "wildcard no match",
+			policy: policy.Like(".", `Alice\*, Bob*, Carol.`),
+			value:  " Alice*, Bob, Carol. ",
+			match:  false,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -372,51 +420,6 @@ func TestMatch(t *testing.T) {
 			}
 		})
 	}
-
-	// t.Run("wildcard", func(t *testing.T) {
-	// 	glb, err := glob.Compile(`Alice\*, Bob*, Carol.`)
-	// 	require.NoError(t, err)
-
-	// 	for _, s := range []string{
-	// 		"Alice*, Bob, Carol.",
-	// 		"Alice*, Bob, Dan, Erin, Carol.",
-	// 		"Alice*, Bob  , Carol.",
-	// 		"Alice*, Bob*, Carol.",
-	// 	} {
-	// 		func(s string) {
-	// 			t.Run(fmt.Sprintf("pass %s", s), func(t *testing.T) {
-	// 				np := basicnode.Prototype.String
-	// 				nb := np.NewBuilder()
-	// 				nb.AssignString(s)
-	// 				nd := nb.Build()
-
-	// 				pol := policy.Policy{Like(mustParse(t, "."), glb)}
-	// 				ok, err := policy.Match(pol, nd)
-	// 				require.True(t, ok)
-	// 			})
-	// 		}(s)
-	// 	}
-
-	// 	for _, s := range []string{
-	// 		"Alice*, Bob, Carol",
-	// 		"Alice*, Bob*, Carol!",
-	// 		"Alice, Bob, Carol.",
-	// 		" Alice*, Bob, Carol. ",
-	// 	} {
-	// 		func(s string) {
-	// 			t.Run(fmt.Sprintf("fail %s", s), func(t *testing.T) {
-	// 				np := basicnode.Prototype.String
-	// 				nb := np.NewBuilder()
-	// 				nb.AssignString(s)
-	// 				nd := nb.Build()
-
-	// 				pol := policy.Policy{Like(mustParse(t, "."), glb)}
-	// 				ok, err := policy.Match(pol, nd)
-	// 				require.False(t, ok)
-	// 			})
-	// 		}(s)
-	// 	}
-	// })
 
 	// t.Run("quantification", func(t *testing.T) {
 	// 	buildValueNode := func(v int64) ipld.Node {
