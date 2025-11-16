@@ -33,12 +33,17 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if one == nil {
-			// TODO: should be allowed
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), one, OpEqual))
-		}
 		if !reflect.DeepEqual(s.model.Value.Value, one) {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" does not equal "%v"`, s.Selector(), one, s.model.Value.Value))
+		}
+		return true, nil
+	case OpNotEqual:
+		one, _, err := selector.Select(s.selector, value)
+		if err != nil {
+			return false, err
+		}
+		if reflect.DeepEqual(s.model.Value.Value, one) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" equals "%v"`, s.Selector(), one, s.model.Value.Value))
 		}
 		return true, nil
 	case OpGreaterThan:
@@ -117,7 +122,7 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 				return true, nil
 			}
 		}
-		return false, nil
+		return false, fmt.Errorf(`"%v" did not match any statements`, value)
 	case OpLike:
 		one, _, err := selector.Select(s.selector, value)
 		if err != nil {

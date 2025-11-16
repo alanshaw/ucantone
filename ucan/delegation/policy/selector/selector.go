@@ -269,8 +269,9 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 		}
 	}
 
+	ct := reflect.TypeOf(cur)
 	// if cur is a slice, we need to return it as a many
-	if reflect.TypeOf(cur).Kind() == reflect.Slice {
+	if ct != nil && ct.Kind() == reflect.Slice {
 		v := reflect.ValueOf(cur)
 		many := make([]any, 0, v.Len())
 		for i := range v.Len() {
