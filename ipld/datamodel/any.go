@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"reflect"
 	"slices"
 
@@ -57,8 +58,8 @@ func (a *Any) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 	switch v := a.Value.(type) {
-	case *Map:
-		return v.MarshalCBOR(w)
+	case map[string]ipld.Any:
+		return Map(v).MarshalCBOR(w)
 	case int64:
 		return cbg.CborInt(v).MarshalCBOR(w)
 	case int:
@@ -112,9 +113,12 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 
 	switch maj {
 	case cbg.MajMap:
-		var m Map
-		a.Value = &m
-		return m.UnmarshalCBOR(pr)
+		m := Map{}
+		if err = m.UnmarshalCBOR(pr); err != nil {
+			return err
+		}
+		a.Value = map[string]ipld.Any(m)
+		return nil
 	case cbg.MajUnsignedInt, cbg.MajNegativeInt:
 		var cbi cbg.CborInt
 		if err = cbi.UnmarshalCBOR(pr); err != nil {
@@ -204,8 +208,8 @@ func (a *Any) MarshalDagJSON(w io.Writer) error {
 		return jw.WriteNull()
 	}
 	switch v := a.Value.(type) {
-	case *Map:
-		return v.MarshalDagJSON(w)
+	case map[string]ipld.Any:
+		return Map(v).MarshalDagJSON(w)
 	case int64:
 		return jw.WriteInt64(v)
 	case int:
@@ -320,19 +324,19 @@ func (a *Any) UnmarshalDagJSON(r io.Reader) (err error) {
 		if err := m.UnmarshalDagJSON(jr); err != nil {
 			return err
 		}
-		keys := slices.Collect(m.Keys())
+		keys := slices.Collect(maps.Keys(m))
 		if len(keys) == 1 && keys[0] == "/" {
-			switch v := m.values["/"].Value.(type) {
+			switch v := m["/"].(type) {
 			case string:
 				c, err := cid.Parse(v)
 				if err != nil {
 					return err
 				}
 				a.Value = c
-			case *Map:
-				skeys := slices.Collect(v.Keys())
+			case map[string]ipld.Any:
+				skeys := slices.Collect(maps.Keys(v))
 				if len(skeys) == 1 && skeys[0] == "bytes" {
-					switch bv := v.values["bytes"].Value.(type) {
+					switch bv := v["bytes"].(type) {
 					case string:
 						decoded, err := base64.RawStdEncoding.DecodeString(bv)
 						if err != nil {
@@ -340,16 +344,16 @@ func (a *Any) UnmarshalDagJSON(r io.Reader) (err error) {
 						}
 						a.Value = decoded
 					default:
-						a.Value = &m
+						a.Value = map[string]ipld.Any(m)
 					}
 				} else {
-					a.Value = &m
+					a.Value = map[string]ipld.Any(m)
 				}
 			default:
-				a.Value = &m
+				a.Value = map[string]ipld.Any(m)
 			}
 		} else {
-			a.Value = &m
+			a.Value = map[string]ipld.Any(m)
 		}
 	}
 	return nil

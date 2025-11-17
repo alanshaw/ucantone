@@ -14,7 +14,7 @@ func RandomArgs(t *testing.T) ipld.Map {
 	for range RandomBytes(t, 1)[0] {
 		list = append(list, RandomCID(t).String())
 	}
-	var m datamodel.Map
+	m := datamodel.Map{}
 	err := datamodel.Rebind(&hdm.TestArgs{
 		ID:    RandomDID(t),
 		Link:  RandomCID(t),
@@ -27,5 +27,5 @@ func RandomArgs(t *testing.T) ipld.Map {
 		List: list,
 	}, &m)
 	require.NoError(t, err)
-	return &m
+	return m
 }

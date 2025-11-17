@@ -1,11 +1,9 @@
 package selector_test
 
 import (
-	"maps"
 	"testing"
 
 	"github.com/alanshaw/ucantone/ipld"
-	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 	"github.com/stretchr/testify/require"
 )
@@ -244,10 +242,7 @@ func printSegments(t *testing.T, s selector.Selector) {
 }
 
 func TestSelect(t *testing.T) {
-	var ToMap = func(m map[string]any) *datamodel.Map {
-		return datamodel.NewMap(datamodel.WithEntries(maps.All(m)))
-	}
-	var Name = func(first string, middle *string, last string) *datamodel.Map {
+	var Name = func(first string, middle *string, last string) ipld.Map {
 		m := map[string]any{
 			"first": first,
 			"last":  last,
@@ -255,24 +250,24 @@ func TestSelect(t *testing.T) {
 		if middle != nil {
 			m["middle"] = *middle
 		}
-		return ToMap(m)
+		return m
 	}
 
-	var Interest = func(name string, outdoor bool, experience int64) *datamodel.Map {
-		return ToMap(map[string]any{
+	var Interest = func(name string, outdoor bool, experience int64) ipld.Map {
+		return map[string]any{
 			"name":       name,
 			"outdoor":    outdoor,
 			"experience": experience,
-		})
+		}
 	}
 
-	var User = func(name *datamodel.Map, age int64, nationalities []string, interests []*datamodel.Map) *datamodel.Map {
-		return ToMap(map[string]any{
+	var User = func(name ipld.Map, age int64, nationalities []string, interests []ipld.Map) ipld.Map {
+		return map[string]any{
 			"name":          name,
 			"age":           age,
 			"nationalities": nationalities,
 			"interests":     nationalities,
-		})
+		}
 	}
 
 	am := "Joan"
@@ -280,7 +275,7 @@ func TestSelect(t *testing.T) {
 		Name("Alice", &am, "Wonderland"),
 		24,
 		[]string{"British"},
-		[]*datamodel.Map{
+		[]ipld.Map{
 			Interest("Cycling", true, 4),
 			Interest("Chess", false, 2),
 		},
@@ -290,7 +285,7 @@ func TestSelect(t *testing.T) {
 		Name("Bob", nil, "Builder"),
 		35,
 		[]string{"Canadian", "South African"},
-		[]*datamodel.Map{
+		[]ipld.Map{
 			Interest("Snowboarding", true, 8),
 			Interest("Reading", false, 25),
 		},

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/testutil"
 	"github.com/stretchr/testify/require"
@@ -20,15 +21,15 @@ func TestAny(t *testing.T) {
 		"test",
 		[]byte{1, 2, 3},
 		[]string{"one", "two", "three"},
-		datamodel.NewMap(datamodel.WithEntry("bytes", []byte{1})),
-		datamodel.NewMap(
-			datamodel.WithEntry("str", "X"),
-			datamodel.WithEntry("bytes", []byte{2}),
-		),
+		map[string]ipld.Any{"bytes": []byte{1}},
+		map[string]ipld.Any{
+			"str":   "X",
+			"bytes": []byte{2},
+		},
 	}
 
 	for _, v := range values {
-		t.Run(fmt.Sprintf("%T", v), func(t *testing.T) {
+		t.Run(fmt.Sprintf("dag-cbor %T", v), func(t *testing.T) {
 			initial := datamodel.NewAny(v)
 
 			var buf bytes.Buffer
@@ -39,8 +40,13 @@ func TestAny(t *testing.T) {
 			err = decodedCBOR.UnmarshalCBOR(&buf)
 			require.NoError(t, err)
 			require.Equal(t, v, decodedCBOR.Value)
+		})
 
-			err = initial.MarshalDagJSON(&buf)
+		t.Run(fmt.Sprintf("dag-json %T", v), func(t *testing.T) {
+			initial := datamodel.NewAny(v)
+
+			var buf bytes.Buffer
+			err := initial.MarshalDagJSON(&buf)
 			require.NoError(t, err)
 
 			t.Log(buf.String())

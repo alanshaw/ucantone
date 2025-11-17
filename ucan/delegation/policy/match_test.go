@@ -3,7 +3,7 @@ package policy_test
 import (
 	"testing"
 
-	"github.com/alanshaw/ucantone/ipld/datamodel"
+	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/testutil"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/ipfs/go-cid"
@@ -35,7 +35,7 @@ func TestMatch(t *testing.T) {
 		{
 			name:   "comparison equal nil in map match",
 			policy: policy.Equal(".foo", nil),
-			value:  datamodel.NewMap(datamodel.WithEntry("foo", nil)),
+			value:  map[string]ipld.Any{"foo": nil},
 			match:  true,
 		},
 		{
@@ -101,31 +101,31 @@ func TestMatch(t *testing.T) {
 		{
 			name:   "comparison equal string in map match",
 			policy: policy.Equal(".foo", "bar"),
-			value:  datamodel.NewMap(datamodel.WithEntry("foo", "bar")),
+			value:  map[string]ipld.Any{"foo": "bar"},
 			match:  true,
 		},
 		{
 			name:   "comparison equal string in map match unambiguous field name",
 			policy: policy.Equal(`.["foo"]`, "bar"),
-			value:  datamodel.NewMap(datamodel.WithEntry("foo", "bar")),
+			value:  map[string]ipld.Any{"foo": "bar"},
 			match:  true,
 		},
 		{
 			name:   "comparison equal string in map no match",
 			policy: policy.Equal(".foo", "baz"),
-			value:  datamodel.NewMap(datamodel.WithEntry("foo", "bar")),
+			value:  map[string]ipld.Any{"foo": "bar"},
 			match:  false,
 		},
 		{
 			name:   "comparison equal string in map no match non-string",
 			policy: policy.Equal(".foo", "baz"),
-			value:  datamodel.NewMap(datamodel.WithEntry("foo", 138)),
+			value:  map[string]ipld.Any{"foo": "bar"},
 			match:  false,
 		},
 		{
 			name:   "comparison equal string in map no match not found",
 			policy: policy.Equal(".foobar", "baz"),
-			value:  datamodel.NewMap(datamodel.WithEntry("foo", "bar")),
+			value:  map[string]ipld.Any{"foo": "bar"},
 			match:  false,
 		},
 		{
@@ -203,19 +203,19 @@ func TestMatch(t *testing.T) {
 		{
 			name:   "comparison not equal string in map match",
 			policy: policy.NotEqual(".foo", "baz"),
-			value:  datamodel.NewMap(datamodel.WithEntry("foo", "bar")),
+			value:  map[string]ipld.Any{"foo": "bar"},
 			match:  true,
 		},
 		{
 			name:   "comparison not equal string in map match unambiguous field name",
 			policy: policy.NotEqual(`.["foo"]`, "baz"),
-			value:  datamodel.NewMap(datamodel.WithEntry("foo", "bar")),
+			value:  map[string]ipld.Any{"foo": "bar"},
 			match:  true,
 		},
 		{
 			name:   "comparison not equal string in map no match",
 			policy: policy.NotEqual(".foo", "bar"),
-			value:  datamodel.NewMap(datamodel.WithEntry("foo", "bar")),
+			value:  map[string]ipld.Any{"foo": "bar"},
 			match:  false,
 		},
 		{
