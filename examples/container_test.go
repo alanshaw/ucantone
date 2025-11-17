@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alanshaw/ucantone/ipld/datamodel"
+	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/container"
@@ -49,11 +49,11 @@ func TestContainer(t *testing.T) {
 		alice,
 		mailer,
 		must(command.Parse("/message/send")),
-		datamodel.NewMap(
-			datamodel.WithEntry("to", []string{"bob@example.com"}),
-			datamodel.WithEntry("subject", "Hello!"),
-			datamodel.WithEntry("message", "Hello Bob, How do you do?"),
-		),
+		ipld.Map{
+			"to":      []string{"bob@example.com"},
+			"subject": "Hello!",
+			"message": "Hello Bob, How do you do?",
+		},
 		invocation.WithProofs(dlg.Link()),
 	)
 	if err != nil {

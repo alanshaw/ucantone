@@ -38,10 +38,7 @@ type Invocation struct {
 //
 // https://github.com/ucan-wg/invocation/blob/main/README.md#arguments
 func (inv *Invocation) Arguments() ipld.Map {
-	if inv.model.SigPayload.TokenPayload1_0_0_rc1.Args == nil {
-		return datamodel.NewMap()
-	}
-	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Args
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Args.Map
 }
 
 // The DID of the intended Executor if different from the Subject.
@@ -109,7 +106,7 @@ func (inv *Invocation) Metadata() ipld.Map {
 	if inv.model.SigPayload.TokenPayload1_0_0_rc1.Meta == nil {
 		return nil
 	}
-	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Meta
+	return inv.model.SigPayload.TokenPayload1_0_0_rc1.Meta.Map
 }
 
 // The datamodel this invocation is built from.
@@ -178,7 +175,7 @@ func (inv *Invocation) UnmarshalCBOR(r io.Reader) error {
 	task, err := NewTask(
 		model.SigPayload.TokenPayload1_0_0_rc1.Sub,
 		model.SigPayload.TokenPayload1_0_0_rc1.Cmd,
-		model.SigPayload.TokenPayload1_0_0_rc1.Args,
+		model.SigPayload.TokenPayload1_0_0_rc1.Args.Map,
 		model.SigPayload.TokenPayload1_0_0_rc1.Nonce,
 	)
 	if err != nil {
@@ -221,7 +218,7 @@ func (inv *Invocation) UnmarshalDagJSON(r io.Reader) error {
 	task, err := NewTask(
 		model.SigPayload.TokenPayload1_0_0_rc1.Sub,
 		model.SigPayload.TokenPayload1_0_0_rc1.Cmd,
-		model.SigPayload.TokenPayload1_0_0_rc1.Args,
+		model.SigPayload.TokenPayload1_0_0_rc1.Args.Map,
 		model.SigPayload.TokenPayload1_0_0_rc1.Nonce,
 	)
 	if err != nil {
@@ -287,9 +284,10 @@ func Invoke(
 		return nil, fmt.Errorf("parsing command: %w", err)
 	}
 
-	var meta *datamodel.Map
+	var meta *datamodel.MapWrapper
 	if cfg.meta != nil {
-		meta = datamodel.NewMap(datamodel.WithEntries(cfg.meta.All()))
+		mw := datamodel.MapWrapper{Map: datamodel.Map(cfg.meta)}
+		meta = &mw
 	}
 
 	nnc := cfg.nnc
@@ -322,7 +320,7 @@ func Invoke(
 		Sub:   subject.DID(),
 		Aud:   cfg.aud,
 		Cmd:   cmd,
-		Args:  datamodel.NewMap(datamodel.WithEntries(arguments.All())),
+		Args:  datamodel.MapWrapper{Map: datamodel.Map(arguments)},
 		Prf:   cfg.prf,
 		Meta:  meta,
 		Nonce: nnc,
@@ -393,9 +391,10 @@ func VerifySignature(inv ucan.Invocation, verifier ucan.Verifier) (bool, error) 
 		aud = &a
 	}
 
-	var meta *datamodel.Map
+	var meta *datamodel.MapWrapper
 	if inv.Metadata() != nil {
-		meta = datamodel.NewMap(datamodel.WithEntries(inv.Metadata().All()))
+		mw := datamodel.MapWrapper{Map: datamodel.Map(inv.Metadata())}
+		meta = &mw
 	}
 
 	tokenPayload := &idm.TokenPayloadModel1_0_0_rc1{
@@ -403,7 +402,7 @@ func VerifySignature(inv ucan.Invocation, verifier ucan.Verifier) (bool, error) 
 		Sub:   sub,
 		Aud:   aud,
 		Cmd:   inv.Command(),
-		Args:  datamodel.NewMap(datamodel.WithEntries(inv.Arguments().All())),
+		Args:  datamodel.MapWrapper{Map: datamodel.Map(inv.Arguments())},
 		Prf:   inv.Proofs(),
 		Meta:  meta,
 		Nonce: inv.Nonce(),

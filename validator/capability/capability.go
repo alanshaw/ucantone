@@ -38,7 +38,6 @@ func NewTask[A Arguments](
 
 // BindArguments binds the arguments to the arguments type for this task.
 func (t *Task[A]) BindArguments() (A, error) {
-	argsMap := datamodel.NewMap(datamodel.WithEntries(t.Arguments().All()))
 	var args A
 	// if args is a pointer type, then we need to create an instance of it because
 	// rebind requires a non-nil pointer.
@@ -46,7 +45,7 @@ func (t *Task[A]) BindArguments() (A, error) {
 	if typ.Kind() == reflect.Ptr {
 		args = reflect.New(typ.Elem()).Interface().(A)
 	}
-	if err := datamodel.Rebind(argsMap, args); err != nil {
+	if err := datamodel.Rebind(datamodel.Map(t.Arguments()), args); err != nil {
 		return args, verrs.NewMalformedArgumentsError(t.Command(), err)
 	}
 	return args, nil
@@ -122,5 +121,5 @@ func (c *Capability[A]) Invoke(issuer ucan.Signer, subject ucan.Subject, argumen
 	if err != nil {
 		return nil, err
 	}
-	return invocation.Invoke(issuer, subject, c.cmd, &m, options...)
+	return invocation.Invoke(issuer, subject, c.cmd, m, options...)
 }

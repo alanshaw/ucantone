@@ -3,17 +3,17 @@ package examples
 import (
 	"testing"
 
-	"github.com/alanshaw/ucantone/ipld/datamodel"
+	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 )
 
 func TestParsePolicy(t *testing.T) {
 	// Create some data to match against the policy:
-	msg := datamodel.NewMap(
-		datamodel.WithEntry("to", []string{"bob@example.com"}),
-		datamodel.WithEntry("from", "alice@example.com"),
-		datamodel.WithEntry("message", "Hello bob!"),
-	)
+	msg := ipld.Map{
+		"to":      []string{"bob@example.com"},
+		"from":    "alice@example.com",
+		"message": "Hello bob!",
+	}
 
 	// A policy is a list of statements.
 	// See https://github.com/ucan-wg/delegation/blob/main/README.md#policy

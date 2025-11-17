@@ -18,19 +18,19 @@ import (
 // values may be any of the types supported by [ipld.Any].
 type Map map[string]ipld.Any
 
-func (m Map) MarshalCBOR(w io.Writer) error {
-	if m == nil {
+func (mp Map) MarshalCBOR(w io.Writer) error {
+	if mp == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
 	}
 
 	cw := cbg.NewCborWriter(w)
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(m))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(mp))); err != nil {
 		return err
 	}
 
-	keys := slices.Collect(maps.Keys(m))
+	keys := slices.Collect(maps.Keys(mp))
 	sort.Slice(keys, func(i, j int) bool {
 		fi := keys[i]
 		fj := keys[j]
@@ -51,7 +51,7 @@ func (m Map) MarshalCBOR(w io.Writer) error {
 			return err
 		}
 
-		v := Any{m[k]}
+		v := Any{mp[k]}
 		if err := v.MarshalCBOR(w); err != nil {
 			return fmt.Errorf(`marshaling map value for key "%s": %w`, k, err)
 		}
@@ -109,12 +109,12 @@ func (mp *Map) UnmarshalCBOR(r io.Reader) (err error) {
 	return nil
 }
 
-func (m Map) MarshalDagJSON(w io.Writer) error {
+func (mp Map) MarshalDagJSON(w io.Writer) error {
 	jw := jsg.NewDagJsonWriter(w)
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	keys := slices.Collect(maps.Keys(m))
+	keys := slices.Collect(maps.Keys(mp))
 	slices.Sort(keys)
 	for i, k := range keys {
 		if err := jw.WriteString(k); err != nil {
@@ -123,7 +123,7 @@ func (m Map) MarshalDagJSON(w io.Writer) error {
 		if err := jw.WriteObjectColon(); err != nil {
 			return err
 		}
-		v := Any{m[k]}
+		v := Any{mp[k]}
 		if err := v.MarshalDagJSON(jw); err != nil {
 			return err
 		}
@@ -136,7 +136,7 @@ func (m Map) MarshalDagJSON(w io.Writer) error {
 	return jw.WriteObjectClose()
 }
 
-func (mp *Map) UnmarshalDagJSON(r io.Reader) (err error) {
+func (mp *Map) UnmarshalDagJSON(r io.Reader) error {
 	jr := jsg.NewDagJsonReader(r)
 	if err := jr.ReadObjectOpen(); err != nil {
 		return err
@@ -184,3 +184,35 @@ func (mp *Map) UnmarshalDagJSON(r io.Reader) (err error) {
 }
 
 var _ ipld.Map = (Map)(nil)
+
+type MapWrapper struct {
+	Map Map
+}
+
+func (mw MapWrapper) MarshalCBOR(w io.Writer) error {
+	return mw.Map.MarshalCBOR(w)
+}
+
+func (mw *MapWrapper) UnmarshalCBOR(r io.Reader) error {
+	mp := Map{}
+	err := mp.UnmarshalCBOR(r)
+	if err != nil {
+		return err
+	}
+	*mw = MapWrapper{mp}
+	return nil
+}
+
+func (mw MapWrapper) MarshalDagJSON(w io.Writer) error {
+	return mw.Map.MarshalDagJSON(w)
+}
+
+func (mw *MapWrapper) UnmarshalDagJSON(r io.Reader) error {
+	mp := Map{}
+	err := mp.UnmarshalDagJSON(r)
+	if err != nil {
+		return err
+	}
+	*mw = MapWrapper{mp}
+	return nil
+}

@@ -32,7 +32,7 @@ func (t *TaskModel) MarshalDagJSON(w io.Writer) error {
 	}
 	written := 0
 
-	// t.Args (datamodel.Map) (struct)
+	// t.Args (datamodel.MapWrapper) (struct)
 	if len("args") > 8192 {
 		return fmt.Errorf("String in field \"args\" was too long")
 	}
@@ -153,24 +153,11 @@ func (t *TaskModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Args (datamodel.Map) (struct)
+			// t.Args (datamodel.MapWrapper) (struct)
 			case "args":
 
-				{
-					null, err := jr.PeekNull()
-					if err != nil {
-						return fmt.Errorf("t.Args: %w", err)
-					}
-					if null {
-						if err := jr.ReadNull(); err != nil {
-							return fmt.Errorf("t.Args: %w", err)
-						}
-					} else {
-						t.Args = new(datamodel.Map)
-						if err := t.Args.UnmarshalDagJSON(jr); err != nil {
-							return fmt.Errorf("unmarshaling t.Args pointer: %w", err)
-						}
-					}
+				if err := t.Args.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Args: %w", err)
 				}
 
 				// t.Cmd (command.Command) (string)
@@ -242,7 +229,7 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 	}
 	written := 0
 
-	// t.Args (datamodel.Map) (struct)
+	// t.Args (datamodel.MapWrapper) (struct)
 	if len("args") > 8192 {
 		return fmt.Errorf("String in field \"args\" was too long")
 	}
@@ -423,7 +410,7 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Meta (datamodel.Map) (struct)
+	// t.Meta (datamodel.MapWrapper) (struct)
 	if t.Meta != nil {
 		if len("meta") > 8192 {
 			return fmt.Errorf("String in field \"meta\" was too long")
@@ -563,24 +550,11 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Args (datamodel.Map) (struct)
+			// t.Args (datamodel.MapWrapper) (struct)
 			case "args":
 
-				{
-					null, err := jr.PeekNull()
-					if err != nil {
-						return fmt.Errorf("t.Args: %w", err)
-					}
-					if null {
-						if err := jr.ReadNull(); err != nil {
-							return fmt.Errorf("t.Args: %w", err)
-						}
-					} else {
-						t.Args = new(datamodel.Map)
-						if err := t.Args.UnmarshalDagJSON(jr); err != nil {
-							return fmt.Errorf("unmarshaling t.Args pointer: %w", err)
-						}
-					}
+				if err := t.Args.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Args: %w", err)
 				}
 
 				// t.Aud (did.DID) (struct)
@@ -665,7 +639,7 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalDagJSON(r io.Reader) (err error) {
 					return fmt.Errorf("unmarshaling t.Iss: %w", err)
 				}
 
-				// t.Meta (datamodel.Map) (struct)
+				// t.Meta (datamodel.MapWrapper) (struct)
 			case "meta":
 
 				{
@@ -678,7 +652,7 @@ func (t *TokenPayloadModel1_0_0_rc1) UnmarshalDagJSON(r io.Reader) (err error) {
 							return fmt.Errorf("t.Meta: %w", err)
 						}
 					} else {
-						t.Meta = new(datamodel.Map)
+						t.Meta = new(datamodel.MapWrapper)
 						if err := t.Meta.UnmarshalDagJSON(jr); err != nil {
 							return fmt.Errorf("unmarshaling t.Meta pointer: %w", err)
 						}

@@ -77,7 +77,7 @@ func (d *Delegation) Metadata() ipld.Map {
 	if d.model.SigPayload.TokenPayload1_0_0_rc1.Meta == nil {
 		return nil
 	}
-	return *d.model.SigPayload.TokenPayload1_0_0_rc1.Meta
+	return d.model.SigPayload.TokenPayload1_0_0_rc1.Meta.Map
 }
 
 // The datamodel this delegation is built from.
@@ -251,10 +251,10 @@ func Delegate(
 		return nil, fmt.Errorf("parsing command: %w", err)
 	}
 
-	var meta *datamodel.Map
+	var meta *datamodel.MapWrapper
 	if cfg.meta != nil {
-		mm := datamodel.Map(cfg.meta)
-		meta = &mm
+		mw := datamodel.MapWrapper{Map: datamodel.Map(cfg.meta)}
+		meta = &mw
 	}
 
 	nnc := cfg.nnc
@@ -334,10 +334,10 @@ func VerifySignature(dlg ucan.Delegation, verifier ucan.Verifier) (bool, error) 
 		sub = dlg.Subject().DID()
 	}
 
-	var meta *datamodel.Map
+	var meta *datamodel.MapWrapper
 	if dlg.Metadata() != nil {
-		mm := datamodel.Map(dlg.Metadata())
-		meta = &mm
+		mw := datamodel.MapWrapper{Map: datamodel.Map(dlg.Metadata())}
+		meta = &mw
 	}
 
 	var pol policy.Policy

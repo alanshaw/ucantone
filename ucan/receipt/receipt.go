@@ -7,7 +7,6 @@ import (
 	"io"
 
 	"github.com/alanshaw/ucantone/ipld"
-	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/result"
 	rsdm "github.com/alanshaw/ucantone/result/datamodel"
@@ -50,17 +49,12 @@ func (rcpt *Receipt) UnmarshalCBOR(r io.Reader) error {
 		return err
 	}
 
-	invArgs, ok := inv.Arguments().(dagcbor.CBORMarshaler)
-	if !ok {
-		return errors.New("invocation arguments are not CBOR unmarahsler")
-	}
-
 	if inv.Command() != Command {
 		return fmt.Errorf("invalid receipt command %s, expected %s", inv.Command().String(), Command.String())
 	}
 
 	var receiptArgs rdm.ArgsModel
-	err = datamodel.Rebind(invArgs, &receiptArgs)
+	err = datamodel.Rebind(datamodel.Map(inv.Arguments()), &receiptArgs)
 	if err != nil {
 		return fmt.Errorf("decoding receipt arguments: %w", err)
 	}
@@ -128,7 +122,7 @@ func Issue[O, X ipld.Any](
 
 	options = append(options, invocation.WithAudience(executor))
 
-	inv, err := invocation.Invoke(executor, executor.DID(), Command, &args, options...)
+	inv, err := invocation.Invoke(executor, executor.DID(), Command, args, options...)
 	if err != nil {
 		return nil, err
 	}

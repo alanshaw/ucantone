@@ -3,6 +3,7 @@ package invocation_test
 import (
 	"testing"
 
+	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/testutil"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
@@ -15,7 +16,7 @@ func TestInvoke(t *testing.T) {
 		issuer := testutil.RandomSigner(t)
 		subject := testutil.RandomDID(t)
 		command := testutil.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments{}
+		arguments := ipld.Map{}
 		then := ucan.Now()
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments)
@@ -38,7 +39,7 @@ func TestInvoke(t *testing.T) {
 	t.Run("bad command", func(t *testing.T) {
 		issuer := testutil.RandomSigner(t)
 		subject := testutil.RandomDID(t)
-		arguments := invocation.NoArguments{}
+		arguments := ipld.Map{}
 
 		_, err := invocation.Invoke(issuer, subject, "testinvoke", arguments)
 		require.Error(t, err)
@@ -49,7 +50,7 @@ func TestInvoke(t *testing.T) {
 		issuer := testutil.RandomSigner(t)
 		subject := testutil.RandomDID(t)
 		command := testutil.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments{}
+		arguments := ipld.Map{}
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNoNonce())
 		require.NoError(t, err)
@@ -68,7 +69,7 @@ func TestInvoke(t *testing.T) {
 		issuer := testutil.RandomSigner(t)
 		subject := testutil.RandomDID(t)
 		command := testutil.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments{}
+		arguments := ipld.Map{}
 		nonce := []byte{1, 2, 3}
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNonce(nonce))
@@ -87,7 +88,7 @@ func TestInvoke(t *testing.T) {
 		issuer := testutil.RandomSigner(t)
 		subject := testutil.RandomDID(t)
 		command := testutil.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments{}
+		arguments := ipld.Map{}
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithNoExpiration())
 		require.NoError(t, err)
@@ -106,7 +107,7 @@ func TestInvoke(t *testing.T) {
 		issuer := testutil.RandomSigner(t)
 		subject := testutil.RandomDID(t)
 		command := testutil.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments{}
+		arguments := ipld.Map{}
 		expiration := ucan.Now() + 138
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithExpiration(expiration))
@@ -125,7 +126,7 @@ func TestInvoke(t *testing.T) {
 		issuer := testutil.RandomSigner(t)
 		subject := testutil.RandomDID(t)
 		command := testutil.Must(command.Parse("/test/invoke"))(t)
-		arguments := invocation.NoArguments{}
+		arguments := ipld.Map{}
 		audience := testutil.RandomDID(t)
 
 		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithAudience(audience))

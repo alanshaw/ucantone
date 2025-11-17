@@ -31,7 +31,7 @@ func NewTask(
 	taskModel := idm.TaskModel{
 		Sub:   subject.DID(),
 		Cmd:   command,
-		Args:  datamodel.NewMap(datamodel.WithEntries(arguments.All())),
+		Args:  datamodel.MapWrapper{Map: datamodel.Map(arguments)},
 		Nonce: nonce,
 	}
 

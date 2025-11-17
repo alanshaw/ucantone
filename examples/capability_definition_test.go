@@ -2,7 +2,6 @@ package examples
 
 import (
 	"fmt"
-	"maps"
 	"testing"
 
 	"github.com/alanshaw/ucantone/examples/types"
@@ -107,7 +106,7 @@ func TestCapabilityDefinitionGenericMap(t *testing.T) {
 		panic(err)
 	}
 
-	args := map[string]any{
+	args := datamodel.Map{
 		"to":      []string{"bob@example.com"},
 		"subject": "Hello!",
 		"message": "Hello Bob, How do you do?",
@@ -117,7 +116,7 @@ func TestCapabilityDefinitionGenericMap(t *testing.T) {
 	invocation, err := messageSendCapability.Invoke(
 		alice,
 		mailer,
-		datamodel.NewMap(datamodel.WithEntries(maps.All(args))),
+		&args,
 		invocation.WithProofs(dlg.Link()),
 	)
 	if err != nil {
