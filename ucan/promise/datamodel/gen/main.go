@@ -1,0 +1,24 @@
+package main
+
+import (
+	jsg "github.com/alanshaw/dag-json-gen"
+	pdm "github.com/alanshaw/ucantone/ucan/promise/datamodel"
+	cbg "github.com/whyrusleeping/cbor-gen"
+)
+
+func main() {
+	if err := cbg.WriteMapEncodersToFile("../cbor_gen.go", "datamodel",
+		pdm.AwaitAnyModel{},
+		pdm.AwaitOKModel{},
+		pdm.AwaitErrorModel{},
+	); err != nil {
+		panic(err)
+	}
+	if err := jsg.WriteMapEncodersToFile("../dag_json_gen.go", "datamodel",
+		pdm.AwaitAnyModel{},
+		pdm.AwaitOKModel{},
+		pdm.AwaitErrorModel{},
+	); err != nil {
+		panic(err)
+	}
+}

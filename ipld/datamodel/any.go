@@ -86,6 +86,18 @@ func (a *Any) MarshalCBOR(w io.Writer) error {
 
 	rt := reflect.TypeOf(a.Value)
 	switch rt.Kind() {
+	// case reflect.Map:
+	// 	if rt.Key().Kind() == reflect.String {
+	// 		rv := reflect.ValueOf(a.Value)
+	// 		m := make(Map, rv.Len())
+	// 		for _, rk := range rv.MapKeys() {
+	// 			m[rk.String()] = rv.MapIndex(rk).Interface()
+	// 		}
+	// 		if err := m.MarshalCBOR(w); err != nil {
+	// 			return fmt.Errorf("marshaling map: %w", err)
+	// 		}
+	// 		return nil
+	// 	}
 	case reflect.Slice:
 		cw := cbg.NewCborWriter(w)
 		s := reflect.ValueOf(a.Value)
@@ -95,7 +107,7 @@ func (a *Any) MarshalCBOR(w io.Writer) error {
 		for i := range s.Len() {
 			a := Any{Value: s.Index(i).Interface()}
 			if err := a.MarshalCBOR(w); err != nil {
-				return fmt.Errorf("marshalling slice index: %d: %w", i, err)
+				return fmt.Errorf("marshaling slice index: %d: %w", i, err)
 			}
 		}
 		return nil
@@ -226,6 +238,18 @@ func (a *Any) MarshalDagJSON(w io.Writer) error {
 
 	rt := reflect.TypeOf(a.Value)
 	switch rt.Kind() {
+	// case reflect.Map:
+	// 	if rt.Key().Kind() == reflect.String {
+	// 		rv := reflect.ValueOf(a.Value)
+	// 		m := make(Map, rv.Len())
+	// 		for _, rk := range rv.MapKeys() {
+	// 			m[rk.String()] = rv.MapIndex(rk).Interface()
+	// 		}
+	// 		if err := m.MarshalDagJSON(w); err != nil {
+	// 			return fmt.Errorf("marshaling map: %w", err)
+	// 		}
+	// 		return nil
+	// 	}
 	case reflect.Slice:
 		if err := jw.WriteArrayOpen(); err != nil {
 			return err

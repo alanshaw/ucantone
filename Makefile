@@ -29,6 +29,9 @@ gen:
 	rm ./ucan/invocation/datamodel/*_gen.*.go || true
 	cd ./ucan/invocation/datamodel/gen && go run ./main.go
 
+	rm ./ucan/promise/datamodel/*_gen.go || true
+	cd ./ucan/promise/datamodel/gen && go run ./main.go
+
 	rm ./ucan/receipt/datamodel/*_gen.go || true
 	cd ./ucan/receipt/datamodel/gen && go run ./main.go
 

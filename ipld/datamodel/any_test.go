@@ -26,6 +26,9 @@ func TestAny(t *testing.T) {
 			"str":   "X",
 			"bytes": []byte{2},
 		},
+		// map[string]cid.Cid{
+		// 	"await/ok": testutil.RandomCID(t),
+		// },
 	}
 
 	for _, v := range values {
