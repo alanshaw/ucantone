@@ -25,11 +25,6 @@ func TestContainer(t *testing.T) {
 		panic(err)
 	}
 
-	pol, err := policy.Build(policy.All(".to", policy.Like(".", "*.example.com")))
-	if err != nil {
-		panic(err)
-	}
-
 	// delegate alice capability to use the email service, but only allow sending
 	// to example.com email addresses
 	dlg, err := delegation.Delegate(
@@ -37,7 +32,9 @@ func TestContainer(t *testing.T) {
 		alice,
 		must(command.Parse("/message/send")),
 		delegation.WithSubject(mailer),
-		delegation.WithPolicy(pol),
+		delegation.WithPolicyBuilder(
+			policy.All(".to", policy.Like(".", "*.example.com")),
+		),
 	)
 	if err != nil {
 		panic(err)
@@ -61,7 +58,10 @@ func TestContainer(t *testing.T) {
 	}
 	fmt.Println("Invocation:", inv.Link())
 
-	ct, err := container.New(container.WithDelegations(dlg), container.WithInvocations(inv))
+	ct, err := container.New(
+		container.WithDelegations(dlg),
+		container.WithInvocations(inv),
+	)
 	if err != nil {
 		panic(err)
 	}

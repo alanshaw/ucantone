@@ -77,8 +77,8 @@ func TestCapabilityDefinitionGenericMap(t *testing.T) {
 	// for values.
 	messageSendCapability, err := capability.New[*datamodel.Map](
 		must(command.Parse("/message/send")),
-		capability.WithPolicy(
-			must(policy.Build(policy.NotEqual(".to", []string{}))),
+		capability.WithPolicyBuilder(
+			policy.NotEqual(".to", []string{}),
 		),
 	)
 	if err != nil {

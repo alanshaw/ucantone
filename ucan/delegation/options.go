@@ -113,3 +113,16 @@ func WithPolicy(pol ucan.Policy) Option {
 		return nil
 	}
 }
+
+// WithPolicyBuilder configures the policy for the delegation, by building a
+// policy from the passed statement builder functions.
+func WithPolicyBuilder(statements ...policy.StatementBuilderFunc) Option {
+	return func(cfg *delegationConfig) error {
+		pol, err := policy.Build(statements...)
+		if err != nil {
+			return err
+		}
+		cfg.pol = pol
+		return nil
+	}
+}
