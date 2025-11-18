@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/alanshaw/ucantone/principal/ed25519"
-	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 )
@@ -30,16 +29,9 @@ func TestDelegations(t *testing.T) {
 	_, err = delegation.Delegate(
 		mailer,
 		alice,
-		must(command.Parse("/message/send")),
+		"/message/send",
 		delegation.WithSubject(mailer),
 	)
-	if err != nil {
-		panic(err)
-	}
-
-	// alice delegates bob capability to use the email service, but only allows
-	// bob to send to example.com email addresses
-	policy, err := policy.Build(policy.All(".to", policy.Like(".", "*.example.com")))
 	if err != nil {
 		panic(err)
 	}
@@ -47,9 +39,13 @@ func TestDelegations(t *testing.T) {
 	_, err = delegation.Delegate(
 		alice,
 		bob,
-		must(command.Parse("/message/send")),
+		"/message/send",
 		delegation.WithSubject(mailer),
-		delegation.WithPolicy(policy),
+		// alice delegates bob capability to use the email service, but only allows
+		// bob to send to example.com email addresses
+		delegation.WithPolicyBuilder(
+			policy.All(".to", policy.Like(".", "*.example.com")),
+		),
 	)
 	if err != nil {
 		panic(err)

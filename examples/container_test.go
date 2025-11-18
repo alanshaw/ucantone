@@ -6,7 +6,6 @@ import (
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/principal/ed25519"
-	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/container"
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
@@ -30,7 +29,7 @@ func TestContainer(t *testing.T) {
 	dlg, err := delegation.Delegate(
 		mailer,
 		alice,
-		must(command.Parse("/message/send")),
+		"/message/send",
 		delegation.WithSubject(mailer),
 		delegation.WithPolicyBuilder(
 			policy.All(".to", policy.Like(".", "*.example.com")),
@@ -45,7 +44,7 @@ func TestContainer(t *testing.T) {
 	inv, err := invocation.Invoke(
 		alice,
 		mailer,
-		must(command.Parse("/message/send")),
+		"/message/send",
 		ipld.Map{
 			"to":      []string{"bob@example.com"},
 			"subject": "Hello!",

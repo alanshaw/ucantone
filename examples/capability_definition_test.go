@@ -7,7 +7,6 @@ import (
 	"github.com/alanshaw/ucantone/examples/types"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/principal/ed25519"
-	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
@@ -19,9 +18,9 @@ func TestCapabilityDefinition(t *testing.T) {
 	// you get a typed Delegate and Invoke method (see below).
 	// i.e. the args parameter for those methods is the type you define here.
 	messageSendCapability, err := capability.New[*types.MessageSendArguments](
-		must(command.Parse("/message/send")),
-		capability.WithPolicy(
-			must(policy.Build(policy.NotEqual(".to", []string{}))),
+		"/message/send",
+		capability.WithPolicyBuilder(
+			policy.NotEqual(".to", []string{}),
 		),
 	)
 	if err != nil {
@@ -76,7 +75,7 @@ func TestCapabilityDefinitionGenericMap(t *testing.T) {
 	// i.e. no information about what keys can be added and no type information
 	// for values.
 	messageSendCapability, err := capability.New[*datamodel.Map](
-		must(command.Parse("/message/send")),
+		"/message/send",
 		capability.WithPolicyBuilder(
 			policy.NotEqual(".to", []string{}),
 		),
@@ -126,11 +125,4 @@ func TestCapabilityDefinitionGenericMap(t *testing.T) {
 
 	// Now, send the invocation to the service. You'll probably want to put the
 	// invocation and delegation in a Container and send a HTTP request...
-}
-
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
 }

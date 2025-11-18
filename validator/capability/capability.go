@@ -2,12 +2,14 @@ package capability
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"
+	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
@@ -71,6 +73,10 @@ func New[A Arguments](cmd ucan.Command, options ...Option) (*Capability[A], erro
 		if err != nil {
 			return nil, err
 		}
+	}
+	cmd, err := command.Parse(string(cmd))
+	if err != nil {
+		return nil, fmt.Errorf("parsing command: %w", err)
 	}
 	return &Capability[A]{cmd, cfg.pol}, nil
 }
