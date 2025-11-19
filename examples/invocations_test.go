@@ -1,14 +1,16 @@
 package examples
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/ucan/delegation"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy"
+	"github.com/alanshaw/ucantone/ucan/invocation"
 )
 
-func TestDelegations(t *testing.T) {
+func TestInvocations(t *testing.T) {
 	// mailer is an email service that can send emails
 	mailer, err := ed25519.Generate()
 	if err != nil {
@@ -20,13 +22,8 @@ func TestDelegations(t *testing.T) {
 		panic(err)
 	}
 
-	bob, err := ed25519.Generate()
-	if err != nil {
-		panic(err)
-	}
-
 	// delegate alice capability to use the email service
-	_, err = delegation.Delegate(
+	dlg, err := delegation.Delegate(
 		mailer,          // issuer
 		alice,           // audience (receiver)
 		mailer,          // subject
@@ -36,18 +33,23 @@ func TestDelegations(t *testing.T) {
 		panic(err)
 	}
 
-	_, err = delegation.Delegate(
+	inv, err := invocation.Invoke(
 		alice,
-		bob,
 		mailer,
 		"/message/send",
-		// alice delegates bob capability to use the email service, but only allows
-		// bob to send to example.com email addresses
-		delegation.WithPolicyBuilder(
-			policy.All(".to", policy.Like(".", "*.example.com")),
-		),
+		ipld.Map{
+			"from":    "alice@example.com",
+			"to":      "bob@example.com",
+			"message": "Hello Bob!",
+		},
+		invocation.WithProofs(dlg.Link()),
 	)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(inv.Link())
+
+	// Now send the invocations to the mailer for execution. You'll need to also
+	// send the delegation as proof. You may want to use a _container_ for this.
+	// See `container_test.go` in this directory.
 }
