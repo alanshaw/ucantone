@@ -1,7 +1,6 @@
 package delegation
 
 import (
-	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
@@ -11,42 +10,13 @@ import (
 type Option func(cfg *delegationConfig) error
 
 type delegationConfig struct {
-	sub       *did.DID
-	powerline bool
-	exp       *ucan.UTCUnixTimestamp
-	nbf       *ucan.UTCUnixTimestamp
-	noexp     bool
-	nnc       []byte
-	nonnc     bool
-	meta      ipld.Map
-	pol       policy.Policy
-}
-
-// WithSubject configures the DID of the subject of the delegation chain.
-func WithSubject(sub ucan.Principal) Option {
-	return func(cfg *delegationConfig) error {
-		if sub == nil {
-			cfg.sub = nil
-		} else {
-			sub := sub.DID()
-			cfg.sub = &sub
-		}
-		return nil
-	}
-}
-
-// WithPowerline configures the delegation powerline. Setting powerline to true
-// allows the delegation subject to be unset.
-//
-// "Powerline" is a pattern for automatically delegating all future delegations
-// to another agent regardless of Subject.
-//
-// https://github.com/ucan-wg/delegation/blob/main/README.md#powerline
-func WithPowerline(on bool) Option {
-	return func(cfg *delegationConfig) error {
-		cfg.powerline = on
-		return nil
-	}
+	exp   *ucan.UTCUnixTimestamp
+	nbf   *ucan.UTCUnixTimestamp
+	noexp bool
+	nnc   []byte
+	nonnc bool
+	meta  ipld.Map
+	pol   policy.Policy
 }
 
 // WithExpiration configures the expiration time in UTC seconds since Unix

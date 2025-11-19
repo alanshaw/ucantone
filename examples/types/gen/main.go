@@ -7,7 +7,9 @@ import (
 
 func main() {
 	if err := cbg.WriteMapEncodersToFile("../cbor_gen.go", "types",
+		types.EmailsListArguments{},
 		types.MessageSendArguments{},
+		types.PromisedMsgSendArguments{},
 	); err != nil {
 		panic(err)
 	}

@@ -29,8 +29,8 @@ func TestContainer(t *testing.T) {
 	dlg, err := delegation.Delegate(
 		mailer,
 		alice,
+		mailer,
 		"/message/send",
-		delegation.WithSubject(mailer),
 		delegation.WithPolicyBuilder(
 			policy.All(".to", policy.Like(".", "*.example.com")),
 		),

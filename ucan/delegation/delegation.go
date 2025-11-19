@@ -216,6 +216,7 @@ func Decode(b []byte) (*Delegation, error) {
 func Delegate(
 	issuer ucan.Signer,
 	audience ucan.Principal,
+	subject ucan.Subject,
 	command ucan.Command,
 	options ...Option,
 ) (*Delegation, error) {
@@ -235,15 +236,9 @@ func Delegate(
 		return nil, fmt.Errorf("encoding varsig header: %w", err)
 	}
 
-	if cfg.sub == nil && !cfg.powerline {
-		return nil, errors.New("one of subject or powerline must be configured")
-	}
-	if cfg.sub != nil && cfg.powerline {
-		return nil, errors.New("subject and powerline cannot both be configured")
-	}
 	var sub did.DID
-	if cfg.sub != nil {
-		sub = *cfg.sub
+	if subject != nil {
+		sub = subject.DID()
 	}
 
 	cmd, err := cmd.Parse(string(command))

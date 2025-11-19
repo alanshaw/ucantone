@@ -18,6 +18,104 @@ var _ = cid.Undef
 var _ = math.E
 var _ = sort.Sort
 
+func (t *EmailsListArguments) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{161}); err != nil {
+		return err
+	}
+
+	// t.Limit (uint64) (uint64)
+	if len("Limit") > 8192 {
+		return xerrors.Errorf("Value in field \"Limit\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("Limit"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("Limit")); err != nil {
+		return err
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Limit)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *EmailsListArguments) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = EmailsListArguments{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("EmailsListArguments: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 5)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Limit (uint64) (uint64)
+		case "Limit":
+
+			{
+
+				maj, extra, err = cr.ReadHeader()
+				if err != nil {
+					return err
+				}
+				if maj != cbg.MajUnsignedInt {
+					return fmt.Errorf("wrong type for uint64 field")
+				}
+				t.Limit = uint64(extra)
+
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
 func (t *MessageSendArguments) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
@@ -213,6 +311,166 @@ func (t *MessageSendArguments) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 				t.Subject = string(sval)
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+func (t *PromisedMsgSendArguments) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{163}); err != nil {
+		return err
+	}
+
+	// t.To (promise.AwaitOK) (struct)
+	if len("To") > 8192 {
+		return xerrors.Errorf("Value in field \"To\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("To"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("To")); err != nil {
+		return err
+	}
+
+	if err := t.To.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.From (string) (string)
+	if len("From") > 8192 {
+		return xerrors.Errorf("Value in field \"From\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("From"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("From")); err != nil {
+		return err
+	}
+
+	if len(t.From) > 8192 {
+		return xerrors.Errorf("Value in field t.From was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.From))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string(t.From)); err != nil {
+		return err
+	}
+
+	// t.Message (string) (string)
+	if len("Message") > 8192 {
+		return xerrors.Errorf("Value in field \"Message\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("Message"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("Message")); err != nil {
+		return err
+	}
+
+	if len(t.Message) > 8192 {
+		return xerrors.Errorf("Value in field t.Message was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.Message))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string(t.Message)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *PromisedMsgSendArguments) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = PromisedMsgSendArguments{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("PromisedMsgSendArguments: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 7)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.To (promise.AwaitOK) (struct)
+		case "To":
+
+			{
+
+				if err := t.To.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.To: %w", err)
+				}
+
+			}
+			// t.From (string) (string)
+		case "From":
+
+			{
+				sval, err := cbg.ReadStringWithMax(cr, 8192)
+				if err != nil {
+					return err
+				}
+
+				t.From = string(sval)
+			}
+			// t.Message (string) (string)
+		case "Message":
+
+			{
+				sval, err := cbg.ReadStringWithMax(cr, 8192)
+				if err != nil {
+					return err
+				}
+
+				t.Message = string(sval)
 			}
 
 		default:

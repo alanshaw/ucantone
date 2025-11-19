@@ -111,8 +111,8 @@ func makeValidSingleNonTimeBoundedProofFixture() fdm.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
+		bob,
 		cmd,
-		delegation.WithSubject(bob),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -141,8 +141,8 @@ func makeValidSingleActiveProofFixture() fdm.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
+		bob,
 		cmd,
-		delegation.WithSubject(bob),
 		delegation.WithNotBefore(nbf),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
@@ -171,8 +171,8 @@ func makeValidMultipleProofsFixture() fdm.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		carol,
 		bob,
+		carol,
 		cmd,
-		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -180,8 +180,8 @@ func makeValidMultipleProofsFixture() fdm.ValidModel {
 	dlg1 := must(delegation.Delegate(
 		bob,
 		alice,
+		carol,
 		cmd,
-		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[1]),
 	))
@@ -209,8 +209,8 @@ func makeValidMultipleActiveProofsFixture() fdm.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		carol,
 		bob,
+		carol,
 		cmd,
-		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -219,8 +219,8 @@ func makeValidMultipleActiveProofsFixture() fdm.ValidModel {
 	dlg1 := must(delegation.Delegate(
 		bob,
 		alice,
+		carol,
 		cmd,
-		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
 		delegation.WithNotBefore(nbf),
 		delegation.WithNonce(nonce[1]),
@@ -249,8 +249,8 @@ func makeValidPowerlineFixture() fdm.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		carol,
 		bob,
+		carol,
 		cmd,
-		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -258,8 +258,8 @@ func makeValidPowerlineFixture() fdm.ValidModel {
 	dlg1 := must(delegation.Delegate(
 		bob,
 		alice,
+		nil,
 		cmd,
-		delegation.WithPowerline(true),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[1]),
 	))
@@ -288,8 +288,8 @@ func makeValidPolicyMatchFixture() fdm.ValidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
+		bob,
 		cmd,
-		delegation.WithSubject(bob),
 		delegation.WithPolicy(pol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
@@ -338,8 +338,8 @@ func makeInvalidMissingProofFixture() fdm.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
+		bob,
 		cmd,
-		delegation.WithSubject(bob),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -369,8 +369,8 @@ func makeInvalidExpiredProofFixture() fdm.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
+		bob,
 		cmd,
-		delegation.WithSubject(bob),
 		delegation.WithExpiration(exp),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -400,8 +400,8 @@ func makeInvalidInactiveProofFixture() fdm.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
+		bob,
 		cmd,
-		delegation.WithSubject(bob),
 		delegation.WithNoExpiration(),
 		delegation.WithNotBefore(nbf),
 		delegation.WithNonce(nonce[0]),
@@ -431,8 +431,8 @@ func makeInvalidProofPrincipalAlignmentFixture() fdm.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		dave,
 		carol,
+		dave,
 		cmd,
-		delegation.WithSubject(dave),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -440,8 +440,8 @@ func makeInvalidProofPrincipalAlignmentFixture() fdm.InvalidModel {
 	dlg1 := must(delegation.Delegate(
 		bob,
 		alice,
+		dave,
 		cmd,
-		delegation.WithSubject(dave),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[1]),
 	))
@@ -470,8 +470,8 @@ func makeInvalidInvocationPrincipalAlignmentFixture() fdm.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		dave,
 		carol,
+		dave,
 		cmd,
-		delegation.WithSubject(dave),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -479,8 +479,8 @@ func makeInvalidInvocationPrincipalAlignmentFixture() fdm.InvalidModel {
 	dlg1 := must(delegation.Delegate(
 		carol,
 		bob,
+		dave,
 		cmd,
-		delegation.WithSubject(dave),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[1]),
 	))
@@ -509,8 +509,8 @@ func makeInvalidProofSubjectAlignmentFixture() fdm.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		carol,
 		bob,
+		carol,
 		cmd,
-		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -518,8 +518,8 @@ func makeInvalidProofSubjectAlignmentFixture() fdm.InvalidModel {
 	dlg1 := must(delegation.Delegate(
 		bob,
 		alice,
+		bob,
 		cmd,
-		delegation.WithSubject(bob),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[1]),
 	))
@@ -548,8 +548,8 @@ func makeInvalidInvocationSubjectAlignmentFixture() fdm.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		carol,
 		bob,
+		carol,
 		cmd,
-		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -557,8 +557,8 @@ func makeInvalidInvocationSubjectAlignmentFixture() fdm.InvalidModel {
 	dlg1 := must(delegation.Delegate(
 		bob,
 		alice,
+		carol,
 		cmd,
-		delegation.WithSubject(carol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[1]),
 	))
@@ -587,8 +587,8 @@ func makeInvalidExpiredInvocationFixture() fdm.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
+		bob,
 		cmd,
-		delegation.WithSubject(bob),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -701,8 +701,8 @@ func makeInvalidPowerlineFixture() fdm.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
+		nil,
 		cmd,
-		delegation.WithPowerline(true),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -732,8 +732,8 @@ func makeInvalidPolicyViolationFixture() fdm.InvalidModel {
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
+		bob,
 		cmd,
-		delegation.WithSubject(bob),
 		delegation.WithPolicy(pol),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),

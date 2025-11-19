@@ -29,8 +29,8 @@ func TestDelegations(t *testing.T) {
 	_, err = delegation.Delegate(
 		mailer,
 		alice,
+		mailer,
 		"/message/send",
-		delegation.WithSubject(mailer),
 	)
 	if err != nil {
 		panic(err)
@@ -39,8 +39,8 @@ func TestDelegations(t *testing.T) {
 	_, err = delegation.Delegate(
 		alice,
 		bob,
+		mailer,
 		"/message/send",
-		delegation.WithSubject(mailer),
 		// alice delegates bob capability to use the email service, but only allows
 		// bob to send to example.com email addresses
 		delegation.WithPolicyBuilder(

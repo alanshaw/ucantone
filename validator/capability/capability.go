@@ -117,8 +117,8 @@ func (c *Capability[A]) Policy() ucan.Policy {
 	return c.pol
 }
 
-func (c *Capability[A]) Delegate(issuer ucan.Signer, audience ucan.Principal, options ...delegation.Option) (*delegation.Delegation, error) {
-	return delegation.Delegate(issuer, audience, c.cmd, options...)
+func (c *Capability[A]) Delegate(issuer ucan.Signer, audience ucan.Principal, subject ucan.Subject, options ...delegation.Option) (*delegation.Delegation, error) {
+	return delegation.Delegate(issuer, audience, subject, c.cmd, options...)
 }
 
 func (c *Capability[A]) Invoke(issuer ucan.Signer, subject ucan.Subject, arguments A, options ...invocation.Option) (*invocation.Invocation, error) {

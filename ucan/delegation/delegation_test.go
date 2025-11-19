@@ -22,7 +22,7 @@ func TestDelegation(t *testing.T) {
 		command := testutil.Must(command.Parse("/test/invoke"))(t)
 		then := ucan.Now()
 
-		initial, err := delegation.Delegate(issuer, audience, command, delegation.WithPowerline(true))
+		initial, err := delegation.Delegate(issuer, audience, nil, command)
 		require.NoError(t, err)
 
 		encoded, err := delegation.Encode(initial)
@@ -106,8 +106,8 @@ func TestFixtures(t *testing.T) {
 			actual, err := delegation.Delegate(
 				issuer,
 				audience,
+				subject,
 				command,
-				delegation.WithSubject(subject),
 				delegation.WithExpiration(expiration),
 				delegation.WithNonce(nonce),
 			)

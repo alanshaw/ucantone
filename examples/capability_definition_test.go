@@ -7,7 +7,6 @@ import (
 	"github.com/alanshaw/ucantone/examples/types"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/principal/ed25519"
-	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/validator/capability"
@@ -39,11 +38,7 @@ func TestCapabilityDefinition(t *testing.T) {
 	}
 
 	// delegate alice capability to use the email service
-	dlg, err := messageSendCapability.Delegate(
-		mailer,
-		alice,
-		delegation.WithSubject(mailer),
-	)
+	dlg, err := messageSendCapability.Delegate(mailer, alice, mailer)
 	if err != nil {
 		panic(err)
 	}
@@ -96,11 +91,7 @@ func TestCapabilityDefinitionGenericMap(t *testing.T) {
 	}
 
 	// delegate alice capability to use the email service
-	dlg, err := messageSendCapability.Delegate(
-		mailer,
-		alice,
-		delegation.WithSubject(mailer),
-	)
+	dlg, err := messageSendCapability.Delegate(mailer, alice, mailer)
 	if err != nil {
 		panic(err)
 	}
