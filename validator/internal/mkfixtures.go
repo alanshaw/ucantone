@@ -284,13 +284,12 @@ func makeValidPowerlineFixture() fdm.ValidModel {
 }
 
 func makeValidPolicyMatchFixture() fdm.ValidModel {
-	pol := must(policy.Build(policy.Equal(".answer", 42)))
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
 		bob,
 		cmd,
-		delegation.WithPolicy(pol),
+		delegation.WithPolicyBuilder(policy.Equal(".answer", 42)),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
@@ -728,13 +727,12 @@ func makeInvalidPowerlineFixture() fdm.InvalidModel {
 }
 
 func makeInvalidPolicyViolationFixture() fdm.InvalidModel {
-	pol := must(policy.Build(policy.Equal(".answer", 42)))
 	dlg0 := must(delegation.Delegate(
 		bob,
 		alice,
 		bob,
 		cmd,
-		delegation.WithPolicy(pol),
+		delegation.WithPolicyBuilder(policy.Equal(".answer", 42)),
 		delegation.WithNoExpiration(),
 		delegation.WithNonce(nonce[0]),
 	))
