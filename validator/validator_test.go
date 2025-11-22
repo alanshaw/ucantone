@@ -55,7 +55,7 @@ func TestFixtures(t *testing.T) {
 			authorization, err := validator.Access(t.Context(), vrf, cap, inv, opts...)
 			require.NoError(t, err, "validation should have passed for invocation with %s", vector.Description)
 
-			_, err = authorization.Task.BindArguments()
+			_ = authorization.Task.BindArguments()
 			require.NoError(t, err)
 		})
 	}

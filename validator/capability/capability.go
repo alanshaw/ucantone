@@ -23,6 +23,7 @@ type Arguments interface {
 
 type Task[A Arguments] struct {
 	*invocation.Task
+	args A
 }
 
 func NewTask[A Arguments](
@@ -31,15 +32,6 @@ func NewTask[A Arguments](
 	arguments ipld.Map,
 	nonce ucan.Nonce,
 ) (*Task[A], error) {
-	task, err := invocation.NewTask(subject, command, arguments, nonce)
-	if err != nil {
-		return nil, err
-	}
-	return &Task[A]{Task: task}, nil
-}
-
-// BindArguments binds the arguments to the arguments type for this task.
-func (t *Task[A]) BindArguments() (A, error) {
 	var args A
 	// if args is a pointer type, then we need to create an instance of it because
 	// rebind requires a non-nil pointer.
@@ -47,10 +39,19 @@ func (t *Task[A]) BindArguments() (A, error) {
 	if typ.Kind() == reflect.Ptr {
 		args = reflect.New(typ.Elem()).Interface().(A)
 	}
-	if err := datamodel.Rebind(datamodel.Map(t.Arguments()), args); err != nil {
-		return args, verrs.NewMalformedArgumentsError(t.Command(), err)
+	if err := datamodel.Rebind(datamodel.Map(arguments), args); err != nil {
+		return nil, verrs.NewMalformedArgumentsError(command, err)
 	}
-	return args, nil
+	task, err := invocation.NewTask(subject, command, arguments, nonce)
+	if err != nil {
+		return nil, err
+	}
+	return &Task[A]{Task: task, args: args}, nil
+}
+
+// BindArguments returns the arguments bound to the type for this task.
+func (t *Task[A]) BindArguments() A {
+	return t.args
 }
 
 var _ ucan.Task = (*Task[Arguments])(nil)
@@ -61,6 +62,8 @@ type Match[A Arguments] struct {
 	Proofs     map[cid.Cid]ucan.Delegation
 }
 
+// Capability is a capability that can be used to validate an invocation and its
+// proofs.
 type Capability[A Arguments] struct {
 	cmd ucan.Command
 	pol ucan.Policy
