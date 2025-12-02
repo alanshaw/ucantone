@@ -1,10 +1,9 @@
 package bindexec
 
 import (
-	"context"
-
 	"github.com/alanshaw/ucantone/executor"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
+	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"
 )
 
@@ -16,44 +15,51 @@ type Success interface {
 	dagcbor.CBORMarshaler
 }
 
-type Input[A Arguments] struct {
-	executor.Input
+type ExecutionRequest[A Arguments] struct {
+	executor.ExecutionRequest
 	task *Task[A]
 }
 
-func (r *Input[A]) Task() *Task[A] {
+func (r *ExecutionRequest[A]) Task() *Task[A] {
 	return r.task
 }
 
-type Output[O Success] struct {
-	executor.Output
+type ExecutionResponse[O Success] struct {
+	executor.ExecutionResponse
 }
 
 // SetResult sets the result of the task.
-func (r *Output[O]) SetResult(ok O, err error) {
-	r.Output.SetResult(ok, err)
+func (r *ExecutionResponse[O]) SetResult(o O, x error) error {
+	m := datamodel.Map{}
+	err := datamodel.Rebind(o, &m)
+	if err != nil {
+		return err
+	}
+	return r.ExecutionResponse.SetResult(m, x)
 }
 
 // SetMetadata allows additional delegations, invocations and/or receipts to
 // be sent in the response.
-func (r *Output[O]) SetMetadata(metadata ucan.Container) {
-	r.Output.SetMetadata(metadata)
+func (r *ExecutionResponse[O]) SetMetadata(metadata ucan.Container) error {
+	// TODO: rebind to ipld map
+	return r.ExecutionResponse.SetMetadata(metadata)
 }
 
-type HandlerFunc[A Arguments, O Success] = func(ctx context.Context, request Input[A], response Output[O]) error
+type HandlerFunc[A Arguments, O Success] = func(req ExecutionRequest[A], res ExecutionResponse[O]) error
 
 // NewHandler creates a new [executor.HandlerFunc] from the provided typed
 // handler.
 func NewHandler[A Arguments, O Success](handler HandlerFunc[A, O]) executor.HandlerFunc {
-	return func(ctx context.Context, req executor.Input, res executor.Output) error {
+	return func(req executor.ExecutionRequest, res executor.ExecutionResponse) error {
 		inv := req.Invocation()
 		task, err := NewTask[A](inv.Subject(), inv.Command(), inv.Arguments(), inv.Nonce())
 		if err != nil {
 			// TODO: transform into malformed arguments error
 			return err
 		}
-		ereq := Input[A]{Input: req, task: task}
-		eres := Output[O]{Output: res}
-		return handler(ctx, ereq, eres)
+		return handler(
+			ExecutionRequest[A]{ExecutionRequest: req, task: task},
+			ExecutionResponse[O]{ExecutionResponse: res},
+		)
 	}
 }

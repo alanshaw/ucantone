@@ -19,9 +19,22 @@ import (
 	"github.com/ipfs/go-cid"
 )
 
+// Capability is a capability definition that can be used to validate an
+// invocation and against it's proof policies.
+type Capability interface {
+	// Command is the command the capability matches against.
+	Command() ucan.Command
+	// Policy is the base policy for the capability.
+	Policy() ucan.Policy
+	// Match an invocation against the capability, resulting in a match, which is
+	// the task from the invocation, verified to be matching with delegation
+	// policies.
+	Match(invocation ucan.Invocation, proofs map[cid.Cid]ucan.Delegation) (*capability.Match, error)
+}
+
 // Authorization is the details of an invocation that has been validated by the
 // validator.
-type Authorization[A capability.Arguments] struct {
+type Authorization struct {
 	// Invocation is the invocation that was validated by the validator.
 	Invocation ucan.Invocation
 	// Proofs are the path of authority from the subject to the invoker. They are
@@ -29,7 +42,7 @@ type Authorization[A capability.Arguments] struct {
 	// strict sequence where the audience of the previous delegation matches the
 	// issuer of the next Delegation.
 	Proofs map[cid.Cid]ucan.Delegation
-	Task   *capability.Task[A]
+	Task   ucan.Task
 }
 
 // ProofResolverFunc finds a delegation corresponding to an external proof link.
@@ -42,7 +55,7 @@ type CanIssueFunc func(capability ucan.Capability, issuer ucan.Principal) bool
 // ValidateAuthorizationFunc allows an authorization to be validated further. It
 // is typically used to check that the delegations from the authorization have
 // not been revoked. It returns `nil` on success.
-type ValidateAuthorizationFunc func(ctx context.Context, auth Authorization[capability.Arguments]) error
+type ValidateAuthorizationFunc func(ctx context.Context, auth Authorization) error
 
 // DIDResolverFunc is used to resolve a key of the principal that is
 // identified by DID different from did:key method. It can be passed into a
@@ -95,13 +108,13 @@ type ValidationContext struct {
 //
 // It also allows a service identified by non did:key e.g. did:web or did:dns
 // to pass a resolved key so it does not need to be resolved at runtime.
-func Access[A capability.Arguments](
+func Access(
 	ctx context.Context,
 	authority ucan.Verifier,
-	capability *capability.Capability[A],
+	capability Capability,
 	invocation ucan.Invocation,
 	options ...Option,
-) (Authorization[A], error) {
+) (Authorization, error) {
 	cfg := validationConfig{
 		canIssue:              IsSelfIssued,
 		parsePrincipal:        ParsePrincipal,
@@ -115,23 +128,23 @@ func Access[A capability.Arguments](
 
 	proofs, err := ResolveProofs(ctx, cfg.resolveProof, invocation.Proofs())
 	if err != nil {
-		return Authorization[A]{}, err
+		return Authorization{}, err
 	}
 
 	err = Validate(ctx, authority, cfg.canIssue, cfg.parsePrincipal, cfg.resolveDIDKey, invocation, proofs)
 	if err != nil {
-		return Authorization[A]{}, err
+		return Authorization{}, err
 	}
 
 	match, err := capability.Match(invocation, proofs)
 	if err != nil {
-		return Authorization[A]{}, err
+		return Authorization{}, err
 	}
 
-	return Authorization[A]{
+	return Authorization{
 		Invocation: invocation,
-		Task:       match.Value,
-		Proofs:     proofs,
+		Task:       match.Task,
+		Proofs:     match.Proofs,
 	}, nil
 }
 
@@ -408,6 +421,6 @@ func FailDIDKeyResolution(ctx context.Context, d did.DID) ([]did.DID, error) {
 
 // NopValidateAuthorization is a [ValidateAuthorizationFunc] that does no
 // validation and returns nil.
-func NopValidateAuthorization(ctx context.Context, auth Authorization[capability.Arguments]) error {
+func NopValidateAuthorization(ctx context.Context, auth Authorization) error {
 	return nil
 }

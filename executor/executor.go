@@ -5,9 +5,11 @@ import (
 
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ucan"
+	"github.com/alanshaw/ucantone/validator"
 )
 
-type Input interface {
+type ExecutionRequest interface {
+	Context() context.Context
 	// Task from the invocation that should be performed.
 	Task() ucan.Task
 	// Invocation that should be executed.
@@ -16,43 +18,66 @@ type Input interface {
 	Metadata() ucan.Container
 }
 
-type Output interface {
+type ExecutionResponse interface {
 	// SetResult sets the result of the task.
-	SetResult(ipld.Any, error)
+	SetResult(ipld.Any, error) error
 	// SetMetadata allows additional delegations, invocations and/or receipts to
 	// be sent in the response.
-	SetMetadata(ucan.Container)
+	SetMetadata(ucan.Container) error
 }
 
-type HandlerFunc = func(ctx context.Context, in Input, out Output) error
-
-// Executor executes UCAN invocations by dispatching them to registered
-// handlers. It also uses the validator to handle invocation proof chain
-// validation and policy matching.
-type Executor struct {
-	handlers map[ucan.Command]HandlerFunc
+// Executor executes UCAN invocations. It also validates proof chains and
+// matches policies.
+type Executor interface {
+	Execute(req ExecutionRequest, res ExecutionResponse) error
 }
 
-func New() *Executor {
-	return &Executor{
-		handlers: map[ucan.Command]HandlerFunc{},
+type HandlerFunc = func(req ExecutionRequest, res ExecutionResponse) error
+
+type handler struct {
+	Func       HandlerFunc
+	Capability validator.Capability
+}
+
+// DispatchExecutor executes UCAN invocations by dispatching them to registered
+// handlers.
+type DispatchExecutor struct {
+	handlers map[ucan.Command]handler
+}
+
+func New() *DispatchExecutor {
+	return &DispatchExecutor{
+		handlers: map[ucan.Command]handler{},
 	}
 }
 
-func (e *Executor) Handle(cmd ucan.Command, handler HandlerFunc) {
-	e.handlers[cmd] = handler
+func (d *DispatchExecutor) Handle(capability validator.Capability, fn HandlerFunc) {
+	d.handlers[capability.Command()] = handler{Func: fn, Capability: capability}
 }
 
-func (e *Executor) Execute(ctx context.Context, in Input, out Output) {
-	handler, ok := e.handlers[in.Task().Command()]
+func (d *DispatchExecutor) Execute(req ExecutionRequest, res ExecutionResponse) error {
+	handler, ok := d.handlers[req.Task().Command()]
 	if !ok {
 		// TODO: transform into unknown command error
 		panic("handler not found")
 	}
 
-	err := handler(ctx, in, out)
+	_, err := validator.Access(
+		req.Context(),
+		d.authority,
+		handler.Capability,
+		req.Invocation(),
+		// TODO - options
+	)
+	if err != nil {
+		return res.SetResult(nil, err)
+	}
+
+	err = handler.Func(req, res)
 	if err != nil {
 		// TODO: transform into handler execution error
-		out.SetResult(nil, err)
+		return res.SetResult(nil, err)
 	}
+
+	return nil
 }

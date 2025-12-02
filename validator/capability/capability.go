@@ -3,11 +3,8 @@ package capability
 import (
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/alanshaw/ucantone/ipld"
-	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
-	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/delegation"
@@ -17,59 +14,20 @@ import (
 	"github.com/ipfs/go-cid"
 )
 
-type Arguments interface {
-	dagcbor.CBORMarshalable
-}
-
-type Task[A Arguments] struct {
-	*invocation.Task
-	args A
-}
-
-func NewTask[A Arguments](
-	subject ucan.Subject,
-	command ucan.Command,
-	arguments ipld.Map,
-	nonce ucan.Nonce,
-) (*Task[A], error) {
-	var args A
-	// if args is a pointer type, then we need to create an instance of it because
-	// rebind requires a non-nil pointer.
-	typ := reflect.TypeOf(args)
-	if typ.Kind() == reflect.Ptr {
-		args = reflect.New(typ.Elem()).Interface().(A)
-	}
-	if err := datamodel.Rebind(datamodel.Map(arguments), args); err != nil {
-		return nil, verrs.NewMalformedArgumentsError(command, err)
-	}
-	task, err := invocation.NewTask(subject, command, arguments, nonce)
-	if err != nil {
-		return nil, err
-	}
-	return &Task[A]{Task: task, args: args}, nil
-}
-
-// BindArguments returns the arguments bound to the type for this task.
-func (t *Task[A]) BindArguments() A {
-	return t.args
-}
-
-var _ ucan.Task = (*Task[Arguments])(nil)
-
-type Match[A Arguments] struct {
+type Match struct {
 	Invocation ucan.Invocation
-	Value      *Task[A]
+	Task       ucan.Task
 	Proofs     map[cid.Cid]ucan.Delegation
 }
 
-// Capability is a capability that can be used to validate an invocation and its
-// proofs.
-type Capability[A Arguments] struct {
+// Capability that can be used to validate an invocation and against it's proof
+// policies.
+type Capability struct {
 	cmd ucan.Command
 	pol ucan.Policy
 }
 
-func New[A Arguments](cmd ucan.Command, options ...Option) (*Capability[A], error) {
+func New(cmd ucan.Command, options ...Option) (*Capability, error) {
 	cfg := capabilityConfig{pol: policy.Policy{}}
 	for _, opt := range options {
 		err := opt(&cfg)
@@ -81,18 +39,19 @@ func New[A Arguments](cmd ucan.Command, options ...Option) (*Capability[A], erro
 	if err != nil {
 		return nil, fmt.Errorf("parsing command: %w", err)
 	}
-	return &Capability[A]{cmd, cfg.pol}, nil
+	return &Capability{cmd, cfg.pol}, nil
 }
 
 // Match an invocation against the capability, resulting in a match, which is
 // the task from the invocation, verified to be matching with delegation
 // policies.
-func (c *Capability[A]) Match(inv ucan.Invocation, proofs map[cid.Cid]ucan.Delegation) (*Match[A], error) {
+func (c *Capability) Match(inv ucan.Invocation, proofs map[cid.Cid]ucan.Delegation) (*Match, error) {
 	ok, err := policy.Match(c.pol, inv.Arguments())
 	if !ok {
 		return nil, err
 	}
 
+	usedProofs := make(map[cid.Cid]ucan.Delegation, len(inv.Proofs()))
 	for _, p := range inv.Proofs() {
 		prf, ok := proofs[p]
 		if !ok {
@@ -102,33 +61,24 @@ func (c *Capability[A]) Match(inv ucan.Invocation, proofs map[cid.Cid]ucan.Deleg
 		if !ok {
 			return nil, err
 		}
+		usedProofs[p] = prf
 	}
 
-	task, err := NewTask[A](inv.Subject(), inv.Command(), inv.Arguments(), inv.Nonce())
-	if err != nil {
-		return nil, err
-	}
-
-	return &Match[A]{Invocation: inv, Value: task, Proofs: proofs}, nil
+	return &Match{Invocation: inv, Task: inv.Task(), Proofs: usedProofs}, nil
 }
 
-func (c *Capability[A]) Command() ucan.Command {
+func (c *Capability) Command() ucan.Command {
 	return c.cmd
 }
 
-func (c *Capability[A]) Policy() ucan.Policy {
+func (c *Capability) Policy() ucan.Policy {
 	return c.pol
 }
 
-func (c *Capability[A]) Delegate(issuer ucan.Signer, audience ucan.Principal, subject ucan.Subject, options ...delegation.Option) (*delegation.Delegation, error) {
+func (c *Capability) Delegate(issuer ucan.Signer, audience ucan.Principal, subject ucan.Subject, options ...delegation.Option) (*delegation.Delegation, error) {
 	return delegation.Delegate(issuer, audience, subject, c.cmd, options...)
 }
 
-func (c *Capability[A]) Invoke(issuer ucan.Signer, subject ucan.Subject, arguments A, options ...invocation.Option) (*invocation.Invocation, error) {
-	var m datamodel.Map
-	err := datamodel.Rebind(arguments, &m)
-	if err != nil {
-		return nil, err
-	}
-	return invocation.Invoke(issuer, subject, c.cmd, m, options...)
+func (c *Capability) Invoke(issuer ucan.Signer, subject ucan.Subject, arguments ipld.Map, options ...invocation.Option) (*invocation.Invocation, error) {
+	return invocation.Invoke(issuer, subject, c.cmd, arguments, options...)
 }
