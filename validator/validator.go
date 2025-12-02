@@ -153,7 +153,7 @@ func ResolveProofs(ctx context.Context, resolve ProofResolverFunc, links []ucan.
 	for _, link := range links {
 		prf, err := resolve(ctx, link)
 		if err != nil {
-			return nil, fmt.Errorf("resolving proof %s: %w", link.String(), err)
+			return nil, verrs.NewUnavailableProofError(link, err)
 		}
 		proofs[link] = prf
 	}
