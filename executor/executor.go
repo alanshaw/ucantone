@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/alanshaw/ucantone/ipld"
+	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/validator"
 )
@@ -39,23 +40,31 @@ type handler struct {
 	Capability validator.Capability
 }
 
-// DispatchExecutor executes UCAN invocations by dispatching them to registered
+// DispatchingExecutor executes UCAN invocations by dispatching them to registered
 // handlers.
-type DispatchExecutor struct {
-	handlers map[ucan.Command]handler
+type DispatchingExecutor struct {
+	id             principal.Signer
+	handlers       map[ucan.Command]handler
+	validationOpts []validator.Option
 }
 
-func New() *DispatchExecutor {
-	return &DispatchExecutor{
-		handlers: map[ucan.Command]handler{},
+func New(id principal.Signer, options ...Option) *DispatchingExecutor {
+	cfg := execConfig{}
+	for _, opt := range options {
+		opt(&cfg)
+	}
+	return &DispatchingExecutor{
+		id:             id,
+		handlers:       map[ucan.Command]handler{},
+		validationOpts: cfg.validationOpts,
 	}
 }
 
-func (d *DispatchExecutor) Handle(capability validator.Capability, fn HandlerFunc) {
+func (d *DispatchingExecutor) Handle(capability validator.Capability, fn HandlerFunc) {
 	d.handlers[capability.Command()] = handler{Func: fn, Capability: capability}
 }
 
-func (d *DispatchExecutor) Execute(req ExecutionRequest, res ExecutionResponse) error {
+func (d *DispatchingExecutor) Execute(req ExecutionRequest, res ExecutionResponse) error {
 	handler, ok := d.handlers[req.Task().Command()]
 	if !ok {
 		// TODO: transform into unknown command error
@@ -64,10 +73,10 @@ func (d *DispatchExecutor) Execute(req ExecutionRequest, res ExecutionResponse) 
 
 	_, err := validator.Access(
 		req.Context(),
-		d.authority,
+		d.id.Verifier(),
 		handler.Capability,
 		req.Invocation(),
-		// TODO - options
+		d.validationOpts...,
 	)
 	if err != nil {
 		return res.SetResult(nil, err)

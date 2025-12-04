@@ -30,18 +30,20 @@ type ExecutionResponse[O Success] struct {
 
 // SetResult sets the result of the task.
 func (r *ExecutionResponse[O]) SetResult(o O, x error) error {
-	m := datamodel.Map{}
-	err := datamodel.Rebind(o, &m)
-	if err != nil {
-		return err
+	if x == nil {
+		m := datamodel.Map{}
+		err := datamodel.Rebind(o, &m)
+		if err != nil {
+			return err
+		}
+		return r.ExecutionResponse.SetResult(m, nil)
 	}
-	return r.ExecutionResponse.SetResult(m, x)
+	return r.ExecutionResponse.SetResult(nil, x)
 }
 
 // SetMetadata allows additional delegations, invocations and/or receipts to
 // be sent in the response.
 func (r *ExecutionResponse[O]) SetMetadata(metadata ucan.Container) error {
-	// TODO: rebind to ipld map
 	return r.ExecutionResponse.SetMetadata(metadata)
 }
 
