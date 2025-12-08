@@ -1,7 +1,7 @@
 package bindexec
 
 import (
-	"github.com/alanshaw/ucantone/executor"
+	"github.com/alanshaw/ucantone/execution/executor"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"

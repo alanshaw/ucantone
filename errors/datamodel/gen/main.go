@@ -1,7 +1,7 @@
 package main
 
 import (
-	vdm "github.com/alanshaw/ucantone/validator/errors/datamodel"
+	vdm "github.com/alanshaw/ucantone/errors/datamodel"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 

@@ -3,8 +3,10 @@ package executor
 import (
 	"context"
 
+	"github.com/alanshaw/ucantone/execution/executor/errors"
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/principal"
+	"github.com/alanshaw/ucantone/result"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/validator"
 )
@@ -20,8 +22,12 @@ type ExecutionRequest interface {
 }
 
 type ExecutionResponse interface {
+	// Result is the result of the task.
+	Result() result.Result[ipld.Any, ipld.Any]
 	// SetResult sets the result of the task.
 	SetResult(ipld.Any, error) error
+	// Metadata provides additional information about the response.
+	Metadata() ucan.Container
 	// SetMetadata allows additional delegations, invocations and/or receipts to
 	// be sent in the response.
 	SetMetadata(ucan.Container) error
@@ -67,8 +73,7 @@ func (d *DispatchingExecutor) Handle(capability validator.Capability, fn Handler
 func (d *DispatchingExecutor) Execute(req ExecutionRequest, res ExecutionResponse) error {
 	handler, ok := d.handlers[req.Task().Command()]
 	if !ok {
-		// TODO: transform into unknown command error
-		panic("handler not found")
+		return errors.NewHandlerNotFoundError(req.Task().Command())
 	}
 
 	_, err := validator.Access(
@@ -84,8 +89,7 @@ func (d *DispatchingExecutor) Execute(req ExecutionRequest, res ExecutionRespons
 
 	err = handler.Func(req, res)
 	if err != nil {
-		// TODO: transform into handler execution error
-		return res.SetResult(nil, err)
+		return res.SetResult(nil, errors.NewHandlerExecutionError(req.Task().Command(), err))
 	}
 
 	return nil

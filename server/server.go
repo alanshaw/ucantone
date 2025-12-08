@@ -2,63 +2,16 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/alanshaw/ucantone/executor"
-	"github.com/alanshaw/ucantone/ipld"
-	"github.com/alanshaw/ucantone/result"
+	"github.com/alanshaw/ucantone/execution"
+	"github.com/alanshaw/ucantone/execution/executor"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/container"
 	"github.com/alanshaw/ucantone/ucan/receipt"
 )
-
-type HTTPExecRequest struct {
-	Request    *http.Request
-	invocation ucan.Invocation
-	metadata   ucan.Container
-}
-
-func (r *HTTPExecRequest) Context() context.Context {
-	return r.Request.Context()
-}
-
-func (r *HTTPExecRequest) Invocation() ucan.Invocation {
-	return r.invocation
-}
-
-func (r *HTTPExecRequest) Metadata() ucan.Container {
-	return r.metadata
-}
-
-func (r *HTTPExecRequest) Task() ucan.Task {
-	return r.invocation.Task()
-}
-
-var _ executor.ExecutionRequest = (*HTTPExecRequest)(nil)
-
-type HTTPExecResponse struct {
-	result   result.Result[ipld.Any, error]
-	metadata ucan.Container
-}
-
-func (r *HTTPExecResponse) SetMetadata(meta ucan.Container) error {
-	r.metadata = meta
-	return nil
-}
-
-func (r *HTTPExecResponse) SetResult(o ipld.Any, x error) error {
-	if x != nil {
-		r.result = result.Error[ipld.Any, error](x)
-	} else {
-		r.result = result.OK[ipld.Any, error](o)
-	}
-	return nil
-}
-
-var _ executor.ExecutionResponse = (*HTTPExecResponse)(nil)
 
 type Server struct {
 	ID       ucan.Signer
@@ -90,10 +43,10 @@ func (s *Server) RoundTrip(r *http.Request) (*http.Response, error) {
 	var invocations []ucan.Invocation
 	var delegations []ucan.Delegation
 	for _, inv := range reqContainer.Invocations() {
-		req := HTTPExecRequest{r, inv, reqContainer}
-		res := HTTPExecResponse{}
+		req := execution.NewRequest(r.Context(), inv, reqContainer)
+		res := execution.NewResponse()
 
-		err := s.Executor.Execute(&req, &res)
+		err := s.Executor.Execute(req, res)
 		if err != nil {
 			// This shouldn't really happen, executor only returns an error when
 			// result or metadata cannot be set, which is likely a developer error.
@@ -103,7 +56,7 @@ func (s *Server) RoundTrip(r *http.Request) (*http.Response, error) {
 		receipt, err := receipt.Issue(
 			s.ID,
 			inv.Link(),
-			res.result,
+			res.Result(),
 			receipt.WithCause(inv.Link()),
 		)
 		if err != nil {
@@ -111,10 +64,10 @@ func (s *Server) RoundTrip(r *http.Request) (*http.Response, error) {
 		}
 		receipts = append(receipts, receipt)
 
-		if res.metadata != nil {
-			invocations = append(invocations, res.metadata.Invocations()...)
-			delegations = append(delegations, res.metadata.Delegations()...)
-			receipts = append(receipts, res.metadata.Receipts()...)
+		if res.Metadata() != nil {
+			invocations = append(invocations, res.Metadata().Invocations()...)
+			delegations = append(delegations, res.Metadata().Delegations()...)
+			receipts = append(receipts, res.Metadata().Receipts()...)
 		}
 	}
 
