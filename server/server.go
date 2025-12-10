@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/alanshaw/ucantone/execution"
-	"github.com/alanshaw/ucantone/execution/executor"
+	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/container"
 	"github.com/alanshaw/ucantone/ucan/receipt"
@@ -15,19 +15,23 @@ import (
 
 type Server struct {
 	ID       ucan.Signer
-	Executor executor.Executor
+	Executor execution.Executor
 }
 
-func New(executor executor.Executor) *Server {
+func New(executor execution.Executor) *Server {
 	return &Server{
 		Executor: executor,
 	}
 }
 
+type InboundCodec[Req, Res any] interface {
+	Decode(Req) (execution.Request, error)
+}
+
 // RoundTrip unpacks and executes an incoming request, returning the response.
 func (s *Server) RoundTrip(r *http.Request) (*http.Response, error) {
-	if r.Header.Get("Content-Type") != "application/vnd.ipld.dag-cbor" {
-		return nil, fmt.Errorf("invalid content type %s, expected application/vnd.ipld.dag-cbor", r.Header.Get("Content-Type"))
+	if r.Header.Get("Content-Type") != dagcbor.ContentType {
+		return nil, fmt.Errorf("invalid content type %s, expected %s", r.Header.Get("Content-Type"), dagcbor.ContentType)
 	}
 
 	buf, err := io.ReadAll(r.Body)

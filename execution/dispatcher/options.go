@@ -1,6 +1,8 @@
 package executor
 
-import "github.com/alanshaw/ucantone/validator"
+import (
+	"github.com/alanshaw/ucantone/validator"
+)
 
 // Option is an option configuring a UCAN executor.
 type Option func(cfg *execConfig)

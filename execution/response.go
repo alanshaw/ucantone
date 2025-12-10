@@ -8,30 +8,29 @@ import (
 	"github.com/alanshaw/ucantone/ucan"
 )
 
-type Response struct {
+type ExecResponse struct {
 	result   result.Result[ipld.Any, ipld.Any]
 	metadata ucan.Container
 }
 
-func NewResponse() *Response {
-	return &Response{result: result.OK[ipld.Any, ipld.Any](datamodel.Map{})}
+type ResponseOption func(r *ExecResponse) error
+
+func WithResult(r result.Result[ipld.Any, ipld.Any]) ResponseOption {
+	return func(resp *ExecResponse) error {
+		resp.result = r
+		return nil
+	}
 }
 
-func (r *Response) Metadata() ucan.Container {
-	return r.metadata
+func WithSuccess(o ipld.Any) ResponseOption {
+	return func(resp *ExecResponse) error {
+		resp.result = result.OK[ipld.Any, ipld.Any](o)
+		return nil
+	}
 }
 
-func (r *Response) Result() result.Result[ipld.Any, ipld.Any] {
-	return r.result
-}
-
-func (r *Response) SetMetadata(meta ucan.Container) error {
-	r.metadata = meta
-	return nil
-}
-
-func (r *Response) SetResult(o ipld.Any, x error) error {
-	if x != nil {
+func WithFailure(x error) ResponseOption {
+	return func(resp *ExecResponse) error {
 		m := datamodel.Map{}
 		if cmx, ok := x.(dagcbor.CBORMarshaler); ok {
 			err := datamodel.Rebind(cmx, &m)
@@ -42,9 +41,33 @@ func (r *Response) SetResult(o ipld.Any, x error) error {
 			m["name"] = "UnknownError"
 			m["message"] = x.Error()
 		}
-		r.result = result.Error[ipld.Any, ipld.Any](x)
-	} else {
-		r.result = result.OK[ipld.Any, ipld.Any](o)
+		resp.result = result.Error[ipld.Any, ipld.Any](x)
+		return nil
 	}
-	return nil
+}
+
+func WithMetadata(m ucan.Container) ResponseOption {
+	return func(r *ExecResponse) error {
+		r.metadata = m
+		return nil
+	}
+}
+
+func NewResponse(options ...ResponseOption) (*ExecResponse, error) {
+	response := ExecResponse{result: result.OK[ipld.Any, ipld.Any](datamodel.Map{})}
+	for _, opt := range options {
+		err := opt(&response)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &response, nil
+}
+
+func (r *ExecResponse) Metadata() ucan.Container {
+	return r.metadata
+}
+
+func (r *ExecResponse) Result() result.Result[ipld.Any, ipld.Any] {
+	return r.result
 }
