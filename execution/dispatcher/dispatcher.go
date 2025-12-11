@@ -1,4 +1,4 @@
-package executor
+package dispatcher
 
 import (
 	"github.com/alanshaw/ucantone/execution"

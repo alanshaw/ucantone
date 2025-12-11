@@ -1,56 +1,63 @@
 package server
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/alanshaw/ucantone/execution"
-	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
+	"github.com/alanshaw/ucantone/execution/dispatcher"
+	"github.com/alanshaw/ucantone/principal"
+	"github.com/alanshaw/ucantone/transport"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/container"
 	"github.com/alanshaw/ucantone/ucan/receipt"
+	"github.com/alanshaw/ucantone/validator"
 )
 
-type Server struct {
-	ID       ucan.Signer
-	Executor execution.Executor
+type HTTPServer struct {
+	id       principal.Signer
+	executor *dispatcher.Dispatcher
+	codec    transport.InboundCodec[*http.Request, *http.Response]
 }
 
-func New(executor execution.Executor) *Server {
-	return &Server{
-		Executor: executor,
+// NewHTTP creates a new UCAN HTTP server capable of handling UCAN invocations
+// over HTTP.
+func NewHTTP(id principal.Signer, options ...Option) *HTTPServer {
+	cfg := serverConfig{
+		codec: transport.DefaultHTTPInboundCodec,
+	}
+	for _, opt := range options {
+		opt(&cfg)
+	}
+	executor := dispatcher.New(
+		id.Verifier(),
+		dispatcher.WithValidationOptions(cfg.validationOpts...),
+	)
+	return &HTTPServer{
+		id:       id,
+		codec:    cfg.codec,
+		executor: executor,
 	}
 }
 
-type InboundCodec[Req, Res any] interface {
-	Decode(Req) (execution.Request, error)
+func (s *HTTPServer) Handle(capability validator.Capability, fn execution.HandlerFunc) {
+	s.executor.Handle(capability, fn)
 }
 
 // RoundTrip unpacks and executes an incoming request, returning the response.
-func (s *Server) RoundTrip(r *http.Request) (*http.Response, error) {
-	if r.Header.Get("Content-Type") != dagcbor.ContentType {
-		return nil, fmt.Errorf("invalid content type %s, expected %s", r.Header.Get("Content-Type"), dagcbor.ContentType)
+func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
+	reqContainer, err := s.codec.Decode(r)
+	if err != nil {
+		return nil, fmt.Errorf("decoding request: %w", err)
 	}
 
-	buf, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, fmt.Errorf("decoding container: %w", err)
-	}
-	reqContainer, err := container.Decode(buf)
-	if err != nil {
-		return nil, fmt.Errorf("decoding container: %w", err)
-	}
-
-	var receipts []ucan.Receipt
 	var invocations []ucan.Invocation
 	var delegations []ucan.Delegation
+	var receipts []ucan.Receipt
 	for _, inv := range reqContainer.Invocations() {
 		req := execution.NewRequest(r.Context(), inv, reqContainer)
-		res := execution.NewResponse()
 
-		err := s.Executor.Execute(req, res)
+		res, err := s.executor.Execute(req)
 		if err != nil {
 			// This shouldn't really happen, executor only returns an error when
 			// result or metadata cannot be set, which is likely a developer error.
@@ -58,7 +65,7 @@ func (s *Server) RoundTrip(r *http.Request) (*http.Response, error) {
 		}
 
 		receipt, err := receipt.Issue(
-			s.ID,
+			s.id,
 			inv.Link(),
 			res.Result(),
 			receipt.WithCause(inv.Link()),
@@ -84,16 +91,10 @@ func (s *Server) RoundTrip(r *http.Request) (*http.Response, error) {
 		return nil, fmt.Errorf("creating response container: %w", err)
 	}
 
-	respBuf, err := container.Encode(container.Raw, respContainer)
+	resp, err := s.codec.Encode(respContainer)
 	if err != nil {
 		return nil, fmt.Errorf("encoding response container: %w", err)
 	}
 
-	resp := &http.Response{
-		StatusCode: http.StatusOK,
-		Body:       io.NopCloser(bytes.NewReader(respBuf)),
-		Header:     make(http.Header),
-	}
-	resp.Header.Set("Content-Type", "application/vnd.ipld.dag-cbor")
 	return resp, nil
 }
