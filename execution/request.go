@@ -31,7 +31,3 @@ func (r *ExecRequest) Invocation() ucan.Invocation {
 func (r *ExecRequest) Metadata() ucan.Container {
 	return r.metadata
 }
-
-func (r *ExecRequest) Task() ucan.Task {
-	return r.invocation.Task()
-}

@@ -11,11 +11,11 @@ import (
 )
 
 type Arguments interface {
-	dagcbor.CBORUnmarshaler
+	dagcbor.Unmarshaler
 }
 
 type Success interface {
-	dagcbor.CBORMarshaler
+	dagcbor.Marshaler
 }
 
 type Request[A Arguments] struct {

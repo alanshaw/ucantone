@@ -41,7 +41,7 @@ func (d *Dispatcher) Handle(capability validator.Capability, fn execution.Handle
 }
 
 func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) {
-	cmd := req.Task().Command()
+	cmd := req.Invocation().Command()
 	handler, ok := d.handlers[cmd]
 	if !ok {
 		return nil, NewHandlerNotFoundError(cmd)

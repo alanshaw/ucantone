@@ -20,13 +20,14 @@ type Match struct {
 	Proofs     map[cid.Cid]ucan.Delegation
 }
 
-// Capability that can be used to validate an invocation and against it's proof
-// policies.
+// Capability that can be used to validate an invocation against proof policies.
 type Capability struct {
 	cmd ucan.Command
 	pol ucan.Policy
 }
 
+// New creates a new capability definition that can be used to validate an
+// invocation against proof policies.
 func New(cmd ucan.Command, options ...Option) (*Capability, error) {
 	cfg := capabilityConfig{pol: policy.Policy{}}
 	for _, opt := range options {

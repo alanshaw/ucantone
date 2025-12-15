@@ -10,7 +10,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/ucan/promise"
-	"github.com/alanshaw/ucantone/validator/capability"
+	"github.com/alanshaw/ucantone/validator/bindcap"
 )
 
 func TestPromises(t *testing.T) {
@@ -84,13 +84,13 @@ func TestPromises(t *testing.T) {
 
 func TestTypedPromises(t *testing.T) {
 	// Define a capability for sending emails
-	msgSendCap, err := capability.New[*types.PromisedMsgSendArguments]("/msg/send")
+	msgSendCap, err := bindcap.New[*types.PromisedMsgSendArguments]("/msg/send")
 	if err != nil {
 		panic(err)
 	}
 
 	// Define a capability listing emails on a mailing list
-	emailListCap, err := capability.New[*types.EmailsListArguments]("/emails/list")
+	emailListCap, err := bindcap.New[*types.EmailsListArguments]("/emails/list")
 	if err != nil {
 		panic(err)
 	}

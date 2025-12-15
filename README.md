@@ -85,7 +85,7 @@ type MessageSendArguments struct {
 	Message string
 }
 
-messageSend, err := capability.New[*MessageSendArguments](
+messageSend, err := capability.New(
   "/message/send",
   capability.WithPolicyBuilder(
     policy.NotEqual(".to", []string{}),
@@ -99,10 +99,11 @@ dlg, err := messageSend.Delegate(mailer, alice, mailer)
 invocation, err := messageSend.Invoke(
   alice,
   mailer,
-  &MessageSendArguments{
-    To:      []string{"bob@example.com"},
-    Message: "Hello Bob, How do you do?",
-  },
+  datamodel.Map{
+		"to":      []string{"bob@example.com"},
+		"subject": "Hello!",
+		"message": "Hello Bob, How do you do?",
+	},
   invocation.WithProofs(dlg.Link()),
 )
 ```

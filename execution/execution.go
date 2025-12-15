@@ -10,8 +10,6 @@ import (
 
 type Request interface {
 	Context() context.Context
-	// Task from the invocation that should be performed.
-	Task() ucan.Task
 	// Invocation that should be executed.
 	Invocation() ucan.Invocation
 	// Metadata provides additional information about the invocation.

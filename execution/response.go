@@ -32,7 +32,7 @@ func WithSuccess(o ipld.Any) ResponseOption {
 func WithFailure(x error) ResponseOption {
 	return func(resp *ExecResponse) error {
 		m := datamodel.Map{}
-		if cmx, ok := x.(dagcbor.CBORMarshaler); ok {
+		if cmx, ok := x.(dagcbor.Marshaler); ok {
 			err := datamodel.Rebind(cmx, &m)
 			if err != nil {
 				return err

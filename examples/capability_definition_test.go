@@ -9,67 +9,12 @@ import (
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
+	"github.com/alanshaw/ucantone/validator/bindcap"
 	"github.com/alanshaw/ucantone/validator/capability"
 )
 
 func TestCapabilityDefinition(t *testing.T) {
-	// Defining a capability with a CBOR marshalling struct type is useful because
-	// you get a typed Delegate and Invoke method (see below).
-	// i.e. the args parameter for those methods is the type you define here.
-	messageSendCapability, err := capability.New[*types.MessageSendArguments](
-		"/message/send",
-		capability.WithPolicyBuilder(
-			policy.NotEqual(".to", []string{}),
-		),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	// mailer is an email service that can send emails
-	mailer, err := ed25519.Generate()
-	if err != nil {
-		panic(err)
-	}
-
-	alice, err := ed25519.Generate()
-	if err != nil {
-		panic(err)
-	}
-
-	// delegate alice capability to use the email service
-	dlg, err := messageSendCapability.Delegate(mailer, alice, mailer)
-	if err != nil {
-		panic(err)
-	}
-
-	// invoke the capability
-	invocation, err := messageSendCapability.Invoke(
-		alice,
-		mailer,
-		&types.MessageSendArguments{
-			To:      []string{"bob@example.com"},
-			Subject: "Hello!",
-			Message: "Hello Bob, How do you do?",
-		},
-		invocation.WithProofs(dlg.Link()),
-	)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(invocation.Link())
-
-	// Now, send the invocation to the service. You'll probably want to put the
-	// invocation and delegation in a Container and send a HTTP request...
-}
-
-func TestCapabilityDefinitionGenericMap(t *testing.T) {
-	// You don't _have_ to create a struct type for arguments, you can just use
-	// the built in IPLD map. However this makes the definition less useful when
-	// calling Delegate or Invoke, since the args type is just the generic map
-	// i.e. no information about what keys can be added and no type information
-	// for values.
-	messageSendCapability, err := capability.New[*datamodel.Map](
+	messageSendCapability, err := capability.New(
 		"/message/send",
 		capability.WithPolicyBuilder(
 			policy.NotEqual(".to", []string{}),
@@ -106,7 +51,58 @@ func TestCapabilityDefinitionGenericMap(t *testing.T) {
 	invocation, err := messageSendCapability.Invoke(
 		alice,
 		mailer,
-		&args,
+		args,
+		invocation.WithProofs(dlg.Link()),
+	)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(invocation.Link())
+
+	// Now, send the invocation to the service. You'll probably want to put the
+	// invocation and delegation in a Container and send a HTTP request...
+}
+
+func TestTypedCapabilityDefinition(t *testing.T) {
+	// Defining a capability with a arguments type is useful because you get a
+	// typed Invoke method (see below).
+	// i.e. the args parameter for this method is the type you define here.
+	messageSendCapability, err := bindcap.New[*types.MessageSendArguments](
+		"/message/send",
+		capability.WithPolicyBuilder(
+			policy.NotEqual(".to", []string{}),
+		),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// mailer is an email service that can send emails
+	mailer, err := ed25519.Generate()
+	if err != nil {
+		panic(err)
+	}
+
+	alice, err := ed25519.Generate()
+	if err != nil {
+		panic(err)
+	}
+
+	// delegate alice capability to use the email service
+	dlg, err := messageSendCapability.Delegate(mailer, alice, mailer)
+	if err != nil {
+		panic(err)
+	}
+
+	// invoke the capability
+	invocation, err := messageSendCapability.Invoke(
+		alice,
+		mailer,
+		&types.MessageSendArguments{
+			To:      []string{"bob@example.com"},
+			Subject: "Hello!",
+			Message: "Hello Bob, How do you do?",
+		},
 		invocation.WithProofs(dlg.Link()),
 	)
 	if err != nil {
