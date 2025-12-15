@@ -124,6 +124,32 @@ ct, err := container.New(
 buf, err := container.Encode(container.Base64Gzip, ct)
 ```
 
+#### Server
+
+See examples in [server_test.go](./examples/server_test.go)
+
+```go
+echoCapability, err := capability.New("/example/echo")
+serviceID, err := ed25519.Generate()
+
+ucanSrv := server.NewHTTP(serviceID)
+
+// Register an echo handler that returns the invocation arguments as the result
+ucanSrv.Handle(echoCapability, func(req execution.Request) (execution.Response, error) {
+  return execution.NewResponse(execution.WithSuccess(req.Invocation().Arguments()))
+})
+
+// Start the server on a random available port
+listener, err := net.Listen("tcp", ":0")
+
+httpSrv := http.Server{Handler: ucanSrv}
+
+err := httpSrv.Serve(listener)
+if err != nil && err != http.ErrServerClosed {
+  panic(err)
+}
+```
+
 ## Contributing
 
 Feel free to join in. All welcome. Please [open an issue](https://github.com/alanshaw/ucantone/issues)!
