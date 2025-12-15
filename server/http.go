@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/alanshaw/ucantone/execution"
@@ -43,6 +44,22 @@ func (s *HTTPServer) Handle(capability validator.Capability, fn execution.Handle
 	s.executor.Handle(capability, fn)
 }
 
+func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	resp, err := s.RoundTrip(r)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("handling request: %v", err), http.StatusInternalServerError)
+		return
+	}
+	for k, vv := range resp.Header {
+		for _, v := range vv {
+			w.Header().Add(k, v)
+		}
+	}
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
+	resp.Body.Close()
+}
+
 // RoundTrip unpacks and executes an incoming request, returning the response.
 func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
 	reqContainer, err := s.codec.Decode(r)
@@ -65,12 +82,12 @@ func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
 
 		receipt, err := receipt.Issue(
 			s.id,
-			inv.Link(),
+			inv.Task().Link(),
 			res.Result(),
 			receipt.WithCause(inv.Link()),
 		)
 		if err != nil {
-			return nil, fmt.Errorf("issuing receipt for task %s: %w", inv.Task().Link(), err)
+			return nil, fmt.Errorf("issuing receipt for task %q: %w", inv.Task().Link(), err)
 		}
 		receipts = append(receipts, receipt)
 

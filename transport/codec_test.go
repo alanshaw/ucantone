@@ -48,12 +48,12 @@ func TestHTTPInboundCodec(t *testing.T) {
 		ct, err := container.New(container.WithDelegations(del), container.WithInvocations(inv))
 		require.NoError(t, err)
 
-		ctBytes, err := container.Encode(container.RawGzip, ct)
+		ctBytes, err := container.Encode(container.Raw, ct)
 		require.NoError(t, err)
 
 		r := http.Request{
 			Header: http.Header{},
-			Body:   io.NopCloser(bytes.NewReader(ctBytes)),
+			Body:   io.NopCloser(bytes.NewReader(ctBytes[1:])),
 		}
 		r.Header.Set("Content-Type", dagcbor.ContentType)
 
@@ -70,12 +70,12 @@ func TestHTTPInboundCodec(t *testing.T) {
 		ct, err := container.New(container.WithDelegations(del), container.WithInvocations(inv))
 		require.NoError(t, err)
 
-		ctBytes, err := container.Encode(container.RawGzip, ct)
+		ctBytes, err := container.Encode(container.Raw, ct)
 		require.NoError(t, err)
 
 		r := http.Request{
 			Header: http.Header{},
-			Body:   io.NopCloser(bytes.NewReader(ctBytes)),
+			Body:   io.NopCloser(bytes.NewReader(ctBytes[1:])),
 		}
 		r.Header.Set("Content-Type", "application/json")
 
@@ -93,7 +93,7 @@ func TestHTTPInboundCodec(t *testing.T) {
 
 		_, err = transport.DefaultHTTPInboundCodec.Decode(&r)
 		require.Error(t, err)
-		require.ErrorContains(t, err, "reading request body")
+		require.ErrorContains(t, err, "unmarshaling request")
 	})
 
 	t.Run("decode invalid body", func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestHTTPInboundCodec(t *testing.T) {
 
 		_, err = transport.DefaultHTTPInboundCodec.Decode(&r)
 		require.Error(t, err)
-		require.ErrorContains(t, err, "decoding container")
+		require.ErrorContains(t, err, "unmarshaling request")
 	})
 
 	t.Run("encode", func(t *testing.T) {
@@ -115,10 +115,8 @@ func TestHTTPInboundCodec(t *testing.T) {
 		r, err := transport.DefaultHTTPInboundCodec.Encode(ct)
 		require.NoError(t, err)
 
-		ctBytes, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-
-		dct, err := container.Decode(ctBytes)
+		dct := container.Container{}
+		err = dct.UnmarshalCBOR(r.Body)
 		require.NoError(t, err)
 
 		require.Len(t, dct.Receipts(), 1)
@@ -155,10 +153,8 @@ func TestHTTPOutboundCodec(t *testing.T) {
 		r, err := transport.DefaultHTTPOutboundCodec.Encode(ct)
 		require.NoError(t, err)
 
-		ctBytes, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-
-		dct, err := container.Decode(ctBytes)
+		dct := container.Container{}
+		err = dct.UnmarshalCBOR(r.Body)
 		require.NoError(t, err)
 
 		require.Len(t, dct.Invocations(), 1)
@@ -176,7 +172,7 @@ func TestHTTPOutboundCodec(t *testing.T) {
 
 		r := http.Response{
 			Header: http.Header{},
-			Body:   io.NopCloser(bytes.NewReader(ctBytes)),
+			Body:   io.NopCloser(bytes.NewReader(ctBytes[1:])),
 		}
 		r.Header.Set("Content-Type", dagcbor.ContentType)
 

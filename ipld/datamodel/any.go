@@ -58,6 +58,8 @@ func (a *Any) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 	switch v := a.Value.(type) {
+	case Map:
+		return v.MarshalCBOR(w)
 	case map[string]ipld.Any:
 		return Map(v).MarshalCBOR(w)
 	case int64:
@@ -220,6 +222,8 @@ func (a *Any) MarshalDagJSON(w io.Writer) error {
 		return jw.WriteNull()
 	}
 	switch v := a.Value.(type) {
+	case Map:
+		return v.MarshalDagJSON(w)
 	case map[string]ipld.Any:
 		return Map(v).MarshalDagJSON(w)
 	case int64:

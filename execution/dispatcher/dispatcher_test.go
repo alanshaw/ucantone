@@ -11,9 +11,7 @@ import (
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/result"
 	"github.com/alanshaw/ucantone/testutil"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
-	"github.com/alanshaw/ucantone/validator/capability"
 	verrs "github.com/alanshaw/ucantone/validator/errors"
 	"github.com/stretchr/testify/require"
 )
@@ -22,32 +20,21 @@ func TestDispatcher(t *testing.T) {
 	service := testutil.RandomSigner(t)
 	alice := testutil.RandomSigner(t)
 
-	// logs a message to the console
-	consoleLogCapability, err := capability.New(
-		"/console/log",
-		capability.WithPolicyBuilder(policy.NotEqual(".message", "")),
-	)
-	require.NoError(t, err)
-
-	// echos the arguments back to the caller
-	testEchoCapability, err := capability.New("/test/echo")
-	require.NoError(t, err)
-
 	t.Run("dispatches invocations for execution", func(t *testing.T) {
 		executor := dispatcher.New(service.Verifier())
 
 		var messages []ipld.Any
-		executor.Handle(consoleLogCapability, func(req execution.Request) (execution.Response, error) {
+		executor.Handle(testutil.ConsoleLogCapability, func(req execution.Request) (execution.Response, error) {
 			msg := req.Invocation().Arguments()["message"]
 			t.Log(msg)
 			messages = append(messages, msg)
 			return execution.NewResponse()
 		})
-		executor.Handle(testEchoCapability, func(req execution.Request) (execution.Response, error) {
+		executor.Handle(testutil.TestEchoCapability, func(req execution.Request) (execution.Response, error) {
 			return execution.NewResponse(execution.WithSuccess(req.Invocation().Arguments()))
 		})
 
-		logInv, err := consoleLogCapability.Invoke(
+		logInv, err := testutil.ConsoleLogCapability.Invoke(
 			alice,
 			alice,
 			datamodel.Map{"message": "Hello, World!"},
@@ -64,7 +51,7 @@ func TestDispatcher(t *testing.T) {
 		require.Len(t, messages, 1)
 		require.Equal(t, "Hello, World!", messages[0])
 
-		echoInv, err := testEchoCapability.Invoke(
+		echoInv, err := testutil.TestEchoCapability.Invoke(
 			alice,
 			alice,
 			datamodel.Map{"message": "echo!"},
@@ -87,7 +74,7 @@ func TestDispatcher(t *testing.T) {
 	t.Run("handler not found", func(t *testing.T) {
 		executor := dispatcher.New(service.Verifier())
 
-		inv, err := testEchoCapability.Invoke(
+		inv, err := testutil.TestEchoCapability.Invoke(
 			alice,
 			alice,
 			datamodel.Map{"message": "echo!"},
@@ -111,7 +98,7 @@ func TestDispatcher(t *testing.T) {
 	t.Run("invalid audience", func(t *testing.T) {
 		executor := dispatcher.New(service.Verifier())
 
-		inv, err := testEchoCapability.Invoke(
+		inv, err := testutil.TestEchoCapability.Invoke(
 			alice,
 			alice,
 			datamodel.Map{"message": "echo!"},
@@ -135,11 +122,11 @@ func TestDispatcher(t *testing.T) {
 	t.Run("handler execution error", func(t *testing.T) {
 		executor := dispatcher.New(service.Verifier())
 
-		executor.Handle(consoleLogCapability, func(req execution.Request) (execution.Response, error) {
+		executor.Handle(testutil.ConsoleLogCapability, func(req execution.Request) (execution.Response, error) {
 			return nil, fmt.Errorf("boom")
 		})
 
-		logInv, err := consoleLogCapability.Invoke(
+		logInv, err := testutil.ConsoleLogCapability.Invoke(
 			alice,
 			alice,
 			datamodel.Map{"message": "Hello, World!"},
@@ -162,11 +149,11 @@ func TestDispatcher(t *testing.T) {
 
 	t.Run("validation error", func(t *testing.T) {
 		executor := dispatcher.New(service.Verifier())
-		executor.Handle(testEchoCapability, func(req execution.Request) (execution.Response, error) {
+		executor.Handle(testutil.TestEchoCapability, func(req execution.Request) (execution.Response, error) {
 			return execution.NewResponse(execution.WithSuccess(req.Invocation().Arguments()))
 		})
 
-		logInv, err := testEchoCapability.Invoke(
+		logInv, err := testutil.TestEchoCapability.Invoke(
 			alice,
 			testutil.RandomDID(t), // alice has no authority to invoke with this subject
 			datamodel.Map{"message": "Hello, World!"},

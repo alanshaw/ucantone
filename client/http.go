@@ -12,7 +12,7 @@ type HTTPClient struct {
 	*Client[*http.Request, *http.Response]
 }
 
-func NewHTTP(serviceURL url.URL, options ...HTTPOption) *HTTPClient {
+func NewHTTP(serviceURL *url.URL, options ...HTTPOption) (*HTTPClient, error) {
 	cfg := httpClientConfig{
 		codec:  transport.DefaultHTTPOutboundCodec,
 		client: http.DefaultClient,
@@ -22,7 +22,7 @@ func NewHTTP(serviceURL url.URL, options ...HTTPOption) *HTTPClient {
 	}
 	return &HTTPClient{
 		Client: New(&httpTransport{cfg.client, serviceURL}, cfg.codec),
-	}
+	}, nil
 }
 
 func (c *HTTPClient) Execute(execRequest execution.Request) (execution.Response, error) {
@@ -31,12 +31,12 @@ func (c *HTTPClient) Execute(execRequest execution.Request) (execution.Response,
 
 type httpTransport struct {
 	client *http.Client
-	url    url.URL
+	url    *url.URL
 }
 
 func (t *httpTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	r.Method = http.MethodPost
-	r.URL = &t.url
+	r.URL = t.url
 	return t.client.Do(r)
 }
 
