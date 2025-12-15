@@ -71,7 +71,7 @@ func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
 	var delegations []ucan.Delegation
 	var receipts []ucan.Receipt
 	for _, inv := range reqContainer.Invocations() {
-		req := execution.NewRequest(r.Context(), inv, reqContainer)
+		req := execution.NewRequest(r.Context(), inv, execution.WithRequestMetadata(reqContainer))
 
 		res, err := s.executor.Execute(req)
 		if err != nil {

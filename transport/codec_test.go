@@ -210,7 +210,7 @@ func TestHTTPOutboundCodec(t *testing.T) {
 
 		_, err = transport.DefaultHTTPOutboundCodec.Decode(&r)
 		require.Error(t, err)
-		require.ErrorContains(t, err, "reading response body")
+		require.ErrorContains(t, err, "unmarshaling response")
 	})
 
 	t.Run("decode invalid body", func(t *testing.T) {
@@ -222,6 +222,6 @@ func TestHTTPOutboundCodec(t *testing.T) {
 
 		_, err = transport.DefaultHTTPOutboundCodec.Decode(&r)
 		require.Error(t, err)
-		require.ErrorContains(t, err, "decoding container")
+		require.ErrorContains(t, err, "unmarshaling response")
 	})
 }

@@ -18,13 +18,29 @@ type Success interface {
 	dagcbor.Marshaler
 }
 
+type requestConfig struct {
+	metadata ucan.Container
+}
+
+type RequestOption = func(cfg *requestConfig)
+
+func WithRequestMetadata(meta ucan.Container) RequestOption {
+	return func(cfg *requestConfig) {
+		cfg.metadata = meta
+	}
+}
+
 type Request[A Arguments] struct {
 	execution.Request
 	task *Task[A]
 }
 
-func NewRequest[A Arguments](ctx context.Context, inv ucan.Invocation, meta ucan.Container) Request[A] {
-	return Request[A]{Request: execution.NewRequest(ctx, inv, meta)}
+func NewRequest[A Arguments](ctx context.Context, inv ucan.Invocation, options ...RequestOption) Request[A] {
+	cfg := requestConfig{}
+	for _, opt := range options {
+		opt(&cfg)
+	}
+	return Request[A]{Request: execution.NewRequest(ctx, inv, execution.WithRequestMetadata(cfg.metadata))}
 }
 
 func (r *Request[A]) Task() *Task[A] {

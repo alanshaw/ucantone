@@ -6,18 +6,29 @@ import (
 	"github.com/alanshaw/ucantone/ucan"
 )
 
+type RequestOption = func(r *ExecRequest)
+
+func WithRequestMetadata(meta ucan.Container) RequestOption {
+	return func(r *ExecRequest) {
+		r.metadata = meta
+	}
+}
+
 type ExecRequest struct {
 	ctx        context.Context
 	invocation ucan.Invocation
 	metadata   ucan.Container
 }
 
-func NewRequest(ctx context.Context, inv ucan.Invocation, meta ucan.Container) *ExecRequest {
-	return &ExecRequest{
+func NewRequest(ctx context.Context, inv ucan.Invocation, options ...RequestOption) *ExecRequest {
+	req := &ExecRequest{
 		ctx:        ctx,
 		invocation: inv,
-		metadata:   meta,
 	}
+	for _, opt := range options {
+		opt(req)
+	}
+	return req
 }
 
 func (r *ExecRequest) Context() context.Context {

@@ -39,5 +39,3 @@ func (t *httpTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	r.URL = t.url
 	return t.client.Do(r)
 }
-
-var NewRequest = execution.NewRequest

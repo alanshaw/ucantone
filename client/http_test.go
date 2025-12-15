@@ -41,7 +41,7 @@ func TestHTTPClient(t *testing.T) {
 		)
 		require.NoError(t, err)
 
-		res, err := c.Execute(client.NewRequest(t.Context(), inv, nil))
+		res, err := c.Execute(execution.NewRequest(t.Context(), inv))
 		require.NoError(t, err)
 
 		o, x := result.Unwrap(res.Result())
