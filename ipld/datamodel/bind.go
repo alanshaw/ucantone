@@ -8,7 +8,7 @@ import (
 
 // Rebind binds the data from one CBOR marshaler type to another CBOR
 // unmarshaler type.
-func Rebind[A dagcbor.CBORMarshaler, B dagcbor.CBORUnmarshaler](from A, to B) error {
+func Rebind[A dagcbor.Marshaler, B dagcbor.Unmarshaler](from A, to B) error {
 	var buf bytes.Buffer
 	if err := from.MarshalCBOR(&buf); err != nil {
 		return err

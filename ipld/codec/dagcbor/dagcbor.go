@@ -4,12 +4,15 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
-const Code = 0x71
+const (
+	Code        = 0x71
+	ContentType = "application/vnd.ipld.dag-cbor"
+)
 
-type CBORMarshaler = cbg.CBORMarshaler
-type CBORUnmarshaler = cbg.CBORUnmarshaler
+type Marshaler = cbg.CBORMarshaler
+type Unmarshaler = cbg.CBORUnmarshaler
 
-type CBORMarshalable interface {
-	CBORMarshaler
-	CBORUnmarshaler
+type Marshalable interface {
+	Marshaler
+	Unmarshaler
 }

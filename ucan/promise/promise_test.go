@@ -13,7 +13,7 @@ import (
 )
 
 type dagMarshalable interface {
-	dagcbor.CBORMarshalable
+	dagcbor.Marshalable
 	dagjson.DagJsonMarshalable
 }
 

@@ -6,6 +6,9 @@ cover:
 	go tool cover -html=./coverage/c.out
 
 gen:
+	rm ./errors/datamodel/cbor_gen.go || true
+	cd ./errors/datamodel/gen && go run ./main.go
+
 	rm ./examples/types/cbor_gen.go || true
 	cd ./examples/types/gen && go run ./main.go
 
@@ -34,9 +37,6 @@ gen:
 
 	rm ./ucan/receipt/datamodel/*_gen.go || true
 	cd ./ucan/receipt/datamodel/gen && go run ./main.go
-
-	rm ./validator/errors/datamodel/cbor_gen.go || true
-	cd ./validator/errors/datamodel/gen && go run ./main.go
 
 	rm ./validator/internal/fixtures/datamodel/dag_json_gen.go || true
 	cd ./validator/internal/fixtures/datamodel/gen && go run ./main.go

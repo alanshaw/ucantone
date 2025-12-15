@@ -95,7 +95,46 @@ func (c *Container) Receipt(task cid.Cid) (ucan.Receipt, error) {
 	return nil, ErrNotFound
 }
 
-type ContainerConfig struct{}
+func (c *Container) MarshalCBOR(w io.Writer) error {
+	return c.model.MarshalCBOR(w)
+}
+
+func (c *Container) UnmarshalCBOR(r io.Reader) error {
+	model := datamodel.ContainerModel{}
+	if err := model.UnmarshalCBOR(r); err != nil {
+		return fmt.Errorf("unmarshalling container model CBOR: %w", err)
+	}
+
+	var dlgs []ucan.Delegation
+	var invs []ucan.Invocation
+	var rcpts []ucan.Receipt
+	for _, b := range model.Ctn1 {
+		if dlg, err := delegation.Decode(b); err == nil {
+			dlgs = append(dlgs, dlg)
+			continue
+		}
+		if rcpt, err := receipt.Decode(b); err == nil {
+			rcpts = append(rcpts, rcpt)
+			continue
+		}
+		if inv, err := invocation.Decode(b); err == nil {
+			invs = append(invs, inv)
+			continue
+		}
+	}
+
+	*c = Container{
+		model: &model,
+		invs:  invs,
+		dlgs:  dlgs,
+		rcpts: rcpts,
+	}
+	return nil
+}
+
+func (c *Container) MarshalDagJSON(w io.Writer) error {
+	return c.model.MarshalDagJSON(w)
+}
 
 type Option func(c *Container)
 
@@ -138,36 +177,7 @@ func New(options ...Option) (*Container, error) {
 		}
 		tokens = append(tokens, b)
 	}
-	slices.SortFunc(tokens, bytes.Compare)
-
-	model := datamodel.ContainerModel{Ctn1: tokens}
-	var buf bytes.Buffer
-	err := model.MarshalCBOR(&buf)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling container to CBOR: %w", err)
-	}
-	ct.model = &model
-
-	return &ct, nil
-}
-
-func Encode(codec byte, container ucan.Container) ([]byte, error) {
-	var tokens [][]byte
-	for _, inv := range container.Invocations() {
-		b, err := invocation.Encode(inv)
-		if err != nil {
-			return nil, fmt.Errorf("encoding invocation: %w", err)
-		}
-		tokens = append(tokens, b)
-	}
-	for _, dlg := range container.Delegations() {
-		b, err := delegation.Encode(dlg)
-		if err != nil {
-			return nil, fmt.Errorf("encoding delegation: %w", err)
-		}
-		tokens = append(tokens, b)
-	}
-	for _, rcpt := range container.Receipts() {
+	for _, rcpt := range ct.rcpts {
 		b, err := receipt.Encode(rcpt)
 		if err != nil {
 			return nil, fmt.Errorf("encoding receipt: %w", err)
@@ -177,6 +187,43 @@ func Encode(codec byte, container ucan.Container) ([]byte, error) {
 	slices.SortFunc(tokens, bytes.Compare)
 
 	model := datamodel.ContainerModel{Ctn1: tokens}
+	ct.model = &model
+
+	return &ct, nil
+}
+
+func Encode(codec byte, container ucan.Container) ([]byte, error) {
+	var model *datamodel.ContainerModel
+	if c, ok := container.(*Container); ok {
+		model = c.model
+	} else {
+		var tokens [][]byte
+		for _, inv := range container.Invocations() {
+			b, err := invocation.Encode(inv)
+			if err != nil {
+				return nil, fmt.Errorf("encoding invocation: %w", err)
+			}
+			tokens = append(tokens, b)
+		}
+		for _, dlg := range container.Delegations() {
+			b, err := delegation.Encode(dlg)
+			if err != nil {
+				return nil, fmt.Errorf("encoding delegation: %w", err)
+			}
+			tokens = append(tokens, b)
+		}
+		for _, rcpt := range container.Receipts() {
+			b, err := receipt.Encode(rcpt)
+			if err != nil {
+				return nil, fmt.Errorf("encoding receipt: %w", err)
+			}
+			tokens = append(tokens, b)
+		}
+		slices.SortFunc(tokens, bytes.Compare)
+
+		model = &datamodel.ContainerModel{Ctn1: tokens}
+	}
+
 	var buf bytes.Buffer
 	err := model.MarshalCBOR(&buf)
 	if err != nil {
@@ -254,33 +301,10 @@ func Decode(input []byte) (*Container, error) {
 		raw = compressed // not compressed
 	}
 
-	model := &datamodel.ContainerModel{}
-	if err := model.UnmarshalCBOR(bytes.NewReader(raw)); err != nil {
-		return nil, fmt.Errorf("unmarshalling container from CBOR: %w", err)
+	ct := Container{}
+	err := ct.UnmarshalCBOR(bytes.NewReader(raw))
+	if err != nil {
+		return nil, err
 	}
-
-	var dlgs []ucan.Delegation
-	var invs []ucan.Invocation
-	var rcpts []ucan.Receipt
-	for _, b := range model.Ctn1 {
-		if dlg, err := delegation.Decode(b); err == nil {
-			dlgs = append(dlgs, dlg)
-			continue
-		}
-		if rcpt, err := receipt.Decode(b); err == nil {
-			rcpts = append(rcpts, rcpt)
-			continue
-		}
-		if inv, err := invocation.Decode(b); err == nil {
-			invs = append(invs, inv)
-			continue
-		}
-	}
-
-	return &Container{
-		model: model,
-		invs:  invs,
-		dlgs:  dlgs,
-		rcpts: rcpts,
-	}, nil
+	return &ct, nil
 }

@@ -117,7 +117,7 @@ func Issue[O, X ipld.Any](
 		Out: outModel,
 	}, &args)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rebinding args model: %w", err)
 	}
 
 	options = append(options, invocation.WithAudience(executor))

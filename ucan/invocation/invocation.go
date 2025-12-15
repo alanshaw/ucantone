@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ipld"
@@ -21,6 +22,9 @@ import (
 	cid "github.com/ipfs/go-cid"
 	multihash "github.com/multiformats/go-multihash/core"
 )
+
+// Validity is the time an invocation is valid for by default.
+const Validity = 30 * time.Second
 
 // UCAN Invocation defines a format for expressing the intention to execute
 // delegated UCAN capabilities, and the attested receipts from an execution.
@@ -302,7 +306,7 @@ func Invoke(
 	var exp *ucan.UTCUnixTimestamp
 	if !cfg.noexp {
 		if cfg.exp == nil {
-			in30s := uint64(ucan.Now() + 30)
+			in30s := ucan.Now() + ucan.UTCUnixTimestamp(Validity.Seconds())
 			exp = &in30s
 		} else {
 			exp = cfg.exp
