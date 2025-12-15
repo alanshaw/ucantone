@@ -6,21 +6,23 @@ import (
 	"github.com/alanshaw/ucantone/ucan"
 )
 
-// Contexter is an interface that provides a context.
-type Contexter interface {
+// Request is an interface that provides a context.
+type Request interface {
 	Context() context.Context
 }
 
-type InboundCodec[Req Contexter, Res any] interface {
+type Response = any
+
+type InboundCodec[Req Request, Res Response] interface {
 	Decode(Req) (ucan.Container, error)
 	Encode(ucan.Container) (Res, error)
 }
 
-type OutboundCodec[Req Contexter, Res any] interface {
+type OutboundCodec[Req Request, Res Response] interface {
 	Encode(ucan.Container) (Req, error)
 	Decode(Res) (ucan.Container, error)
 }
 
-type RoundTripper[Req Contexter, Res any] interface {
+type RoundTripper[Req Request, Res Response] interface {
 	RoundTrip(Req) (Res, error)
 }

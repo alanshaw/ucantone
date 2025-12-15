@@ -20,8 +20,7 @@ type HTTPServer struct {
 	codec    transport.InboundCodec[*http.Request, *http.Response]
 }
 
-// NewHTTP creates a new UCAN HTTP server capable of handling UCAN invocations
-// over HTTP.
+// NewHTTP creates a new server capable of handling UCAN invocations over HTTP.
 func NewHTTP(id principal.Signer, options ...Option) *HTTPServer {
 	cfg := serverConfig{
 		codec: transport.DefaultHTTPInboundCodec,

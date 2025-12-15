@@ -22,7 +22,7 @@ var _ InboundCodec[*http.Request, *http.Response] = (*HTTPInboundCodec)(nil)
 
 func (h *HTTPInboundCodec) Decode(r *http.Request) (ucan.Container, error) {
 	if r.Header.Get("Content-Type") != dagcbor.ContentType {
-		return nil, fmt.Errorf("invalid content type %s, expected %s", r.Header.Get("Content-Type"), dagcbor.ContentType)
+		return nil, fmt.Errorf("invalid content type %q, expected %q", r.Header.Get("Content-Type"), dagcbor.ContentType)
 	}
 	buf, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -59,6 +59,7 @@ func (h *HTTPOutboundCodec) Encode(c ucan.Container) (*http.Request, error) {
 		return nil, fmt.Errorf("encoding request container: %w", err)
 	}
 	req := &http.Request{
+		Method: http.MethodPost,
 		Body:   io.NopCloser(bytes.NewReader(buf)),
 		Header: make(http.Header),
 	}
@@ -67,6 +68,9 @@ func (h *HTTPOutboundCodec) Encode(c ucan.Container) (*http.Request, error) {
 }
 
 func (h *HTTPOutboundCodec) Decode(r *http.Response) (ucan.Container, error) {
+	if r.Header.Get("Content-Type") != dagcbor.ContentType {
+		return nil, fmt.Errorf("invalid content type %q, expected %q", r.Header.Get("Content-Type"), dagcbor.ContentType)
+	}
 	buf, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
