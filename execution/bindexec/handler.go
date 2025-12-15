@@ -19,14 +19,39 @@ type Success interface {
 }
 
 type requestConfig struct {
-	metadata ucan.Container
+	invocations []ucan.Invocation
+	delegations []ucan.Delegation
+	receipts    []ucan.Receipt
 }
 
 type RequestOption = func(cfg *requestConfig)
 
-func WithRequestMetadata(meta ucan.Container) RequestOption {
+// WithProofs adds delegations to the execution request. They should be linked
+// from the invocation to be executed.
+func WithProofs(delegations ...ucan.Delegation) RequestOption {
 	return func(cfg *requestConfig) {
-		cfg.metadata = meta
+		cfg.delegations = append(cfg.delegations, delegations...)
+	}
+}
+
+// WithDelegations adds delegations to the execution request.
+func WithDelegations(delegations ...ucan.Delegation) RequestOption {
+	return func(cfg *requestConfig) {
+		cfg.delegations = append(cfg.delegations, delegations...)
+	}
+}
+
+// WithReceipts adds receipts to the execution request.
+func WithReceipts(receipts ...ucan.Receipt) RequestOption {
+	return func(cfg *requestConfig) {
+		cfg.receipts = append(cfg.receipts, receipts...)
+	}
+}
+
+// WithInvocations adds additional invocations to the execution request.
+func WithInvocations(invocations ...ucan.Invocation) RequestOption {
+	return func(cfg *requestConfig) {
+		cfg.invocations = append(cfg.invocations, invocations...)
 	}
 }
 
@@ -40,7 +65,15 @@ func NewRequest[A Arguments](ctx context.Context, inv ucan.Invocation, options .
 	for _, opt := range options {
 		opt(&cfg)
 	}
-	return Request[A]{Request: execution.NewRequest(ctx, inv, execution.WithRequestMetadata(cfg.metadata))}
+	return Request[A]{
+		Request: execution.NewRequest(
+			ctx,
+			inv,
+			execution.WithInvocations(cfg.invocations...),
+			execution.WithDelegations(cfg.delegations...),
+			execution.WithReceipts(cfg.receipts...),
+		),
+	}
 }
 
 func (r *Request[A]) Task() *Task[A] {

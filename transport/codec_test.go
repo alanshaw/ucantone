@@ -45,8 +45,7 @@ func TestHTTPInboundCodec(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("decode", func(t *testing.T) {
-		ct, err := container.New(container.WithDelegations(del), container.WithInvocations(inv))
-		require.NoError(t, err)
+		ct := container.New(container.WithDelegations(del), container.WithInvocations(inv))
 
 		ctBytes, err := container.Encode(container.Raw, ct)
 		require.NoError(t, err)
@@ -67,8 +66,7 @@ func TestHTTPInboundCodec(t *testing.T) {
 	})
 
 	t.Run("decode invalid content type", func(t *testing.T) {
-		ct, err := container.New(container.WithDelegations(del), container.WithInvocations(inv))
-		require.NoError(t, err)
+		ct := container.New(container.WithDelegations(del), container.WithInvocations(inv))
 
 		ctBytes, err := container.Encode(container.Raw, ct)
 		require.NoError(t, err)
@@ -109,8 +107,7 @@ func TestHTTPInboundCodec(t *testing.T) {
 	})
 
 	t.Run("encode", func(t *testing.T) {
-		ct, err := container.New(container.WithReceipts(rec))
-		require.NoError(t, err)
+		ct := container.New(container.WithReceipts(rec))
 
 		r, err := transport.DefaultHTTPInboundCodec.Encode(ct)
 		require.NoError(t, err)
@@ -147,8 +144,7 @@ func TestHTTPOutboundCodec(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("encode", func(t *testing.T) {
-		ct, err := container.New(container.WithDelegations(del), container.WithInvocations(inv))
-		require.NoError(t, err)
+		ct := container.New(container.WithDelegations(del), container.WithInvocations(inv))
 
 		r, err := transport.DefaultHTTPOutboundCodec.Encode(ct)
 		require.NoError(t, err)
@@ -164,8 +160,7 @@ func TestHTTPOutboundCodec(t *testing.T) {
 	})
 
 	t.Run("decode", func(t *testing.T) {
-		ct, err := container.New(container.WithReceipts(rec))
-		require.NoError(t, err)
+		ct := container.New(container.WithReceipts(rec))
 
 		ctBytes, err := container.Encode(container.Raw, ct)
 		require.NoError(t, err)
@@ -184,8 +179,7 @@ func TestHTTPOutboundCodec(t *testing.T) {
 	})
 
 	t.Run("decode invalid content type", func(t *testing.T) {
-		ct, err := container.New(container.WithReceipts(rec))
-		require.NoError(t, err)
+		ct := container.New(container.WithReceipts(rec))
 
 		ctBytes, err := container.Encode(container.Raw, ct)
 		require.NoError(t, err)

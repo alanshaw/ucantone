@@ -43,8 +43,7 @@ func TestHTTPServer(t *testing.T) {
 		)
 		require.NoError(t, err)
 
-		ct, err := container.New(container.WithInvocations(logInv))
-		require.NoError(t, err)
+		ct := container.New(container.WithInvocations(logInv))
 
 		r, w := io.Pipe()
 		go func() {
@@ -78,8 +77,7 @@ func TestHTTPServer(t *testing.T) {
 		)
 		require.NoError(t, err)
 
-		ct, err = container.New(container.WithInvocations(echoInv))
-		require.NoError(t, err)
+		ct = container.New(container.WithInvocations(echoInv))
 
 		r, w = io.Pipe()
 		go func() {

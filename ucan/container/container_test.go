@@ -29,8 +29,7 @@ func TestContainer(t *testing.T) {
 			inv, err := invocation.Invoke(issuer, subject, command, arguments)
 			require.NoError(t, err)
 
-			initial, err := container.New(container.WithInvocations(inv))
-			require.NoError(t, err)
+			initial := container.New(container.WithInvocations(inv))
 
 			bytes, err := container.Encode(code, initial)
 			require.NoError(t, err)

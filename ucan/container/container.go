@@ -15,7 +15,6 @@ import (
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/ucan/receipt"
 	"github.com/ipfs/go-cid"
-	"github.com/multiformats/go-multihash"
 )
 
 const (
@@ -50,7 +49,6 @@ func FormatCodec(codec byte) string {
 }
 
 type Container struct {
-	model *datamodel.ContainerModel
 	invs  []ucan.Invocation
 	rcpts []ucan.Receipt
 	dlgs  []ucan.Delegation
@@ -61,13 +59,9 @@ func (c *Container) Delegations() []ucan.Delegation {
 }
 
 func (c *Container) Delegation(root cid.Cid) (ucan.Delegation, error) {
-	for _, b := range c.model.Ctn1 {
-		digest, err := multihash.Sum(b, multihash.SHA2_256, -1)
-		if err != nil {
-			return nil, err
-		}
-		if bytes.Equal(root.Hash(), digest) {
-			return delegation.Decode(b)
+	for _, dlg := range c.dlgs {
+		if dlg.Link() == root {
+			return dlg, nil
 		}
 	}
 	return nil, ErrNotFound
@@ -75,11 +69,6 @@ func (c *Container) Delegation(root cid.Cid) (ucan.Delegation, error) {
 
 func (c *Container) Invocations() []ucan.Invocation {
 	return c.invs
-}
-
-// The datamodel this container is built from.
-func (c *Container) Model() *datamodel.ContainerModel {
-	return c.model
 }
 
 func (c *Container) Receipts() []ucan.Receipt {
@@ -96,7 +85,32 @@ func (c *Container) Receipt(task cid.Cid) (ucan.Receipt, error) {
 }
 
 func (c *Container) MarshalCBOR(w io.Writer) error {
-	return c.model.MarshalCBOR(w)
+	var tokens [][]byte
+	for _, inv := range c.invs {
+		b, err := invocation.Encode(inv)
+		if err != nil {
+			return fmt.Errorf("encoding invocation: %w", err)
+		}
+		tokens = append(tokens, b)
+	}
+	for _, dlg := range c.dlgs {
+		b, err := delegation.Encode(dlg)
+		if err != nil {
+			return fmt.Errorf("encoding delegation: %w", err)
+		}
+		tokens = append(tokens, b)
+	}
+	for _, rcpt := range c.rcpts {
+		b, err := receipt.Encode(rcpt)
+		if err != nil {
+			return fmt.Errorf("encoding receipt: %w", err)
+		}
+		tokens = append(tokens, b)
+	}
+	slices.SortFunc(tokens, bytes.Compare)
+
+	model := datamodel.ContainerModel{Ctn1: tokens}
+	return model.MarshalCBOR(w)
 }
 
 func (c *Container) UnmarshalCBOR(r io.Reader) error {
@@ -124,7 +138,6 @@ func (c *Container) UnmarshalCBOR(r io.Reader) error {
 	}
 
 	*c = Container{
-		model: &model,
 		invs:  invs,
 		dlgs:  dlgs,
 		rcpts: rcpts,
@@ -133,7 +146,32 @@ func (c *Container) UnmarshalCBOR(r io.Reader) error {
 }
 
 func (c *Container) MarshalDagJSON(w io.Writer) error {
-	return c.model.MarshalDagJSON(w)
+	var tokens [][]byte
+	for _, inv := range c.invs {
+		b, err := invocation.Encode(inv)
+		if err != nil {
+			return fmt.Errorf("encoding invocation: %w", err)
+		}
+		tokens = append(tokens, b)
+	}
+	for _, dlg := range c.dlgs {
+		b, err := delegation.Encode(dlg)
+		if err != nil {
+			return fmt.Errorf("encoding delegation: %w", err)
+		}
+		tokens = append(tokens, b)
+	}
+	for _, rcpt := range c.rcpts {
+		b, err := receipt.Encode(rcpt)
+		if err != nil {
+			return fmt.Errorf("encoding receipt: %w", err)
+		}
+		tokens = append(tokens, b)
+	}
+	slices.SortFunc(tokens, bytes.Compare)
+
+	model := datamodel.ContainerModel{Ctn1: tokens}
+	return model.MarshalDagJSON(w)
 }
 
 type Option func(c *Container)
@@ -156,76 +194,26 @@ func WithReceipts(receipts ...ucan.Receipt) Option {
 	}
 }
 
-func New(options ...Option) (*Container, error) {
+func New(options ...Option) *Container {
 	ct := Container{}
 	for _, opt := range options {
 		opt(&ct)
 	}
-
-	var tokens [][]byte
-	for _, inv := range ct.invs {
-		b, err := invocation.Encode(inv)
-		if err != nil {
-			return nil, fmt.Errorf("encoding invocation: %w", err)
-		}
-		tokens = append(tokens, b)
-	}
-	for _, dlg := range ct.dlgs {
-		b, err := delegation.Encode(dlg)
-		if err != nil {
-			return nil, fmt.Errorf("encoding delegation: %w", err)
-		}
-		tokens = append(tokens, b)
-	}
-	for _, rcpt := range ct.rcpts {
-		b, err := receipt.Encode(rcpt)
-		if err != nil {
-			return nil, fmt.Errorf("encoding receipt: %w", err)
-		}
-		tokens = append(tokens, b)
-	}
-	slices.SortFunc(tokens, bytes.Compare)
-
-	model := datamodel.ContainerModel{Ctn1: tokens}
-	ct.model = &model
-
-	return &ct, nil
+	return &ct
 }
 
 func Encode(codec byte, container ucan.Container) ([]byte, error) {
-	var model *datamodel.ContainerModel
-	if c, ok := container.(*Container); ok {
-		model = c.model
-	} else {
-		var tokens [][]byte
-		for _, inv := range container.Invocations() {
-			b, err := invocation.Encode(inv)
-			if err != nil {
-				return nil, fmt.Errorf("encoding invocation: %w", err)
-			}
-			tokens = append(tokens, b)
+	c, ok := container.(*Container)
+	if !ok {
+		c = &Container{
+			invs:  container.Invocations(),
+			dlgs:  container.Delegations(),
+			rcpts: container.Receipts(),
 		}
-		for _, dlg := range container.Delegations() {
-			b, err := delegation.Encode(dlg)
-			if err != nil {
-				return nil, fmt.Errorf("encoding delegation: %w", err)
-			}
-			tokens = append(tokens, b)
-		}
-		for _, rcpt := range container.Receipts() {
-			b, err := receipt.Encode(rcpt)
-			if err != nil {
-				return nil, fmt.Errorf("encoding receipt: %w", err)
-			}
-			tokens = append(tokens, b)
-		}
-		slices.SortFunc(tokens, bytes.Compare)
-
-		model = &datamodel.ContainerModel{Ctn1: tokens}
 	}
 
 	var buf bytes.Buffer
-	err := model.MarshalCBOR(&buf)
+	err := c.MarshalCBOR(&buf)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling container to CBOR: %w", err)
 	}

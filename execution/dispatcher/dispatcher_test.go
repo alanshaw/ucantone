@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alanshaw/ucantone/errors"
 	"github.com/alanshaw/ucantone/execution"
 	"github.com/alanshaw/ucantone/execution/dispatcher"
 	"github.com/alanshaw/ucantone/ipld"
@@ -90,9 +89,7 @@ func TestDispatcher(t *testing.T) {
 		require.NotNil(t, x)
 		t.Log(x)
 
-		namedErr, ok := x.(errors.Named)
-		require.True(t, ok)
-		require.Equal(t, dispatcher.HandlerNotFoundErrorName, namedErr.Name())
+		require.Equal(t, dispatcher.HandlerNotFoundErrorName, x.(ipld.Map)["name"])
 	})
 
 	t.Run("invalid audience", func(t *testing.T) {
@@ -114,9 +111,7 @@ func TestDispatcher(t *testing.T) {
 		require.NotNil(t, x)
 		t.Log(x)
 
-		namedErr, ok := x.(errors.Named)
-		require.True(t, ok)
-		require.Equal(t, execution.InvalidAudienceErrorName, namedErr.Name())
+		require.Equal(t, execution.InvalidAudienceErrorName, x.(ipld.Map)["name"])
 	})
 
 	t.Run("handler execution error", func(t *testing.T) {
@@ -142,9 +137,7 @@ func TestDispatcher(t *testing.T) {
 		require.NotNil(t, x)
 		t.Log(x)
 
-		namedErr, ok := x.(errors.Named)
-		require.True(t, ok)
-		require.Equal(t, execution.HandlerExecutionErrorName, namedErr.Name())
+		require.Equal(t, execution.HandlerExecutionErrorName, x.(ipld.Map)["name"])
 	})
 
 	t.Run("validation error", func(t *testing.T) {
@@ -169,8 +162,6 @@ func TestDispatcher(t *testing.T) {
 		require.NotNil(t, x)
 		t.Log(x)
 
-		namedErr, ok := x.(errors.Named)
-		require.True(t, ok)
-		require.Equal(t, verrs.InvalidClaimErrorName, namedErr.Name())
+		require.Equal(t, verrs.InvalidClaimErrorName, x.(ipld.Map)["name"])
 	})
 }

@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,28 +31,31 @@ func (h *HTTPInboundCodec) Decode(r *http.Request) (ucan.Container, error) {
 }
 
 func (h *HTTPInboundCodec) Encode(c ucan.Container) (*http.Response, error) {
-	var reader io.ReadCloser
-	if ct, ok := c.(*container.Container); ok {
-		r, w := io.Pipe()
-		go func() {
-			err := ct.MarshalCBOR(w)
-			w.CloseWithError(err)
-		}()
-		reader = r
-	} else {
-		buf, err := container.Encode(container.Raw, c)
-		if err != nil {
-			return nil, fmt.Errorf("encoding response container: %w", err)
-		}
-		reader = io.NopCloser(bytes.NewReader(buf[1:]))
+	ct, ok := c.(*container.Container)
+	if !ok {
+		ct = container.New(
+			container.WithInvocations(c.Invocations()...),
+			container.WithDelegations(c.Delegations()...),
+			container.WithReceipts(c.Receipts()...),
+		)
 	}
+	r, w := io.Pipe()
+	go func() {
+		err := ct.MarshalCBOR(w)
+		w.CloseWithError(err)
+	}()
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
-		Body:       reader,
-		Header:     make(http.Header),
+		Body:       r,
+		Header:     http.Header{},
 	}
 	resp.Header.Set("Content-Type", dagcbor.ContentType)
 	return resp, nil
+}
+
+type HTTPResponseContainer struct {
+	ucan.Container
+	Response *http.Response
 }
 
 type HTTPOutboundCodec struct{}
@@ -61,25 +63,23 @@ type HTTPOutboundCodec struct{}
 var _ OutboundCodec[*http.Request, *http.Response] = (*HTTPOutboundCodec)(nil)
 
 func (h *HTTPOutboundCodec) Encode(c ucan.Container) (*http.Request, error) {
-	var reader io.ReadCloser
-	if ct, ok := c.(*container.Container); ok {
-		r, w := io.Pipe()
-		go func() {
-			err := ct.MarshalCBOR(w)
-			w.CloseWithError(err)
-		}()
-		reader = r
-	} else {
-		buf, err := container.Encode(container.Raw, c)
-		if err != nil {
-			return nil, fmt.Errorf("encoding request container: %w", err)
-		}
-		reader = io.NopCloser(bytes.NewReader(buf[1:]))
+	ct, ok := c.(*container.Container)
+	if !ok {
+		ct = container.New(
+			container.WithInvocations(c.Invocations()...),
+			container.WithDelegations(c.Delegations()...),
+			container.WithReceipts(c.Receipts()...),
+		)
 	}
+	r, w := io.Pipe()
+	go func() {
+		err := ct.MarshalCBOR(w)
+		w.CloseWithError(err)
+	}()
 	req := &http.Request{
 		Method: http.MethodPost,
-		Body:   reader,
-		Header: make(http.Header),
+		Body:   r,
+		Header: http.Header{},
 	}
 	req.Header.Set("Content-Type", dagcbor.ContentType)
 	return req, nil
@@ -93,5 +93,5 @@ func (h *HTTPOutboundCodec) Decode(r *http.Response) (ucan.Container, error) {
 	if err := ct.UnmarshalCBOR(r.Body); err != nil {
 		return nil, fmt.Errorf("unmarshaling response container: %w", err)
 	}
-	return &ct, nil
+	return &HTTPResponseContainer{Container: &ct, Response: r}, nil
 }

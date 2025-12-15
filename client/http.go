@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -26,7 +27,19 @@ func NewHTTP(serviceURL *url.URL, options ...HTTPOption) (*HTTPClient, error) {
 }
 
 func (c *HTTPClient) Execute(execRequest execution.Request) (execution.Response, error) {
-	return c.Client.Execute(execRequest)
+	res, err := c.Client.Execute(execRequest)
+	if err != nil {
+		return nil, fmt.Errorf("executing request: %w", err)
+	}
+	httpMeta, ok := res.Metadata().(*transport.HTTPResponseContainer)
+	if !ok {
+		return nil, fmt.Errorf("expected HTTPResponseContainer, got %T", res.Metadata())
+	}
+	err = httpMeta.Response.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("closing body: %w", err)
+	}
+	return res, nil
 }
 
 type httpTransport struct {

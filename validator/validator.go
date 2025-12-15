@@ -126,7 +126,12 @@ func Access(
 		opt(&cfg)
 	}
 
-	proofs, err := ResolveProofs(ctx, cfg.resolveProof, invocation.Proofs())
+	proofs := map[cid.Cid]ucan.Delegation{}
+	for _, p := range cfg.proofs {
+		proofs[p.Link()] = p
+	}
+
+	proofs, err := ResolveProofs(ctx, proofs, cfg.resolveProof, invocation.Proofs())
 	if err != nil {
 		return Authorization{}, err
 	}
@@ -148,12 +153,16 @@ func Access(
 	}, nil
 }
 
-func ResolveProofs(ctx context.Context, resolve ProofResolverFunc, links []ucan.Link) (map[cid.Cid]ucan.Delegation, error) {
+func ResolveProofs(ctx context.Context, providedProofs map[cid.Cid]ucan.Delegation, resolve ProofResolverFunc, links []ucan.Link) (map[cid.Cid]ucan.Delegation, error) {
 	proofs := map[cid.Cid]ucan.Delegation{}
 	for _, link := range links {
-		prf, err := resolve(ctx, link)
-		if err != nil {
-			return nil, verrs.NewUnavailableProofError(link, err)
+		prf, ok := providedProofs[link]
+		if !ok {
+			var err error
+			prf, err = resolve(ctx, link)
+			if err != nil {
+				return nil, verrs.NewUnavailableProofError(link, err)
+			}
 		}
 		proofs[link] = prf
 	}

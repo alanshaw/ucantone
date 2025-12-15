@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/alanshaw/ucantone/examples/types"
-	"github.com/alanshaw/ucantone/ipld/datamodel"
+	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/invocation"
@@ -41,7 +41,7 @@ func TestCapabilityDefinition(t *testing.T) {
 		panic(err)
 	}
 
-	args := datamodel.Map{
+	args := ipld.Map{
 		"to":      []string{"bob@example.com"},
 		"subject": "Hello!",
 		"message": "Hello Bob, How do you do?",

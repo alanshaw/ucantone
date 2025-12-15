@@ -4,13 +4,43 @@ import (
 	"context"
 
 	"github.com/alanshaw/ucantone/ucan"
+	"github.com/alanshaw/ucantone/ucan/container"
 )
 
-type RequestOption = func(r *ExecRequest)
+type requestConfig struct {
+	invocations []ucan.Invocation
+	delegations []ucan.Delegation
+	receipts    []ucan.Receipt
+}
 
-func WithRequestMetadata(meta ucan.Container) RequestOption {
-	return func(r *ExecRequest) {
-		r.metadata = meta
+type RequestOption = func(cfg *requestConfig)
+
+// WithProofs adds delegations to the execution request. They should be linked
+// from the invocation to be executed.
+func WithProofs(delegations ...ucan.Delegation) RequestOption {
+	return func(cfg *requestConfig) {
+		cfg.delegations = append(cfg.delegations, delegations...)
+	}
+}
+
+// WithDelegations adds delegations to the execution request.
+func WithDelegations(delegations ...ucan.Delegation) RequestOption {
+	return func(cfg *requestConfig) {
+		cfg.delegations = append(cfg.delegations, delegations...)
+	}
+}
+
+// WithReceipts adds receipts to the execution request.
+func WithReceipts(receipts ...ucan.Receipt) RequestOption {
+	return func(cfg *requestConfig) {
+		cfg.receipts = append(cfg.receipts, receipts...)
+	}
+}
+
+// WithInvocations adds additional invocations to the execution request.
+func WithInvocations(invocations ...ucan.Invocation) RequestOption {
+	return func(cfg *requestConfig) {
+		cfg.invocations = append(cfg.invocations, invocations...)
 	}
 }
 
@@ -21,12 +51,22 @@ type ExecRequest struct {
 }
 
 func NewRequest(ctx context.Context, inv ucan.Invocation, options ...RequestOption) *ExecRequest {
+	cfg := requestConfig{}
+	for _, opt := range options {
+		opt(&cfg)
+	}
+	var meta ucan.Container
+	if len(cfg.invocations) > 0 || len(cfg.delegations) > 0 || len(cfg.receipts) > 0 {
+		meta = container.New(
+			container.WithInvocations(cfg.invocations...),
+			container.WithDelegations(cfg.delegations...),
+			container.WithReceipts(cfg.receipts...),
+		)
+	}
 	req := &ExecRequest{
 		ctx:        ctx,
 		invocation: inv,
-	}
-	for _, opt := range options {
-		opt(req)
+		metadata:   meta,
 	}
 	return req
 }

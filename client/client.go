@@ -30,14 +30,11 @@ func (c *Client[Req, Res]) Execute(execRequest execution.Request) (execution.Res
 		delegations = append(delegations, execRequest.Metadata().Delegations()...)
 		receipts = append(receipts, execRequest.Metadata().Receipts()...)
 	}
-	reqContainer, err := container.New(
+	reqContainer := container.New(
 		container.WithInvocations(invocations...),
 		container.WithDelegations(delegations...),
 		container.WithReceipts(receipts...),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("creating request container: %w", err)
-	}
 	request, err := c.Codec.Encode(reqContainer)
 	if err != nil {
 		return nil, fmt.Errorf("encoding container: %w", err)

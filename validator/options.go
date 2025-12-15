@@ -1,8 +1,11 @@
 package validator
 
+import "github.com/alanshaw/ucantone/ucan"
+
 type validationConfig struct {
 	canIssue              CanIssueFunc
 	parsePrincipal        PrincipalParserFunc
+	proofs                []ucan.Delegation
 	resolveProof          ProofResolverFunc
 	resolveDIDKey         DIDResolverFunc
 	validateAuthorization ValidateAuthorizationFunc
@@ -22,6 +25,12 @@ func WithCanIssue(canIssue CanIssueFunc) Option {
 func WithPrincipalParser(parsePrincipal PrincipalParserFunc) Option {
 	return func(vc *validationConfig) {
 		vc.parsePrincipal = parsePrincipal
+	}
+}
+
+func WithProofs(proofs ...ucan.Delegation) Option {
+	return func(vc *validationConfig) {
+		vc.proofs = append(vc.proofs, proofs...)
 	}
 }
 

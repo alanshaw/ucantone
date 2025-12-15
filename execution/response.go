@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"github.com/alanshaw/ucantone/errors"
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
@@ -38,10 +39,14 @@ func WithFailure(x error) ResponseOption {
 				return err
 			}
 		} else {
-			m["name"] = "UnknownError"
+			name := "UnknownError"
+			if nx, ok := x.(errors.Named); ok {
+				name = nx.Name()
+			}
+			m["name"] = name
 			m["message"] = x.Error()
 		}
-		resp.result = result.Error[ipld.Any, ipld.Any](x)
+		resp.result = result.Error[ipld.Any, ipld.Any](ipld.Map(m))
 		return nil
 	}
 }

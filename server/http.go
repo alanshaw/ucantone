@@ -71,7 +71,13 @@ func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
 	var delegations []ucan.Delegation
 	var receipts []ucan.Receipt
 	for _, inv := range reqContainer.Invocations() {
-		req := execution.NewRequest(r.Context(), inv, execution.WithRequestMetadata(reqContainer))
+		req := execution.NewRequest(
+			r.Context(),
+			inv,
+			execution.WithInvocations(reqContainer.Invocations()...),
+			execution.WithDelegations(reqContainer.Delegations()...),
+			execution.WithReceipts(reqContainer.Receipts()...),
+		)
 
 		res, err := s.executor.Execute(req)
 		if err != nil {
@@ -98,14 +104,11 @@ func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
 		}
 	}
 
-	respContainer, err := container.New(
+	respContainer := container.New(
 		container.WithInvocations(invocations...),
 		container.WithDelegations(delegations...),
 		container.WithReceipts(receipts...),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("creating response container: %w", err)
-	}
 
 	resp, err := s.codec.Encode(respContainer)
 	if err != nil {

@@ -57,13 +57,10 @@ func TestContainer(t *testing.T) {
 	}
 	fmt.Println("Invocation:", inv.Link())
 
-	ct, err := container.New(
+	ct := container.New(
 		container.WithDelegations(dlg),
 		container.WithInvocations(inv),
 	)
-	if err != nil {
-		panic(err)
-	}
 
 	buf, err := container.Encode(container.Base64Gzip, ct)
 	if err != nil {
