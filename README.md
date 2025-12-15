@@ -113,7 +113,7 @@ invocation, err := messageSend.Invoke(
 See examples in [container_test.go](./examples/container_test.go)
 
 ```go
-ct, err := container.New(
+ct := container.New(
   container.WithDelegations(dlg0, dlg1),
   container.WithInvocations(inv0),
   // container.WithReceipts(...),
