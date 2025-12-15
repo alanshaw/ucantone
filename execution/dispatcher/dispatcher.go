@@ -41,10 +41,17 @@ func (d *Dispatcher) Handle(capability validator.Capability, fn execution.Handle
 }
 
 func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) {
+	aud := req.Invocation().Audience()
+	if aud.DID() != d.authority.DID() {
+		return execution.NewResponse(
+			execution.WithFailure(execution.NewInvalidAudienceError(d.authority, aud)),
+		)
+	}
+
 	cmd := req.Invocation().Command()
 	handler, ok := d.handlers[cmd]
 	if !ok {
-		return nil, NewHandlerNotFoundError(cmd)
+		return execution.NewResponse(execution.WithFailure(NewHandlerNotFoundError(cmd)))
 	}
 
 	_, err := validator.Access(
@@ -61,7 +68,7 @@ func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) 
 	res, err := handler.Func(req)
 	if err != nil {
 		return execution.NewResponse(
-			execution.WithFailure(NewHandlerExecutionError(cmd, err)),
+			execution.WithFailure(execution.NewHandlerExecutionError(cmd, err)),
 		)
 	}
 	return res, nil

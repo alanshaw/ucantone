@@ -21,8 +21,8 @@ type HTTPServer struct {
 }
 
 // NewHTTP creates a new server capable of handling UCAN invocations over HTTP.
-func NewHTTP(id principal.Signer, options ...Option) *HTTPServer {
-	cfg := serverConfig{
+func NewHTTP(id principal.Signer, options ...HTTPOption) *HTTPServer {
+	cfg := httpServerConfig{
 		codec: transport.DefaultHTTPInboundCodec,
 	}
 	for _, opt := range options {

@@ -109,7 +109,7 @@ func NewResponse[O Success](options ...ResponseOption[O]) (*Response[O], error) 
 	return &response, nil
 }
 
-type HandlerFunc[A Arguments, O Success] = func(req Request[A]) (Response[O], error)
+type HandlerFunc[A Arguments, O Success] = func(req *Request[A]) (*Response[O], error)
 
 // NewHandler creates a new [execution.HandlerFunc] from the provided typed
 // handler.
@@ -120,6 +120,6 @@ func NewHandler[A Arguments, O Success](handler HandlerFunc[A, O]) execution.Han
 		if err != nil {
 			return execution.NewResponse(execution.WithFailure(NewMalformedArgumentsError(err)))
 		}
-		return handler(Request[A]{Request: req, task: task})
+		return handler(&Request[A]{Request: req, task: task})
 	}
 }

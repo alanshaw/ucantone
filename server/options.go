@@ -7,22 +7,22 @@ import (
 	"github.com/alanshaw/ucantone/validator"
 )
 
-// Option is an option configuring a UCAN executor.
-type Option func(cfg *serverConfig)
+// HTTPOption is an option configuring a UCAN HTTP server.
+type HTTPOption func(cfg *httpServerConfig)
 
-type serverConfig struct {
+type httpServerConfig struct {
 	codec          transport.InboundCodec[*http.Request, *http.Response]
 	validationOpts []validator.Option
 }
 
-func WithCodec(codec transport.InboundCodec[*http.Request, *http.Response]) Option {
-	return func(cfg *serverConfig) {
+func WithHTTPCodec(codec transport.InboundCodec[*http.Request, *http.Response]) HTTPOption {
+	return func(cfg *httpServerConfig) {
 		cfg.codec = codec
 	}
 }
 
-func WithValidationOptions(options ...validator.Option) Option {
-	return func(cfg *serverConfig) {
+func WithValidationOptions(options ...validator.Option) HTTPOption {
+	return func(cfg *httpServerConfig) {
 		cfg.validationOpts = append(cfg.validationOpts, options...)
 	}
 }

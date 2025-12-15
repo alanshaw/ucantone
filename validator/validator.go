@@ -352,7 +352,7 @@ func VerifyAuthorization(
 				}
 				// check root issuer/subject alignment
 				if !canIssue(ucan.Capability(prf), prf.Issuer()) {
-					return verrs.NewInvalidClaimError(fmt.Sprintf("%s cannot issue delegations for %s", prf.Issuer().DID(), prf.Subject().DID()))
+					return verrs.NewInvalidClaimError(fmt.Sprintf("%q cannot issue delegations for %q", prf.Issuer().DID(), prf.Subject().DID()))
 				}
 			} else {
 				// otherwise check subject and principal alignment
@@ -368,7 +368,7 @@ func VerifyAuthorization(
 		// check invocation issuer/subject alignment
 		cap := delegation.NewCapability(inv.Subject(), inv.Command(), policy.Policy{})
 		if !canIssue(cap, inv.Issuer()) {
-			return verrs.NewInvalidClaimError(fmt.Sprintf("%s cannot issue invocations for %s", inv.Issuer().DID(), inv.Subject().DID()))
+			return verrs.NewInvalidClaimError(fmt.Sprintf("%q cannot issue invocations for %q", inv.Issuer().DID(), inv.Subject().DID()))
 		}
 	}
 

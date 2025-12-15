@@ -12,15 +12,6 @@ const HandlerNotFoundErrorName = "HandlerNotFound"
 func NewHandlerNotFoundError(cmd ucan.Command) error {
 	return edm.ErrorModel{
 		ErrorName: HandlerNotFoundErrorName,
-		Message:   fmt.Sprintf("handler not found: %s", cmd),
-	}
-}
-
-const HandlerExecutionErrorName = "HandlerExecutionError"
-
-func NewHandlerExecutionError(cmd ucan.Command, cause error) error {
-	return edm.ErrorModel{
-		ErrorName: HandlerExecutionErrorName,
-		Message:   fmt.Errorf("%s handler execution error: %w", cmd, cause).Error(),
+		Message:   fmt.Sprintf("handler not found: %q", cmd),
 	}
 }

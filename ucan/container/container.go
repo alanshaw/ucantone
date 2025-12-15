@@ -95,8 +95,6 @@ func (c *Container) Receipt(task cid.Cid) (ucan.Receipt, error) {
 	return nil, ErrNotFound
 }
 
-type ContainerConfig struct{}
-
 type Option func(c *Container)
 
 func WithInvocations(invocations ...ucan.Invocation) Option {
@@ -141,11 +139,6 @@ func New(options ...Option) (*Container, error) {
 	slices.SortFunc(tokens, bytes.Compare)
 
 	model := datamodel.ContainerModel{Ctn1: tokens}
-	var buf bytes.Buffer
-	err := model.MarshalCBOR(&buf)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling container to CBOR: %w", err)
-	}
 	ct.model = &model
 
 	return &ct, nil
