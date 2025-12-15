@@ -139,15 +139,7 @@ ucanSrv.Handle(echoCapability, func(req execution.Request) (execution.Response, 
   return execution.NewResponse(execution.WithSuccess(req.Invocation().Arguments()))
 })
 
-// Start the server on a random available port
-listener, err := net.Listen("tcp", ":0")
-
-httpSrv := http.Server{Handler: ucanSrv}
-
-err := httpSrv.Serve(listener)
-if err != nil && err != http.ErrServerClosed {
-  panic(err)
-}
+http.ListenAndServe(":3000", ucanSrv)
 ```
 
 ## Contributing
