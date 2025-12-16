@@ -26,8 +26,6 @@ const (
 	Base64urlGzip = byte(0x46) // base64 url (no padding), gzip
 )
 
-var ErrNotFound = errors.New("not found")
-
 // FormatCodec converts a container codec code into a human readable string.
 func FormatCodec(codec byte) string {
 	switch codec {
@@ -58,13 +56,13 @@ func (c *Container) Delegations() []ucan.Delegation {
 	return c.dlgs
 }
 
-func (c *Container) Delegation(root cid.Cid) (ucan.Delegation, error) {
+func (c *Container) Delegation(root cid.Cid) (ucan.Delegation, bool) {
 	for _, dlg := range c.dlgs {
 		if dlg.Link() == root {
-			return dlg, nil
+			return dlg, true
 		}
 	}
-	return nil, ErrNotFound
+	return nil, false
 }
 
 func (c *Container) Invocations() []ucan.Invocation {
@@ -75,13 +73,13 @@ func (c *Container) Receipts() []ucan.Receipt {
 	return c.rcpts
 }
 
-func (c *Container) Receipt(task cid.Cid) (ucan.Receipt, error) {
+func (c *Container) Receipt(task cid.Cid) (ucan.Receipt, bool) {
 	for _, rcpt := range c.rcpts {
 		if rcpt.Ran() == task {
-			return rcpt, nil
+			return rcpt, true
 		}
 	}
-	return nil, ErrNotFound
+	return nil, false
 }
 
 func (c *Container) MarshalCBOR(w io.Writer) error {

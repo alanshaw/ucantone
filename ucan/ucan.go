@@ -228,12 +228,12 @@ type Container interface {
 	// Delegations the container contains.
 	Delegations() []Delegation
 	// Delegation retrieves a delegation from the container by it's CID.
-	Delegation(Link) (Delegation, error)
+	Delegation(Link) (Delegation, bool)
 	// Receipts the container contains.
 	Receipts() []Receipt
 	// Receipt retrieves a receipt from the container by the CID of a [Task] that
 	// was executed.
-	Receipt(Link) (Receipt, error)
+	Receipt(Link) (Receipt, bool)
 }
 
 // IsExpired checks if a UCAN is expired.
