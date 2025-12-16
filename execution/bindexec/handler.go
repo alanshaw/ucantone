@@ -60,12 +60,16 @@ type Request[A Arguments] struct {
 	task *Task[A]
 }
 
-func NewRequest[A Arguments](ctx context.Context, inv ucan.Invocation, options ...RequestOption) Request[A] {
+func NewRequest[A Arguments](ctx context.Context, inv ucan.Invocation, options ...RequestOption) (*Request[A], error) {
 	cfg := requestConfig{}
 	for _, opt := range options {
 		opt(&cfg)
 	}
-	return Request[A]{
+	task, err := NewTask[A](inv.Subject(), inv.Command(), inv.Arguments(), inv.Nonce())
+	if err != nil {
+		return nil, err
+	}
+	return &Request[A]{
 		Request: execution.NewRequest(
 			ctx,
 			inv,
@@ -73,7 +77,8 @@ func NewRequest[A Arguments](ctx context.Context, inv ucan.Invocation, options .
 			execution.WithDelegations(cfg.delegations...),
 			execution.WithReceipts(cfg.receipts...),
 		),
-	}
+		task: task,
+	}, nil
 }
 
 func (r *Request[A]) Task() *Task[A] {

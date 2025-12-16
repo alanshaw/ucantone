@@ -10,6 +10,7 @@ func main() {
 		types.EmailsListArguments{},
 		types.MessageSendArguments{},
 		types.PromisedMsgSendArguments{},
+		types.EchoArguments{},
 	); err != nil {
 		panic(err)
 	}

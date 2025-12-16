@@ -28,7 +28,9 @@ func TestHandler(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	req := bindexec.NewRequest[*tdm.TestObject](t.Context(), inv)
+	req, err := bindexec.NewRequest[*tdm.TestObject](t.Context(), inv)
+	require.NoError(t, err)
+
 	res, err := handler(req)
 	require.NoError(t, err)
 	require.NotNil(t, res)

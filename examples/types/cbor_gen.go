@@ -31,14 +31,14 @@ func (t *EmailsListArguments) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.Limit (uint64) (uint64)
-	if len("Limit") > 8192 {
-		return xerrors.Errorf("Value in field \"Limit\" was too long")
+	if len("limit") > 8192 {
+		return xerrors.Errorf("Value in field \"limit\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("Limit"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("limit"))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("Limit")); err != nil {
+	if _, err := cw.WriteString(string("limit")); err != nil {
 		return err
 	}
 
@@ -91,7 +91,7 @@ func (t *EmailsListArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 		switch string(nameBuf[:nameLen]) {
 		// t.Limit (uint64) (uint64)
-		case "Limit":
+		case "limit":
 
 			{
 
@@ -129,14 +129,14 @@ func (t *MessageSendArguments) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.To ([]string) (slice)
-	if len("To") > 8192 {
-		return xerrors.Errorf("Value in field \"To\" was too long")
+	if len("to") > 8192 {
+		return xerrors.Errorf("Value in field \"to\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("To"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("to"))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("To")); err != nil {
+	if _, err := cw.WriteString(string("to")); err != nil {
 		return err
 	}
 
@@ -162,14 +162,14 @@ func (t *MessageSendArguments) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.Message (string) (string)
-	if len("Message") > 8192 {
-		return xerrors.Errorf("Value in field \"Message\" was too long")
+	if len("message") > 8192 {
+		return xerrors.Errorf("Value in field \"message\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("Message"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("message"))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("Message")); err != nil {
+	if _, err := cw.WriteString(string("message")); err != nil {
 		return err
 	}
 
@@ -185,14 +185,14 @@ func (t *MessageSendArguments) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.Subject (string) (string)
-	if len("Subject") > 8192 {
-		return xerrors.Errorf("Value in field \"Subject\" was too long")
+	if len("subject") > 8192 {
+		return xerrors.Errorf("Value in field \"subject\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("Subject"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("subject"))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("Subject")); err != nil {
+	if _, err := cw.WriteString(string("subject")); err != nil {
 		return err
 	}
 
@@ -251,7 +251,7 @@ func (t *MessageSendArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 		switch string(nameBuf[:nameLen]) {
 		// t.To ([]string) (slice)
-		case "To":
+		case "to":
 
 			maj, extra, err = cr.ReadHeader()
 			if err != nil {
@@ -291,7 +291,7 @@ func (t *MessageSendArguments) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 			}
 			// t.Message (string) (string)
-		case "Message":
+		case "message":
 
 			{
 				sval, err := cbg.ReadStringWithMax(cr, 8192)
@@ -302,7 +302,7 @@ func (t *MessageSendArguments) UnmarshalCBOR(r io.Reader) (err error) {
 				t.Message = string(sval)
 			}
 			// t.Subject (string) (string)
-		case "Subject":
+		case "subject":
 
 			{
 				sval, err := cbg.ReadStringWithMax(cr, 8192)
@@ -336,14 +336,14 @@ func (t *PromisedMsgSendArguments) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.To (promise.AwaitOK) (struct)
-	if len("To") > 8192 {
-		return xerrors.Errorf("Value in field \"To\" was too long")
+	if len("to") > 8192 {
+		return xerrors.Errorf("Value in field \"to\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("To"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("to"))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("To")); err != nil {
+	if _, err := cw.WriteString(string("to")); err != nil {
 		return err
 	}
 
@@ -352,14 +352,14 @@ func (t *PromisedMsgSendArguments) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.From (string) (string)
-	if len("From") > 8192 {
-		return xerrors.Errorf("Value in field \"From\" was too long")
+	if len("from") > 8192 {
+		return xerrors.Errorf("Value in field \"from\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("From"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("from"))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("From")); err != nil {
+	if _, err := cw.WriteString(string("from")); err != nil {
 		return err
 	}
 
@@ -375,14 +375,14 @@ func (t *PromisedMsgSendArguments) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.Message (string) (string)
-	if len("Message") > 8192 {
-		return xerrors.Errorf("Value in field \"Message\" was too long")
+	if len("message") > 8192 {
+		return xerrors.Errorf("Value in field \"message\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("Message"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("message"))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("Message")); err != nil {
+	if _, err := cw.WriteString(string("message")); err != nil {
 		return err
 	}
 
@@ -441,7 +441,7 @@ func (t *PromisedMsgSendArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 		switch string(nameBuf[:nameLen]) {
 		// t.To (promise.AwaitOK) (struct)
-		case "To":
+		case "to":
 
 			{
 
@@ -451,7 +451,7 @@ func (t *PromisedMsgSendArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 			}
 			// t.From (string) (string)
-		case "From":
+		case "from":
 
 			{
 				sval, err := cbg.ReadStringWithMax(cr, 8192)
@@ -462,7 +462,107 @@ func (t *PromisedMsgSendArguments) UnmarshalCBOR(r io.Reader) (err error) {
 				t.From = string(sval)
 			}
 			// t.Message (string) (string)
-		case "Message":
+		case "message":
+
+			{
+				sval, err := cbg.ReadStringWithMax(cr, 8192)
+				if err != nil {
+					return err
+				}
+
+				t.Message = string(sval)
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+func (t *EchoArguments) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{161}); err != nil {
+		return err
+	}
+
+	// t.Message (string) (string)
+	if len("message") > 8192 {
+		return xerrors.Errorf("Value in field \"message\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("message"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("message")); err != nil {
+		return err
+	}
+
+	if len(t.Message) > 8192 {
+		return xerrors.Errorf("Value in field t.Message was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.Message))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string(t.Message)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *EchoArguments) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = EchoArguments{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("EchoArguments: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 7)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Message (string) (string)
+		case "message":
 
 			{
 				sval, err := cbg.ReadStringWithMax(cr, 8192)
