@@ -98,7 +98,7 @@ func TestServer(t *testing.T) {
 	}
 
 	result.MatchResultR0(
-		resp.Result(),
+		resp.Out(),
 		func(o ipld.Any) {
 			fmt.Printf("Echo response: %+v\n", o)
 		},
@@ -189,7 +189,7 @@ func TestTypedServer(t *testing.T) {
 	}
 
 	result.MatchResultR0(
-		resp.Result(),
+		resp.Out(),
 		func(o ipld.Any) {
 			args := types.EchoArguments{}
 			err := datamodel.Rebind(datamodel.NewAny(o), &args)

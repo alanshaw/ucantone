@@ -44,7 +44,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), logInv))
 		require.NoError(t, err)
 
-		_, x := result.Unwrap(resp.Result())
+		_, x := result.Unwrap(resp.Out())
 		require.Nil(t, x)
 
 		require.Len(t, messages, 1)
@@ -61,7 +61,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err = executor.Execute(execution.NewRequest(t.Context(), echoInv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(resp.Result())
+		o, x := result.Unwrap(resp.Out())
 		require.NotNil(t, o)
 		require.Nil(t, x)
 		t.Log(o)
@@ -84,7 +84,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), inv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(resp.Result())
+		o, x := result.Unwrap(resp.Out())
 		require.Nil(t, o)
 		require.NotNil(t, x)
 		t.Log(x)
@@ -106,7 +106,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), inv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(resp.Result())
+		o, x := result.Unwrap(resp.Out())
 		require.Nil(t, o)
 		require.NotNil(t, x)
 		t.Log(x)
@@ -132,7 +132,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), logInv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(resp.Result())
+		o, x := result.Unwrap(resp.Out())
 		require.Nil(t, o)
 		require.NotNil(t, x)
 		t.Log(x)
@@ -157,7 +157,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), logInv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(resp.Result())
+		o, x := result.Unwrap(resp.Out())
 		require.Nil(t, o)
 		require.NotNil(t, x)
 		t.Log(x)

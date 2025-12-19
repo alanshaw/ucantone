@@ -89,7 +89,7 @@ func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
 		receipt, err := receipt.Issue(
 			s.id,
 			inv.Task().Link(),
-			res.Result(),
+			res.Out(),
 			receipt.WithCause(inv.Link()),
 		)
 		if err != nil {

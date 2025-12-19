@@ -17,8 +17,8 @@ type Request interface {
 }
 
 type Response interface {
-	// Result is the result of the task.
-	Result() result.Result[ipld.Any, ipld.Any]
+	// Out is the result of the task.
+	Out() result.Result[ipld.Any, ipld.Any]
 	// Metadata provides additional information about the response.
 	Metadata() ucan.Container
 }

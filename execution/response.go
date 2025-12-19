@@ -10,22 +10,22 @@ import (
 )
 
 type ExecResponse struct {
-	result   result.Result[ipld.Any, ipld.Any]
+	out      result.Result[ipld.Any, ipld.Any]
 	metadata ucan.Container
 }
 
 type ResponseOption func(r *ExecResponse) error
 
-func WithResult(r result.Result[ipld.Any, ipld.Any]) ResponseOption {
+func WithOutcome(out result.Result[ipld.Any, ipld.Any]) ResponseOption {
 	return func(resp *ExecResponse) error {
-		resp.result = r
+		resp.out = out
 		return nil
 	}
 }
 
 func WithSuccess(o ipld.Any) ResponseOption {
 	return func(resp *ExecResponse) error {
-		resp.result = result.OK[ipld.Any, ipld.Any](o)
+		resp.out = result.OK[ipld.Any, ipld.Any](o)
 		return nil
 	}
 }
@@ -46,7 +46,7 @@ func WithFailure(x error) ResponseOption {
 			m["name"] = name
 			m["message"] = x.Error()
 		}
-		resp.result = result.Error[ipld.Any, ipld.Any](ipld.Map(m))
+		resp.out = result.Error[ipld.Any, ipld.Any](ipld.Map(m))
 		return nil
 	}
 }
@@ -59,7 +59,7 @@ func WithMetadata(m ucan.Container) ResponseOption {
 }
 
 func NewResponse(options ...ResponseOption) (*ExecResponse, error) {
-	response := ExecResponse{result: result.OK[ipld.Any, ipld.Any](datamodel.Map{})}
+	response := ExecResponse{out: result.OK[ipld.Any, ipld.Any](datamodel.Map{})}
 	for _, opt := range options {
 		err := opt(&response)
 		if err != nil {
@@ -73,6 +73,6 @@ func (r *ExecResponse) Metadata() ucan.Container {
 	return r.metadata
 }
 
-func (r *ExecResponse) Result() result.Result[ipld.Any, ipld.Any] {
-	return r.result
+func (r *ExecResponse) Out() result.Result[ipld.Any, ipld.Any] {
+	return r.out
 }

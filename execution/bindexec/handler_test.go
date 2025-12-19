@@ -35,7 +35,7 @@ func TestHandler(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
-	o, x := result.Unwrap(res.Result())
+	o, x := result.Unwrap(res.Out())
 	require.Nil(t, x)
 	require.NotNil(t, o)
 	require.Equal(t, "testy", o.(datamodel.Map)["str"])

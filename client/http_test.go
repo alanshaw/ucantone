@@ -44,7 +44,7 @@ func TestHTTPClient(t *testing.T) {
 		res, err := c.Execute(execution.NewRequest(t.Context(), inv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(res.Result())
+		o, x := result.Unwrap(res.Out())
 		require.Nil(t, x)
 		require.NotNil(t, o)
 		require.Equal(t, "echo!", o.(ipld.Map)["message"])

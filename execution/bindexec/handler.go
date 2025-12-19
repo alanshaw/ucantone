@@ -87,9 +87,9 @@ func (r *Request[A]) Task() *Task[A] {
 
 type ResponseOption[O Success] func(r *Response[O]) error
 
-func WithResult[O Success](r result.Result[O, error]) ResponseOption[O] {
+func WithOutcome[O Success](out result.Result[O, error]) ResponseOption[O] {
 	return func(resp *Response[O]) error {
-		o, x := result.Unwrap(r)
+		o, x := result.Unwrap(out)
 		if x == nil {
 			return WithSuccess(o)(resp)
 		}
@@ -133,7 +133,7 @@ func WithFailure[O Success](x error) ResponseOption[O] {
 func WithMetadata[O Success](m ucan.Container) ResponseOption[O] {
 	return func(r *Response[O]) error {
 		exr, err := execution.NewResponse(
-			execution.WithResult(r.Response.Result()),
+			execution.WithOutcome(r.Response.Out()),
 			execution.WithMetadata(m),
 		)
 		if err != nil {
