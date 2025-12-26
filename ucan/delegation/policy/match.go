@@ -29,21 +29,49 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 	}
 	switch statement.Operator() {
 	case OpEqual:
-		one, _, err := selector.Select(s.selector, value)
+		one, many, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		if !reflect.DeepEqual(s.model.Value.Value, one) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" does not equal "%v"`, s.Selector(), one, s.model.Value.Value))
+		// if selected value is a slice then it'll be returned as "many" and we need
+		// to compare against that.
+		selectedValue := one
+		statementValue := s.model.Value.Value
+		statementValueType := reflect.TypeOf(statementValue)
+		if statementValueType != nil && statementValueType.Kind() == reflect.Slice {
+			statementReflectValue := reflect.ValueOf(statementValue)
+			anySlice := make([]any, 0, statementReflectValue.Len())
+			for i := range statementReflectValue.Len() {
+				anySlice = append(anySlice, statementReflectValue.Index(i).Interface())
+			}
+			selectedValue = many
+			statementValue = anySlice
+		}
+		if !reflect.DeepEqual(statementValue, selectedValue) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" does not equal "%v"`, s.Selector(), selectedValue, statementValue))
 		}
 		return true, nil
 	case OpNotEqual:
-		one, _, err := selector.Select(s.selector, value)
+		one, many, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		if reflect.DeepEqual(s.model.Value.Value, one) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" equals "%v"`, s.Selector(), one, s.model.Value.Value))
+		// if selected value is a slice then it'll be returned as "many" and we need
+		// to compare against that.
+		selectedValue := one
+		statementValue := s.model.Value.Value
+		statementValueType := reflect.TypeOf(statementValue)
+		if statementValueType != nil && statementValueType.Kind() == reflect.Slice {
+			statementReflectValue := reflect.ValueOf(statementValue)
+			anySlice := make([]any, 0, statementReflectValue.Len())
+			for i := range statementReflectValue.Len() {
+				anySlice = append(anySlice, statementReflectValue.Index(i).Interface())
+			}
+			selectedValue = many
+			statementValue = anySlice
+		}
+		if reflect.DeepEqual(statementValue, selectedValue) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" equals "%v"`, s.Selector(), selectedValue, statementValue))
 		}
 		return true, nil
 	case OpGreaterThan:
