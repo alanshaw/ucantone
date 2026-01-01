@@ -24,7 +24,7 @@ import (
 //   - Integer (int64, int)
 //   - String (string)
 //   - Bytes ([]byte)
-//   - List (slice)
+//   - List ([]Any)
 //   - Map ([Map])
 //   - Link ([cid.Cid])
 //
@@ -190,23 +190,15 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 			return fmt.Errorf("array too large (%d)", extra)
 		}
 		if extra > 0 {
-			var items reflect.Value
-			for i := range extra {
+			items := make([]any, 0, int(extra))
+			for range extra {
 				item := Any{}
 				if err := item.UnmarshalCBOR(r); err != nil {
 					return err
 				}
-				// TODO: ensure all items are the same type?
-				if i == 0 {
-					typ := reflect.TypeOf(item.Value)
-					if typ == nil { // TODO: handle a list of nulls?
-						return fmt.Errorf("nil item in list")
-					}
-					items = reflect.MakeSlice(reflect.SliceOf(typ), 0, int(extra))
-				}
-				items = reflect.Append(items, reflect.ValueOf(item.Value))
+				items = append(items, item.Value)
 			}
-			a.Value = items.Interface()
+			a.Value = items
 		} else {
 			a.Value = []any{}
 		}
@@ -262,7 +254,7 @@ func (a *Any) MarshalDagJSON(w io.Writer) error {
 		for i := range s.Len() {
 			a := Any{Value: s.Index(i).Interface()}
 			if err := a.MarshalDagJSON(w); err != nil {
-				return fmt.Errorf("marshalling slice index: %d: %w", i, err)
+				return fmt.Errorf("marshaling slice index: %d: %w", i, err)
 			}
 			if i < s.Len()-1 {
 				if err := jw.WriteComma(); err != nil {
@@ -318,21 +310,13 @@ func (a *Any) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			a.Value = []any{}
 		} else {
-			var items reflect.Value
+			items := []any{}
 			for i := range jsg.MaxLength {
 				item := Any{}
 				if err := item.UnmarshalDagJSON(jr); err != nil {
 					return err
 				}
-				// TODO: ensure all items are the same type?
-				if i == 0 {
-					typ := reflect.TypeOf(item.Value)
-					if typ == nil { // TODO: handle a list of nulls?
-						return fmt.Errorf("nil item in list")
-					}
-					items = reflect.MakeSlice(reflect.SliceOf(typ), 0, 1)
-				}
-				items = reflect.Append(items, reflect.ValueOf(item.Value))
+				items = append(items, item.Value)
 
 				close, err := jr.ReadArrayCloseOrComma()
 				if err != nil {
@@ -345,7 +329,7 @@ func (a *Any) UnmarshalDagJSON(r io.Reader) (err error) {
 					return errors.New("IPLD array too large")
 				}
 			}
-			a.Value = items.Interface()
+			a.Value = items
 		}
 	case "object":
 		m := Map{}

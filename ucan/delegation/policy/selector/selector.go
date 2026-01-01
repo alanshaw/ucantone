@@ -62,7 +62,7 @@ type Segment struct {
 	Identity bool   // Identity flags that this selector is the identity selector.
 	Optional bool   // Optional flags that this selector is optional.
 	Iterator bool   // Iterator flags that this selector is an iterator segment.
-	Slice    []int  // Slice flags that this segemnt targets a range of a slice.
+	Slice    []int  // Slice flags that this segment targets a range of a slice.
 	Field    string // Field is the name of a field in a struct/map.
 	Index    int    // Index is an index of a slice.
 }
@@ -190,7 +190,8 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 		if seg.Identity {
 			continue
 		} else if seg.Iterator {
-			if reflect.TypeOf(cur).Kind() == reflect.Slice {
+			curType := reflect.TypeOf(cur)
+			if curType != nil && curType.Kind() == reflect.Slice {
 				var many []any
 				v := reflect.ValueOf(cur)
 				for k := range v.Len() {
@@ -201,11 +202,11 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 					}
 					if m != nil {
 						many = append(many, m...)
-					} else {
+					} else if o != nil {
 						many = append(many, o)
 					}
 				}
-				return nil, many, nil
+				cur = many
 			} else if m, ok := cur.(ipld.Map); ok {
 				var many []any
 				for k, v := range m {
@@ -213,14 +214,13 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 					if err != nil {
 						return nil, nil, err
 					}
-
 					if m != nil {
 						many = append(many, m...)
-					} else {
+					} else if o != nil {
 						many = append(many, o)
 					}
 				}
-				return nil, many, nil
+				cur = many
 			} else if seg.Optional {
 				cur = nil
 			} else {
@@ -240,8 +240,26 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 				return nil, nil, NewResolutionError(fmt.Sprintf("can not access field: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
 			}
 		} else if seg.Slice != nil {
-			if reflect.TypeOf(cur).Kind() == reflect.Slice {
-				return nil, nil, NewResolutionError("slice selection not yet implemented", at)
+			curType := reflect.TypeOf(cur)
+			if curType != nil && curType.Kind() == reflect.Slice {
+				v := reflect.ValueOf(cur)
+				idxs := seg.Slice
+				if len(idxs) == 1 {
+					idxs = []int{idxs[0], v.Len()}
+				}
+				if idxs[1] > v.Len() {
+					return nil, nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", idxs[1]), at)
+				}
+				cur = v.Slice(idxs[0], idxs[1]).Interface()
+			} else if curStr, ok := cur.(string); ok {
+				idxs := seg.Slice
+				if len(idxs) == 1 {
+					idxs = []int{idxs[0], len(curStr)}
+				}
+				if idxs[1] > len(curStr) {
+					return nil, nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", idxs[1]), at)
+				}
+				cur = curStr[idxs[0]:idxs[1]]
 			} else if seg.Optional {
 				cur = nil
 			} else {
@@ -249,16 +267,35 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 			}
 		} else {
 			at = append(at, fmt.Sprintf("%d", seg.Index))
-			if reflect.TypeOf(cur).Kind() == reflect.Slice {
+			curType := reflect.TypeOf(cur)
+			if curType != nil && curType.Kind() == reflect.Slice {
 				v := reflect.ValueOf(cur)
-				if seg.Index < 0 || seg.Index >= v.Len() {
+				idx := seg.Index
+				if idx < 0 {
+					idx = v.Len() + idx
+				}
+				if idx < 0 || idx >= v.Len() {
 					if seg.Optional {
 						cur = nil
 					} else {
 						return nil, nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", seg.Index), at)
 					}
 				} else {
-					cur = v.Index(seg.Index).Interface()
+					cur = v.Index(idx).Interface()
+				}
+			} else if curStr, ok := cur.(string); ok {
+				idx := seg.Index
+				if idx < 0 {
+					idx = len(curStr) + idx
+				}
+				if idx < 0 || idx >= len(curStr) {
+					if seg.Optional {
+						cur = nil
+					} else {
+						return nil, nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", seg.Index), at)
+					}
+				} else {
+					cur = string(curStr[idx])
 				}
 			} else if seg.Optional {
 				cur = nil
@@ -268,9 +305,9 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 		}
 	}
 
-	ct := reflect.TypeOf(cur)
+	curType := reflect.TypeOf(cur)
 	// if cur is a slice, we need to return it as a many
-	if ct != nil && ct.Kind() == reflect.Slice {
+	if curType != nil && curType.Kind() == reflect.Slice {
 		v := reflect.ValueOf(cur)
 		many := make([]any, 0, v.Len())
 		for i := range v.Len() {

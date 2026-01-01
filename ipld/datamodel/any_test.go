@@ -20,7 +20,7 @@ func TestAny(t *testing.T) {
 		testutil.RandomCID(t),
 		"test",
 		[]byte{1, 2, 3},
-		[]string{"one", "two", "three"},
+		[]ipld.Any{"one", "two", "three"},
 		map[string]ipld.Any{"bytes": []byte{1}},
 		map[string]ipld.Any{
 			"str":   "X",
