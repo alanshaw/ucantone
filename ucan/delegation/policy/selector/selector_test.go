@@ -295,12 +295,11 @@ func TestSelect(t *testing.T) {
 		sel, err := selector.Parse(".")
 		require.NoError(t, err)
 
-		one, many, err := selector.Select(sel, alice)
+		val, err := selector.Select(sel, alice)
 		require.NoError(t, err)
-		require.NotEmpty(t, one)
-		require.Empty(t, many)
+		require.NotEmpty(t, val)
 
-		user, ok := one.(ipld.Map)
+		user, ok := val.(ipld.Map)
 		require.True(t, ok)
 		require.Equal(t, alice, user)
 	})
@@ -309,21 +308,19 @@ func TestSelect(t *testing.T) {
 		sel, err := selector.Parse(".name.first")
 		require.NoError(t, err)
 
-		one, many, err := selector.Select(sel, alice)
+		val, err := selector.Select(sel, alice)
 		require.NoError(t, err)
-		require.NotEmpty(t, one)
-		require.Empty(t, many)
+		require.NotEmpty(t, val)
 
-		name, ok := one.(string)
+		name, ok := val.(string)
 		require.True(t, ok)
 		require.Equal(t, "Alice", name)
 
-		one, many, err = selector.Select(sel, bob)
+		val, err = selector.Select(sel, bob)
 		require.NoError(t, err)
-		require.NotEmpty(t, one)
-		require.Empty(t, many)
+		require.NotEmpty(t, val)
 
-		name, ok = one.(string)
+		name, ok = val.(string)
 		require.True(t, ok)
 		require.Equal(t, "Bob", name)
 	})

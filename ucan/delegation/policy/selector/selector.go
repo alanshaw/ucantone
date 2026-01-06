@@ -180,11 +180,11 @@ func tokenize(str string) []string {
 }
 
 // Select uses a selector to extract a value from the passed subject.
-func Select(sel Selector, subject any) (any, []any, error) {
+func Select(sel Selector, subject any) (any, error) {
 	return resolve(sel, subject, nil)
 }
 
-func resolve(sel Selector, subject any, at []string) (any, []any, error) {
+func resolve(sel Selector, subject any, at []string) (any, error) {
 	cur := subject
 	for i, seg := range sel {
 		if seg.Identity {
@@ -196,48 +196,66 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 				v := reflect.ValueOf(cur)
 				for k := range v.Len() {
 					key := fmt.Sprintf("%d", k)
-					o, m, err := resolve(sel[i+1:], v.Index(k).Interface(), append(at[:], key))
+					r, err := resolve(sel[i+1:], v.Index(k).Interface(), append(at[:], key))
 					if err != nil {
-						return nil, nil, err
+						return nil, err
 					}
-					if m != nil {
-						many = append(many, m...)
-					} else if o != nil {
-						many = append(many, o)
+					if r == nil {
+						continue
+					}
+					rTyp := reflect.TypeOf(r)
+					if rTyp != nil {
+						if rTyp.Kind() == reflect.Slice {
+							rVal := reflect.ValueOf(r)
+							for j := range rVal.Len() {
+								many = append(many, rVal.Index(j).Interface())
+							}
+						} else {
+							many = append(many, r)
+						}
 					}
 				}
 				cur = many
 			} else if m, ok := cur.(ipld.Map); ok {
 				var many []any
 				for k, v := range m {
-					o, m, err := resolve(sel[i+1:], v, append(at[:], k))
+					r, err := resolve(sel[i+1:], v, append(at[:], k))
 					if err != nil {
-						return nil, nil, err
+						return nil, err
 					}
-					if m != nil {
-						many = append(many, m...)
-					} else if o != nil {
-						many = append(many, o)
+					if r == nil {
+						continue
+					}
+					rTyp := reflect.TypeOf(r)
+					if rTyp != nil {
+						if rTyp.Kind() == reflect.Slice {
+							rVal := reflect.ValueOf(r)
+							for j := range rVal.Len() {
+								many = append(many, rVal.Index(j).Interface())
+							}
+						} else {
+							many = append(many, r)
+						}
 					}
 				}
 				cur = many
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, nil, NewResolutionError(fmt.Sprintf("can not iterate over type: %s", reflect.TypeOf(cur)), at)
+				return nil, NewResolutionError(fmt.Sprintf("can not iterate over type: %s", reflect.TypeOf(cur)), at)
 			}
 		} else if seg.Field != "" {
 			at = append(at, seg.Field)
 			if m, ok := cur.(ipld.Map); ok {
 				v, ok := m[seg.Field]
 				if !ok && !seg.Optional {
-					return nil, nil, NewResolutionError(fmt.Sprintf("object has no field named: %s", seg.Field), at)
+					return nil, NewResolutionError(fmt.Sprintf("object has no field named: %s", seg.Field), at)
 				}
 				cur = v
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, nil, NewResolutionError(fmt.Sprintf("can not access field: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
+				return nil, NewResolutionError(fmt.Sprintf("can not access field: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
 			}
 		} else if seg.Slice != nil {
 			curType := reflect.TypeOf(cur)
@@ -248,7 +266,7 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 					idxs = []int{idxs[0], v.Len()}
 				}
 				if idxs[1] > v.Len() {
-					return nil, nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", idxs[1]), at)
+					return nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", idxs[1]), at)
 				}
 				cur = v.Slice(idxs[0], idxs[1]).Interface()
 			} else if curStr, ok := cur.(string); ok {
@@ -257,13 +275,13 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 					idxs = []int{idxs[0], len(curStr)}
 				}
 				if idxs[1] > len(curStr) {
-					return nil, nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", idxs[1]), at)
+					return nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", idxs[1]), at)
 				}
 				cur = curStr[idxs[0]:idxs[1]]
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, nil, NewResolutionError(fmt.Sprintf("can not index: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
+				return nil, NewResolutionError(fmt.Sprintf("can not index: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
 			}
 		} else {
 			at = append(at, fmt.Sprintf("%d", seg.Index))
@@ -278,7 +296,7 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 					if seg.Optional {
 						cur = nil
 					} else {
-						return nil, nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", seg.Index), at)
+						return nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", seg.Index), at)
 					}
 				} else {
 					cur = v.Index(idx).Interface()
@@ -292,7 +310,7 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 					if seg.Optional {
 						cur = nil
 					} else {
-						return nil, nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", seg.Index), at)
+						return nil, NewResolutionError(fmt.Sprintf("index out of bounds: %d", seg.Index), at)
 					}
 				} else {
 					cur = string(curStr[idx])
@@ -300,21 +318,43 @@ func resolve(sel Selector, subject any, at []string) (any, []any, error) {
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, nil, NewResolutionError(fmt.Sprintf("can not access field: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
+				return nil, NewResolutionError(fmt.Sprintf("can not access field: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
 			}
 		}
 	}
 
 	curType := reflect.TypeOf(cur)
-	// if cur is a slice, we need to return it as a many
+	// if cur is a slice, we need to return it as a typed slice if all items
+	// have the same type.
 	if curType != nil && curType.Kind() == reflect.Slice {
 		v := reflect.ValueOf(cur)
-		many := make([]any, 0, v.Len())
+		var itemsType reflect.Type
+		hasCommonType := true
 		for i := range v.Len() {
-			many = append(many, v.Index(i).Interface())
+			typ := reflect.TypeOf(v.Index(i).Interface())
+			if hasCommonType {
+				// first iteration (or all nil)
+				if itemsType == nil {
+					itemsType = typ
+				} else if itemsType != typ {
+					hasCommonType = false
+					itemsType = nil
+					break
+				}
+			}
 		}
-		return nil, many, nil
+
+		// if all items have the same type and the type is not nil, create and
+		// return a typed slice
+		if hasCommonType && itemsType != nil {
+			sliceType := reflect.SliceOf(itemsType)
+			sliceValue := reflect.MakeSlice(sliceType, v.Len(), v.Len())
+			for i := range v.Len() {
+				sliceValue.Index(i).Set(reflect.ValueOf(v.Index(i).Interface()))
+			}
+			return sliceValue.Interface(), nil
+		}
 	}
 
-	return cur, nil, nil
+	return cur, nil
 }

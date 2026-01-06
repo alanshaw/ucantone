@@ -29,97 +29,71 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 	}
 	switch statement.Operator() {
 	case OpEqual:
-		one, many, err := selector.Select(s.selector, value)
+		selectedValue, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		// if selected value is a slice then it'll be returned as "many" and we need
-		// to compare against that.
-		selectedValue := one
 		statementValue := s.model.Value.Value
-		statementValueType := reflect.TypeOf(statementValue)
-		if statementValueType != nil && statementValueType.Kind() == reflect.Slice {
-			statementReflectValue := reflect.ValueOf(statementValue)
-			anySlice := make([]any, 0, statementReflectValue.Len())
-			for i := range statementReflectValue.Len() {
-				anySlice = append(anySlice, statementReflectValue.Index(i).Interface())
-			}
-			selectedValue = many
-			statementValue = anySlice
-		}
 		if !reflect.DeepEqual(statementValue, selectedValue) {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" does not equal "%v"`, s.Selector(), selectedValue, statementValue))
 		}
 		return true, nil
 	case OpNotEqual:
-		one, many, err := selector.Select(s.selector, value)
+		selectedValue, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		// if selected value is a slice then it'll be returned as "many" and we need
-		// to compare against that.
-		selectedValue := one
 		statementValue := s.model.Value.Value
-		statementValueType := reflect.TypeOf(statementValue)
-		if statementValueType != nil && statementValueType.Kind() == reflect.Slice {
-			statementReflectValue := reflect.ValueOf(statementValue)
-			anySlice := make([]any, 0, statementReflectValue.Len())
-			for i := range statementReflectValue.Len() {
-				anySlice = append(anySlice, statementReflectValue.Index(i).Interface())
-			}
-			selectedValue = many
-			statementValue = anySlice
-		}
 		if reflect.DeepEqual(statementValue, selectedValue) {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" equals "%v"`, s.Selector(), selectedValue, statementValue))
 		}
 		return true, nil
 	case OpGreaterThan:
-		one, _, err := selector.Select(s.selector, value)
+		selectedValue, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		if one == nil {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), one, OpGreaterThan))
+		if selectedValue == nil {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), selectedValue, OpGreaterThan))
 		}
-		if !isOrdered(one, s.model.Value.Value, gt) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not greater than "%v"`, s.Selector(), one, s.model.Value.Value))
+		if !isOrdered(selectedValue, s.model.Value.Value, gt) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not greater than "%v"`, s.Selector(), selectedValue, s.model.Value.Value))
 		}
 		return true, nil
 	case OpGreaterThanOrEqual:
-		one, _, err := selector.Select(s.selector, value)
+		selectedValue, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		if one == nil {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), one, OpGreaterThanOrEqual))
+		if selectedValue == nil {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), selectedValue, OpGreaterThanOrEqual))
 		}
-		if !isOrdered(one, s.model.Value.Value, gte) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not greater than or equal to "%v"`, s.Selector(), one, s.model.Value.Value))
+		if !isOrdered(selectedValue, s.model.Value.Value, gte) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not greater than or equal to "%v"`, s.Selector(), selectedValue, s.model.Value.Value))
 		}
 		return true, nil
 	case OpLessThan:
-		one, _, err := selector.Select(s.selector, value)
+		selectedValue, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		if one == nil {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), one, OpLessThan))
+		if selectedValue == nil {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), selectedValue, OpLessThan))
 		}
-		if !isOrdered(one, s.model.Value.Value, lt) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not less than "%v"`, s.Selector(), one, s.model.Value.Value))
+		if !isOrdered(selectedValue, s.model.Value.Value, lt) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not less than "%v"`, s.Selector(), selectedValue, s.model.Value.Value))
 		}
 		return true, nil
 	case OpLessThanOrEqual:
-		one, _, err := selector.Select(s.selector, value)
+		selectedValue, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		if one == nil {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), one, OpLessThanOrEqual))
+		if selectedValue == nil {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), selectedValue, OpLessThanOrEqual))
 		}
-		if !isOrdered(one, s.model.Value.Value, lte) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not less than or equal to "%v"`, s.Selector(), one, s.model.Value.Value))
+		if !isOrdered(selectedValue, s.model.Value.Value, lte) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not less than or equal to "%v"`, s.Selector(), selectedValue, s.model.Value.Value))
 		}
 		return true, nil
 	case OpNot:
@@ -152,53 +126,58 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 		}
 		return false, fmt.Errorf(`"%v" did not match any statements`, value)
 	case OpLike:
-		one, _, err := selector.Select(s.selector, value)
+		selectedValue, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		v, ok := one.(string)
+		v, ok := selectedValue.(string)
 		if !ok {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), one, OpLike))
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), selectedValue, OpLike))
 		}
 		if !s.glob.Match(v) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not like "%v"`, s.Selector(), one, s.model.Pattern))
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not like "%v"`, s.Selector(), selectedValue, s.model.Pattern))
 		}
 		return true, nil
 	case OpAll:
-		_, many, err := selector.Select(s.selector, value)
+		selectedValue, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		if many == nil {
-			return false, NewMatchError(statement, fmt.Errorf(`"%v" is empty or not a list`, many))
+		selectedValueVal := reflect.ValueOf(selectedValue)
+		if selectedValueVal.Kind() != reflect.Slice {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not a list`, s.Selector(), selectedValue))
 		}
-		for _, n := range many {
+		for i := range selectedValueVal.Len() {
 			ss := make([]Statement, 0, len(s.statements))
 			for _, m := range s.statements {
 				ss = append(ss, *m)
 			}
-			ok, err := Match(Policy{ss}, n)
+			ok, err := Match(Policy{ss}, selectedValueVal.Index(i).Interface())
 			if !ok {
 				return false, err
 			}
 		}
 		return true, nil
 	case OpAny:
-		_, many, err := selector.Select(s.selector, value)
+		selectedValue, err := selector.Select(s.selector, value)
 		if err != nil {
 			return false, err
 		}
-		for _, n := range many {
+		selectedValueVal := reflect.ValueOf(selectedValue)
+		if selectedValueVal.Kind() != reflect.Slice {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not a list`, s.Selector(), selectedValue))
+		}
+		for i := range selectedValueVal.Len() {
 			ss := make([]Statement, 0, len(s.statements))
 			for _, m := range s.statements {
 				ss = append(ss, *m)
 			}
-			ok, _ := Match(Policy{ss}, n)
+			ok, _ := Match(Policy{ss}, selectedValueVal.Index(i).Interface())
 			if ok {
 				return true, nil
 			}
 		}
-		return false, NewMatchError(statement, fmt.Errorf(`"%v" is empty or not a list`, many))
+		return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" did not match any statements`, s.Selector(), selectedValue))
 	}
 	panic(fmt.Errorf("unknown statement operator: %s", statement.Operator()))
 }

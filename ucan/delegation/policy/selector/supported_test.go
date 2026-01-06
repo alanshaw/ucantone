@@ -4,7 +4,6 @@ import (
 	"bytes"
 	_ "embed"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/alanshaw/ucantone/ipld/datamodel"
@@ -37,7 +36,7 @@ func TestSupportedForms(t *testing.T) {
 				err = in.UnmarshalDagJSON(bytes.NewReader(testcase.Input.Raw))
 				require.NoError(t, err)
 
-				one, many, err := selector.Select(sel, in.Value)
+				out, err := selector.Select(sel, in.Value)
 				require.NoError(t, err)
 
 				if testcase.Output != nil {
@@ -45,31 +44,7 @@ func TestSupportedForms(t *testing.T) {
 					expectOut := datamodel.Any{}
 					err = expectOut.UnmarshalDagJSON(bytes.NewReader(testcase.Output.Raw))
 					require.NoError(t, err)
-					out := datamodel.Any{Value: one}
-					expectOutType := reflect.TypeOf(expectOut.Value)
-					if expectOutType != nil && expectOutType.Kind() == reflect.Slice {
-						out.Value = many
-					}
-
-					switch testcase.Name {
-					// special case for "Bytes Index" test - selecting a byte from []byte
-					// will yield a uint8, which is not supported by the IPLD datamodel
-					case "Bytes Index":
-						out.Value = int(one.(uint8))
-					// special case for "Bytes Slice" test - selecting a slice from []byte
-					// will yield a []any, which needs to be converted back to []byte
-					case "Bytes Slice":
-						var bytes []byte
-						for _, v := range many {
-							bytes = append(bytes, v.(uint8))
-						}
-						out.Value = bytes
-					}
-					var buf bytes.Buffer
-					err = out.MarshalDagJSON(&buf)
-					require.NoError(t, err)
-					t.Logf("Actual Output: %s\n", buf.String())
-					require.Equal(t, string(testcase.Output.Raw), buf.String())
+					require.EqualValues(t, expectOut.Value, out)
 				}
 			})
 		}
@@ -88,10 +63,9 @@ func TestSupportedForms(t *testing.T) {
 				err = in.UnmarshalDagJSON(bytes.NewReader(testcase.Input.Raw))
 				require.NoError(t, err)
 
-				one, many, err := selector.Select(sel, in.Value)
+				out, err := selector.Select(sel, in.Value)
 				require.NoError(t, err)
-				require.Nil(t, one)
-				require.Empty(t, many)
+				require.Nil(t, out)
 			})
 		}
 	})
@@ -109,11 +83,10 @@ func TestSupportedForms(t *testing.T) {
 				err = in.UnmarshalDagJSON(bytes.NewReader(testcase.Input.Raw))
 				require.NoError(t, err)
 
-				one, many, err := selector.Select(sel, in.Value)
+				out, err := selector.Select(sel, in.Value)
 				require.Error(t, err)
 				t.Logf("Error: %v\n", err)
-				require.Nil(t, one)
-				require.Empty(t, many)
+				require.Nil(t, out)
 			})
 		}
 	})
