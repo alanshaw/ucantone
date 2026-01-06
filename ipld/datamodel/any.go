@@ -191,14 +191,38 @@ func (a *Any) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 		if extra > 0 {
 			items := make([]any, 0, int(extra))
+			var itemsType reflect.Type
+			hasCommonType := true
 			for range extra {
 				item := Any{}
 				if err := item.UnmarshalCBOR(r); err != nil {
 					return err
 				}
 				items = append(items, item.Value)
+				typ := reflect.TypeOf(item.Value)
+
+				if hasCommonType {
+					// first iteration (or all nil)
+					if itemsType == nil {
+						itemsType = typ
+					} else if itemsType != typ {
+						hasCommonType = false
+						itemsType = nil
+					}
+				}
 			}
-			a.Value = items
+
+			// if all items have the same type and the type is not nil, create a typed slice
+			if hasCommonType && itemsType != nil {
+				sliceType := reflect.SliceOf(itemsType)
+				sliceValue := reflect.MakeSlice(sliceType, len(items), len(items))
+				for i, v := range items {
+					sliceValue.Index(i).Set(reflect.ValueOf(v))
+				}
+				a.Value = sliceValue.Interface()
+			} else {
+				a.Value = items
+			}
 		} else {
 			a.Value = []any{}
 		}
@@ -311,12 +335,25 @@ func (a *Any) UnmarshalDagJSON(r io.Reader) (err error) {
 			a.Value = []any{}
 		} else {
 			items := []any{}
+			var itemsType reflect.Type
+			hasCommonType := true
 			for i := range jsg.MaxLength {
 				item := Any{}
 				if err := item.UnmarshalDagJSON(jr); err != nil {
 					return err
 				}
 				items = append(items, item.Value)
+				typ := reflect.TypeOf(item.Value)
+
+				if hasCommonType {
+					// first iteration (or all nil)
+					if itemsType == nil {
+						itemsType = typ
+					} else if itemsType != typ {
+						hasCommonType = false
+						itemsType = nil
+					}
+				}
 
 				close, err := jr.ReadArrayCloseOrComma()
 				if err != nil {
@@ -329,7 +366,18 @@ func (a *Any) UnmarshalDagJSON(r io.Reader) (err error) {
 					return errors.New("IPLD array too large")
 				}
 			}
-			a.Value = items
+
+			// if all items have the same type and the type is not nil, create a typed slice
+			if hasCommonType && itemsType != nil {
+				sliceType := reflect.SliceOf(itemsType)
+				sliceValue := reflect.MakeSlice(sliceType, len(items), len(items))
+				for i, v := range items {
+					sliceValue.Index(i).Set(reflect.ValueOf(v))
+				}
+				a.Value = sliceValue.Interface()
+			} else {
+				a.Value = items
+			}
 		}
 	case "object":
 		m := Map{}
