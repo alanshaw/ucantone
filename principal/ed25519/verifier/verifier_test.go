@@ -11,12 +11,8 @@ import (
 func TestParse(t *testing.T) {
 	str := "did:key:z6MkgZN5cRgWqesJeaZCEs7eKzyQsfpzmhnSEqTL6FZt56Ym"
 	v, err := verifier.Parse(str)
-	if err != nil {
-		t.Fatalf("parsing DID: %s", err)
-	}
-	if v.DID().String() != str {
-		t.Fatalf("expected %s to equal %s", v.DID().String(), str)
-	}
+	require.NoError(t, err)
+	require.Equal(t, str, v.DID().String())
 }
 
 func TestFromRaw(t *testing.T) {

@@ -2,7 +2,6 @@ package ed25519_test
 
 import (
 	"crypto/ed25519"
-	"fmt"
 	"testing"
 
 	ed "github.com/alanshaw/ucantone/principal/ed25519"
@@ -12,60 +11,42 @@ import (
 
 func TestGenerateEncodeDecode(t *testing.T) {
 	s0, err := ed.Generate()
-	if err != nil {
-		t.Fatalf("generating Ed25519 key: %v", err)
-	}
+	require.NoError(t, err)
 
-	fmt.Println(s0.DID().String())
+	t.Log(s0.DID().String())
 
 	s1, err := ed.Decode(s0.Bytes())
-	if err != nil {
-		t.Fatalf("decoding Ed25519 key: %v", err)
-	}
+	require.NoError(t, err)
 
-	fmt.Println(s1.DID().String())
-
-	if s0.DID().String() != s1.DID().String() {
-		t.Fatalf("public key mismatch: %s != %s", s0.DID().String(), s1.DID().String())
-	}
+	t.Log(s1.DID().String())
+	require.Equal(t, s0.DID(), s1.DID(), "public key mismatch")
 }
 
 func TestGenerateFormatParse(t *testing.T) {
 	s0, err := ed.Generate()
-	if err != nil {
-		t.Fatalf("generating Ed25519 key: %v", err)
-	}
+	require.NoError(t, err)
 
-	fmt.Println(s0.DID().String())
+	t.Log(s0.DID().String())
 
 	str := signer.Format(s0)
-	fmt.Println(str)
+	t.Log(str)
 
 	s1, err := ed.Parse(str)
-	if err != nil {
-		t.Fatalf("parsing Ed25519 key: %v", err)
-	}
+	require.NoError(t, err)
 
-	fmt.Println(s1.DID().String())
-
-	if s0.DID().String() != s1.DID().String() {
-		t.Fatalf("public key mismatch: %s != %s", s0.DID().String(), s1.DID().String())
-	}
+	t.Log(s1.DID().String())
+	require.Equal(t, s0.DID(), s1.DID(), "public key mismatch")
 }
 
 func TestVerify(t *testing.T) {
 	s0, err := ed.Generate()
-	if err != nil {
-		t.Fatalf("generating Ed25519 key: %v", err)
-	}
+	require.NoError(t, err)
 
 	msg := []byte("testy")
 	sig := s0.Sign(msg)
 
 	res := s0.Verifier().Verify(msg, sig)
-	if res != true {
-		t.Fatalf("verify failed")
-	}
+	require.True(t, res)
 }
 
 func TestSignerRaw(t *testing.T) {
