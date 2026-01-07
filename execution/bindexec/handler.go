@@ -158,6 +158,8 @@ type Response[O Success] struct {
 	execution.Response
 }
 
+// NewResponse creates a new response object, representing the result of
+// executing a task. Note: a receipt MUST be provided via options.
 func NewResponse[O Success](options ...ResponseOption[O]) (*Response[O], error) {
 	response := Response[O]{Response: &execution.ExecResponse{}}
 	for _, opt := range options {

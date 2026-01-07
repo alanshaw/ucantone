@@ -74,6 +74,8 @@ func WithMetadata(m ucan.Container) ResponseOption {
 	}
 }
 
+// NewResponse creates a new response object, representing the result of
+// executing a task. Note: a receipt MUST be provided via options.
 func NewResponse(options ...ResponseOption) (*ExecResponse, error) {
 	response := ExecResponse{}
 	for _, opt := range options {
