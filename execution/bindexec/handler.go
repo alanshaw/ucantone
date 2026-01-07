@@ -6,8 +6,8 @@ import (
 	"github.com/alanshaw/ucantone/execution"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
-	"github.com/alanshaw/ucantone/result"
 	"github.com/alanshaw/ucantone/ucan"
+	"github.com/ipfs/go-cid"
 )
 
 type Arguments interface {
@@ -81,45 +81,55 @@ func NewRequest[A Arguments](ctx context.Context, inv ucan.Invocation, options .
 	}, nil
 }
 
+// Task returns an object containing just the fields that comprise the task
+// for the invocation.
+//
+// https://github.com/ucan-wg/invocation/blob/main/README.md#task
 func (r *Request[A]) Task() *Task[A] {
 	return r.task
 }
 
 type ResponseOption[O Success] func(r *Response[O]) error
 
-func WithOutcome[O Success](out result.Result[O, error]) ResponseOption[O] {
+func WithReceipt[O Success](receipt ucan.Receipt) ResponseOption[O] {
 	return func(resp *Response[O]) error {
-		o, x := result.Unwrap(out)
-		if x == nil {
-			return WithSuccess(o)(resp)
+		exr, err := execution.NewResponse(
+			execution.WithReceipt(receipt),
+			execution.WithMetadata(resp.Response.Metadata()),
+		)
+		if err != nil {
+			return err
 		}
-		return WithFailure[O](x)(resp)
+		resp.Response = exr
+		return nil
 	}
 }
 
-func WithSuccess[O Success](o O) ResponseOption[O] {
-	return func(r *Response[O]) error {
+// WithSuccess issues and sets a receipt for a successful execution of a task.
+func WithSuccess[O Success](signer ucan.Signer, task cid.Cid, o O) ResponseOption[O] {
+	return func(resp *Response[O]) error {
 		m := datamodel.Map{}
 		err := datamodel.Rebind(o, &m)
 		if err != nil {
 			return err
 		}
 		exr, err := execution.NewResponse(
-			execution.WithSuccess(m),
-			execution.WithMetadata(r.Response.Metadata()),
+			execution.WithSuccess(signer, task, m),
+			execution.WithMetadata(resp.Metadata()),
 		)
 		if err != nil {
 			return err
 		}
-		r.Response = exr
+		resp.Response = exr
 		return nil
 	}
 }
 
-func WithFailure[O Success](x error) ResponseOption[O] {
+// WithFailure issues and sets a receipt for a failed execution of a task.
+func WithFailure[O Success](signer ucan.Signer, task cid.Cid, x error) ResponseOption[O] {
 	return func(resp *Response[O]) error {
 		exr, err := execution.NewResponse(
-			execution.WithFailure(x),
+			execution.WithFailure(signer, task, x),
 			execution.WithMetadata(resp.Response.Metadata()),
 		)
 		if err != nil {
@@ -131,15 +141,15 @@ func WithFailure[O Success](x error) ResponseOption[O] {
 }
 
 func WithMetadata[O Success](m ucan.Container) ResponseOption[O] {
-	return func(r *Response[O]) error {
+	return func(resp *Response[O]) error {
 		exr, err := execution.NewResponse(
-			execution.WithOutcome(r.Response.Out()),
+			execution.WithReceipt(resp.Receipt()),
 			execution.WithMetadata(m),
 		)
 		if err != nil {
 			return err
 		}
-		r.Response = exr
+		resp.Response = exr
 		return nil
 	}
 }
@@ -149,11 +159,7 @@ type Response[O Success] struct {
 }
 
 func NewResponse[O Success](options ...ResponseOption[O]) (*Response[O], error) {
-	exr, err := execution.NewResponse()
-	if err != nil {
-		return nil, err
-	}
-	response := Response[O]{Response: exr}
+	response := Response[O]{Response: &execution.ExecResponse{}}
 	for _, opt := range options {
 		err := opt(&response)
 		if err != nil {
@@ -172,7 +178,7 @@ func NewHandler[A Arguments, O Success](handler HandlerFunc[A, O]) execution.Han
 		inv := req.Invocation()
 		task, err := NewTask[A](inv.Subject(), inv.Command(), inv.Arguments(), inv.Nonce())
 		if err != nil {
-			return execution.NewResponse(execution.WithFailure(NewMalformedArgumentsError(err)))
+			return nil, NewMalformedArgumentsError(err)
 		}
 		return handler(&Request[A]{Request: req, task: task})
 	}

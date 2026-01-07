@@ -3,8 +3,6 @@ package execution
 import (
 	"context"
 
-	"github.com/alanshaw/ucantone/ipld"
-	"github.com/alanshaw/ucantone/result"
 	"github.com/alanshaw/ucantone/ucan"
 )
 
@@ -17,8 +15,8 @@ type Request interface {
 }
 
 type Response interface {
-	// Out is the result of the task.
-	Out() result.Result[ipld.Any, ipld.Any]
+	// Receipt for the executed task.
+	Receipt() ucan.Receipt
 	// Metadata provides additional information about the response.
 	Metadata() ucan.Container
 }

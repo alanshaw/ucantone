@@ -29,10 +29,11 @@ func TestHTTPServer(t *testing.T) {
 			msg := req.Invocation().Arguments()["message"]
 			t.Log(msg)
 			messages = append(messages, msg)
-			return execution.NewResponse()
+			return execution.NewResponse(execution.WithSuccess(service, req.Invocation().Task().Link(), ipld.Map{}))
 		})
 		server.Handle(testutil.TestEchoCapability, func(req execution.Request) (execution.Response, error) {
-			return execution.NewResponse(execution.WithSuccess(req.Invocation().Arguments()))
+			inv := req.Invocation()
+			return execution.NewResponse(execution.WithSuccess(service, inv.Task().Link(), inv.Arguments()))
 		})
 
 		logInv, err := testutil.ConsoleLogCapability.Invoke(

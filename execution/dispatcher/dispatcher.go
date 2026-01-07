@@ -2,6 +2,7 @@ package dispatcher
 
 import (
 	"github.com/alanshaw/ucantone/execution"
+	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/validator"
 )
@@ -14,7 +15,7 @@ type handler struct {
 // Dispatcher executes UCAN invocations by dispatching them to registered
 // handlers.
 type Dispatcher struct {
-	authority      ucan.Verifier
+	authority      principal.Signer
 	handlers       map[ucan.Command]handler
 	validationOpts []validator.Option
 }
@@ -23,8 +24,8 @@ type Dispatcher struct {
 // dispatching them to registered handlers.
 //
 // The authority is the identity of the local authority, used to verify
-// signatures of delegations signed by it.
-func New(authority ucan.Verifier, options ...Option) *Dispatcher {
+// signatures of delegations signed by it and sign receipts for executed tasks.
+func New(authority principal.Signer, options ...Option) *Dispatcher {
 	cfg := execConfig{}
 	for _, opt := range options {
 		opt(&cfg)
@@ -41,20 +42,22 @@ func (d *Dispatcher) Handle(capability validator.Capability, fn execution.Handle
 }
 
 func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) {
+	id := d.authority
+	task := req.Invocation().Task().Link()
 	aud := req.Invocation().Audience()
 	if aud == nil {
 		aud = req.Invocation().Subject()
 	}
 	if aud.DID() != d.authority.DID() {
 		return execution.NewResponse(
-			execution.WithFailure(execution.NewInvalidAudienceError(d.authority, aud)),
+			execution.WithFailure(id, task, execution.NewInvalidAudienceError(d.authority, aud)),
 		)
 	}
 
 	cmd := req.Invocation().Command()
 	handler, ok := d.handlers[cmd]
 	if !ok {
-		return execution.NewResponse(execution.WithFailure(NewHandlerNotFoundError(cmd)))
+		return execution.NewResponse(execution.WithFailure(id, task, NewHandlerNotFoundError(cmd)))
 	}
 
 	opts := append([]validator.Option{}, d.validationOpts...)
@@ -64,19 +67,19 @@ func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) 
 
 	_, err := validator.Access(
 		req.Context(),
-		d.authority,
+		d.authority.Verifier(),
 		handler.Capability,
 		req.Invocation(),
 		opts...,
 	)
 	if err != nil {
-		return execution.NewResponse(execution.WithFailure(err))
+		return execution.NewResponse(execution.WithFailure(id, task, err))
 	}
 
 	res, err := handler.Func(req)
 	if err != nil {
 		return execution.NewResponse(
-			execution.WithFailure(execution.NewHandlerExecutionError(cmd, err)),
+			execution.WithFailure(id, task, execution.NewHandlerExecutionError(cmd, err)),
 		)
 	}
 	return res, nil

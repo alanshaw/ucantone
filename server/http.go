@@ -11,7 +11,6 @@ import (
 	"github.com/alanshaw/ucantone/transport"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/container"
-	"github.com/alanshaw/ucantone/ucan/receipt"
 	"github.com/alanshaw/ucantone/validator"
 )
 
@@ -29,10 +28,7 @@ func NewHTTP(id principal.Signer, options ...HTTPOption) *HTTPServer {
 	for _, opt := range options {
 		opt(&cfg)
 	}
-	executor := dispatcher.New(
-		id.Verifier(),
-		dispatcher.WithValidationOptions(cfg.validationOpts...),
-	)
+	executor := dispatcher.New(id, dispatcher.WithValidationOptions(cfg.validationOpts...))
 	return &HTTPServer{
 		id:       id,
 		codec:    cfg.codec,
@@ -71,6 +67,14 @@ func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
 	var delegations []ucan.Delegation
 	var receipts []ucan.Receipt
 	for _, inv := range reqContainer.Invocations() {
+		aud := inv.Audience()
+		if aud == nil {
+			aud = inv.Subject()
+		}
+		// Skip invocations not addressed to this server.
+		if aud.DID() != s.id.DID() {
+			continue
+		}
 		req := execution.NewRequest(
 			r.Context(),
 			inv,
@@ -86,17 +90,7 @@ func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
 			return nil, fmt.Errorf("executing task %s: %w", inv.Task().Link(), err)
 		}
 
-		receipt, err := receipt.Issue(
-			s.id,
-			inv.Task().Link(),
-			res.Out(),
-			receipt.WithCause(inv.Link()),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("issuing receipt for task %q: %w", inv.Task().Link(), err)
-		}
-		receipts = append(receipts, receipt)
-
+		receipts = append(receipts, res.Receipt())
 		if res.Metadata() != nil {
 			invocations = append(invocations, res.Metadata().Invocations()...)
 			delegations = append(delegations, res.Metadata().Delegations()...)

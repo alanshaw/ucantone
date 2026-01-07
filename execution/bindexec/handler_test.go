@@ -13,13 +13,13 @@ import (
 )
 
 func TestHandler(t *testing.T) {
+	alice := testutil.RandomSigner(t)
 	handler := bindexec.NewHandler(func(req *bindexec.Request[*tdm.TestObject]) (*bindexec.Response[*tdm.TestObject2], error) {
 		args := req.Task().BindArguments()
 		require.Equal(t, args.Bytes, []byte{0x01, 0x02, 0x03})
-		return bindexec.NewResponse(bindexec.WithSuccess(&tdm.TestObject2{Str: "testy"}))
+		return bindexec.NewResponse(bindexec.WithSuccess(alice, req.Task().Link(), &tdm.TestObject2{Str: "testy"}))
 	})
 
-	alice := testutil.RandomSigner(t)
 	inv, err := invocation.Invoke(
 		alice,
 		alice,
@@ -35,7 +35,7 @@ func TestHandler(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
-	o, x := result.Unwrap(res.Out())
+	o, x := result.Unwrap(res.Receipt().Out())
 	require.Nil(t, x)
 	require.NotNil(t, o)
 	require.Equal(t, "testy", o.(datamodel.Map)["str"])

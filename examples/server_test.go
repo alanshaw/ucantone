@@ -37,9 +37,10 @@ func TestServer(t *testing.T) {
 
 	// Register an echo handler that returns the invocation arguments as the result
 	ucanSrv.Handle(echoCapability, func(req execution.Request) (execution.Response, error) {
-		args := req.Invocation().Arguments()
+		inv := req.Invocation()
+		args := inv.Arguments()
 		fmt.Printf("Echo: %s\n", args["message"])
-		return execution.NewResponse(execution.WithSuccess(args))
+		return execution.NewResponse(execution.WithSuccess(serviceID, inv.Task().Link(), args))
 	})
 
 	// Start the server on a random available port
@@ -98,7 +99,7 @@ func TestServer(t *testing.T) {
 	}
 
 	result.MatchResultR0(
-		resp.Out(),
+		resp.Receipt().Out(),
 		func(o ipld.Any) {
 			fmt.Printf("Echo response: %+v\n", o)
 		},
@@ -128,9 +129,10 @@ func TestTypedServer(t *testing.T) {
 
 	// Register an echo handler that returns the invocation arguments as the result
 	ucanSrv.Handle(echoCapability, bindexec.NewHandler(func(req *bindexec.Request[*types.EchoArguments]) (*bindexec.Response[*types.EchoArguments], error) {
-		args := req.Task().BindArguments()
+		task := req.Task()
+		args := task.BindArguments()
 		fmt.Printf("Echo: %s\n", args.Message)
-		return bindexec.NewResponse(bindexec.WithSuccess(args))
+		return bindexec.NewResponse(bindexec.WithSuccess(serviceID, task.Link(), args))
 	}))
 
 	// Start the server on a random available port
@@ -189,7 +191,7 @@ func TestTypedServer(t *testing.T) {
 	}
 
 	result.MatchResultR0(
-		resp.Out(),
+		resp.Receipt().Out(),
 		func(o ipld.Any) {
 			args := types.EchoArguments{}
 			err := datamodel.Rebind(datamodel.NewAny(o), &args)

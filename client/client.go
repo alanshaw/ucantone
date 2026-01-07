@@ -60,7 +60,7 @@ func (c *Client[Req, Res]) Execute(execRequest execution.Request) (execution.Res
 		return nil, fmt.Errorf("missing receipt for task: %s", task.Link())
 	}
 	return execution.NewResponse(
-		execution.WithOutcome(receipt.Out()),
+		execution.WithReceipt(receipt),
 		execution.WithMetadata(resContainer),
 	)
 }

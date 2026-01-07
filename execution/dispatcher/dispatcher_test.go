@@ -20,17 +20,17 @@ func TestDispatcher(t *testing.T) {
 	alice := testutil.RandomSigner(t)
 
 	t.Run("dispatches invocations for execution", func(t *testing.T) {
-		executor := dispatcher.New(service.Verifier())
+		executor := dispatcher.New(service)
 
 		var messages []ipld.Any
 		executor.Handle(testutil.ConsoleLogCapability, func(req execution.Request) (execution.Response, error) {
 			msg := req.Invocation().Arguments()["message"]
 			t.Log(msg)
 			messages = append(messages, msg)
-			return execution.NewResponse()
+			return execution.NewResponse(execution.WithSuccess(service, req.Invocation().Task().Link(), ipld.Map{}))
 		})
 		executor.Handle(testutil.TestEchoCapability, func(req execution.Request) (execution.Response, error) {
-			return execution.NewResponse(execution.WithSuccess(req.Invocation().Arguments()))
+			return execution.NewResponse(execution.WithSuccess(service, req.Invocation().Task().Link(), req.Invocation().Arguments()))
 		})
 
 		logInv, err := testutil.ConsoleLogCapability.Invoke(
@@ -44,7 +44,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), logInv))
 		require.NoError(t, err)
 
-		_, x := result.Unwrap(resp.Out())
+		_, x := result.Unwrap(resp.Receipt().Out())
 		require.Nil(t, x)
 
 		require.Len(t, messages, 1)
@@ -61,7 +61,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err = executor.Execute(execution.NewRequest(t.Context(), echoInv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(resp.Out())
+		o, x := result.Unwrap(resp.Receipt().Out())
 		require.NotNil(t, o)
 		require.Nil(t, x)
 		t.Log(o)
@@ -71,7 +71,7 @@ func TestDispatcher(t *testing.T) {
 	})
 
 	t.Run("handler not found", func(t *testing.T) {
-		executor := dispatcher.New(service.Verifier())
+		executor := dispatcher.New(service)
 
 		inv, err := testutil.TestEchoCapability.Invoke(
 			alice,
@@ -84,7 +84,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), inv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(resp.Out())
+		o, x := result.Unwrap(resp.Receipt().Out())
 		require.Nil(t, o)
 		require.NotNil(t, x)
 		t.Log(x)
@@ -93,7 +93,7 @@ func TestDispatcher(t *testing.T) {
 	})
 
 	t.Run("invalid audience", func(t *testing.T) {
-		executor := dispatcher.New(service.Verifier())
+		executor := dispatcher.New(service)
 
 		inv, err := testutil.TestEchoCapability.Invoke(
 			alice,
@@ -106,7 +106,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), inv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(resp.Out())
+		o, x := result.Unwrap(resp.Receipt().Out())
 		require.Nil(t, o)
 		require.NotNil(t, x)
 		t.Log(x)
@@ -115,7 +115,7 @@ func TestDispatcher(t *testing.T) {
 	})
 
 	t.Run("handler execution error", func(t *testing.T) {
-		executor := dispatcher.New(service.Verifier())
+		executor := dispatcher.New(service)
 
 		executor.Handle(testutil.ConsoleLogCapability, func(req execution.Request) (execution.Response, error) {
 			return nil, fmt.Errorf("boom")
@@ -132,7 +132,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), logInv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(resp.Out())
+		o, x := result.Unwrap(resp.Receipt().Out())
 		require.Nil(t, o)
 		require.NotNil(t, x)
 		t.Log(x)
@@ -141,9 +141,9 @@ func TestDispatcher(t *testing.T) {
 	})
 
 	t.Run("validation error", func(t *testing.T) {
-		executor := dispatcher.New(service.Verifier())
+		executor := dispatcher.New(service)
 		executor.Handle(testutil.TestEchoCapability, func(req execution.Request) (execution.Response, error) {
-			return execution.NewResponse(execution.WithSuccess(req.Invocation().Arguments()))
+			return execution.NewResponse(execution.WithSuccess(service, req.Invocation().Task().Link(), req.Invocation().Arguments()))
 		})
 
 		logInv, err := testutil.TestEchoCapability.Invoke(
@@ -157,7 +157,7 @@ func TestDispatcher(t *testing.T) {
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), logInv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(resp.Out())
+		o, x := result.Unwrap(resp.Receipt().Out())
 		require.Nil(t, o)
 		require.NotNil(t, x)
 		t.Log(x)

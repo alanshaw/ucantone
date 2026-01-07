@@ -24,7 +24,7 @@ func TestHTTPClient(t *testing.T) {
 		server := server.NewHTTP(service)
 
 		server.Handle(testutil.TestEchoCapability, func(req execution.Request) (execution.Response, error) {
-			return execution.NewResponse(execution.WithSuccess(req.Invocation().Arguments()))
+			return execution.NewResponse(execution.WithSuccess(service, req.Invocation().Task().Link(), req.Invocation().Arguments()))
 		})
 
 		c, err := client.NewHTTP(
@@ -44,7 +44,7 @@ func TestHTTPClient(t *testing.T) {
 		res, err := c.Execute(execution.NewRequest(t.Context(), inv))
 		require.NoError(t, err)
 
-		o, x := result.Unwrap(res.Out())
+		o, x := result.Unwrap(res.Receipt().Out())
 		require.Nil(t, x)
 		require.NotNil(t, o)
 		require.Equal(t, "echo!", o.(ipld.Map)["message"])
