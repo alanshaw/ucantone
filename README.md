@@ -52,7 +52,7 @@ dlg, err = delegation.Delegate(
   // policy (alice delegates bob capability to use the email service, but only
   // allows bob to send to example.com email addresses)
   delegation.WithPolicyBuilder(
-    policy.All(".to", policy.Like(".", "*.example.com")),
+    policy.All(".to", policy.Like(".", "*@example.com")),
   ),
 )
 ```
