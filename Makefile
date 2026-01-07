@@ -26,6 +26,12 @@ gen:
 
 	cd ./ucan/delegation/policy/datamodel/gen && go run ./main.go
 
+	rm ./ucan/delegation/policy/internal/fixtures/datamodel/*_gen.go || true
+	cd ./ucan/delegation/policy/internal/fixtures/datamodel/gen && go run ./main.go
+
+	rm ./ucan/delegation/policy/selector/internal/fixtures/datamodel/*_gen.go || true
+	cd ./ucan/delegation/policy/selector/internal/fixtures/datamodel/gen && go run ./main.go
+
 	rm ./ucan/delegation/policy/selector/datamodel/*_gen.go || true
 	cd ./ucan/delegation/policy/selector/datamodel/gen && go run ./main.go
 

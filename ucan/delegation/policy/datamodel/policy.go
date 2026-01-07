@@ -329,5 +329,5 @@ type NegationModel struct {
 type QuantificationModel struct {
 	Op        string
 	Selector  string
-	Statement *StatementModel // TODO: should be just one statement
+	Statement *StatementModel
 }

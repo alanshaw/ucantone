@@ -18,7 +18,7 @@ func TestParsePolicy(t *testing.T) {
 	// A policy is a list of statements.
 	// See https://github.com/ucan-wg/delegation/blob/main/README.md#policy
 	pol, err := policy.Build(
-		policy.All(".to", policy.Like(".", "*.example.com")),
+		policy.All(".to", policy.Like(".", "*@example.com")),
 		policy.Equal(".from", "alice@example.com"),
 	)
 	if err != nil {

@@ -1,0 +1,1 @@
+`policy.json` has been edited slightly to not include non-integer numbers, since this library does not yet support. See https://github.com/ucan-wg/spec/blob/main/fixtures/1.0.0/policy.json for complete fixture with float values in policies.

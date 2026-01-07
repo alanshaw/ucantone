@@ -7,8 +7,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/alanshaw/ucantone/ipld"
 )
 
 // Selector syntax is closely based on jq's "filters". They operate on an
@@ -54,7 +52,16 @@ var Identity = Segment{".", true, false, false, nil, "", 0}
 var (
 	indexRegex = regexp.MustCompile(`^-?\d+$`)
 	sliceRegex = regexp.MustCompile(`^((\-?\d+:\-?\d*)|(\-?\d*:\-?\d+))$`)
-	fieldRegex = regexp.MustCompile(`^\.[a-zA-Z_]*?$`)
+	// Field name requirements:
+	// - Must start with ASCII letter, Unicode letter, or underscore
+	// - Can contain:
+	//   - ASCII letters (a-z, A-Z)
+	//   - ASCII digits (0-9)
+	//   - Unicode letters (\p{L})
+	//   - Dollar sign ($)
+	//   - Underscore (_)
+	//   - Hyphen (-)
+	fieldRegex = regexp.MustCompile(`^\.[a-zA-Z_\p{L}][a-zA-Z0-9$_\p{L}\-]*$`)
 )
 
 type Segment struct {
@@ -187,16 +194,16 @@ func Select(sel Selector, subject any) (any, error) {
 func resolve(sel Selector, subject any, at []string) (any, error) {
 	cur := subject
 	for i, seg := range sel {
+		curType := reflect.TypeOf(cur)
 		if seg.Identity {
 			continue
 		} else if seg.Iterator {
-			curType := reflect.TypeOf(cur)
 			if curType != nil && curType.Kind() == reflect.Slice {
 				var many []any
-				v := reflect.ValueOf(cur)
-				for k := range v.Len() {
+				curVal := reflect.ValueOf(cur)
+				for k := range curVal.Len() {
 					key := fmt.Sprintf("%d", k)
-					r, err := resolve(sel[i+1:], v.Index(k).Interface(), append(at[:], key))
+					r, err := resolve(sel[i+1:], curVal.Index(k).Interface(), append(at[:], key))
 					if err != nil {
 						return nil, err
 					}
@@ -216,10 +223,15 @@ func resolve(sel Selector, subject any, at []string) (any, error) {
 					}
 				}
 				cur = many
-			} else if m, ok := cur.(ipld.Map); ok {
+			} else if curType != nil && curType.Kind() == reflect.Map {
 				var many []any
-				for k, v := range m {
-					r, err := resolve(sel[i+1:], v, append(at[:], k))
+				curVal := reflect.ValueOf(cur)
+				for _, kVal := range curVal.MapKeys() {
+					if kVal.Kind() != reflect.String {
+						return nil, NewResolutionError(fmt.Sprintf("can not iterate over map with non-string keys: %s", reflect.TypeOf(cur)), at)
+					}
+					key := kVal.String()
+					r, err := resolve(sel[i+1:], curVal.MapIndex(kVal).Interface(), append(at[:], key))
 					if err != nil {
 						return nil, err
 					}
@@ -242,23 +254,27 @@ func resolve(sel Selector, subject any, at []string) (any, error) {
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, NewResolutionError(fmt.Sprintf("can not iterate over type: %s", reflect.TypeOf(cur)), at)
+				return nil, NewResolutionError(fmt.Sprintf("can not iterate over type: %q", reflect.TypeOf(cur)), at)
 			}
 		} else if seg.Field != "" {
 			at = append(at, seg.Field)
-			if m, ok := cur.(ipld.Map); ok {
-				v, ok := m[seg.Field]
-				if !ok && !seg.Optional {
-					return nil, NewResolutionError(fmt.Sprintf("object has no field named: %s", seg.Field), at)
+			if curType != nil && curType.Kind() == reflect.Map {
+				curVal := reflect.ValueOf(cur)
+				entVal := curVal.MapIndex(reflect.ValueOf(seg.Field))
+				if entVal == (reflect.Value{}) {
+					if !seg.Optional {
+						return nil, NewResolutionError(fmt.Sprintf("object has no field named: %q", seg.Field), at)
+					}
+					cur = nil
+				} else {
+					cur = entVal.Interface()
 				}
-				cur = v
 			} else if seg.Optional {
 				cur = nil
 			} else {
-				return nil, NewResolutionError(fmt.Sprintf("can not access field: %s on type: %s", seg.Field, reflect.TypeOf(cur)), at)
+				return nil, NewResolutionError(fmt.Sprintf("can not access field: %q on type: %s", seg.Field, reflect.TypeOf(cur)), at)
 			}
 		} else if seg.Slice != nil {
-			curType := reflect.TypeOf(cur)
 			if curType != nil && curType.Kind() == reflect.Slice {
 				v := reflect.ValueOf(cur)
 				idxs := seg.Slice
@@ -285,7 +301,6 @@ func resolve(sel Selector, subject any, at []string) (any, error) {
 			}
 		} else {
 			at = append(at, fmt.Sprintf("%d", seg.Index))
-			curType := reflect.TypeOf(cur)
 			if curType != nil && curType.Kind() == reflect.Slice {
 				v := reflect.ValueOf(cur)
 				idx := seg.Index

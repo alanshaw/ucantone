@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"reflect"
@@ -131,6 +132,27 @@ func (p *Policy) UnmarshalDagJSON(r io.Reader) error {
 	return nil
 }
 
+func (p Policy) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	err := p.MarshalDagJSON(&buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (p *Policy) UnmarshalJSON(b []byte) error {
+	return p.UnmarshalDagJSON(bytes.NewReader(b))
+}
+
+func (p Policy) String() string {
+	data, err := p.MarshalJSON()
+	if err != nil {
+		return fmt.Sprintf("Error: marshaling policy to string: %s", err.Error())
+	}
+	return string(data)
+}
+
 type Statement struct {
 	model      pdm.StatementModel
 	statement  *Statement
@@ -157,13 +179,13 @@ func newStatement(m pdm.StatementModel) (Statement, error) {
 		s.glob = g
 	}
 	switch m.Op {
-	case OpNot:
+	case OpNot, OpAny, OpAll:
 		stmt, err := newStatement(*m.Statement)
 		if err != nil {
 			return Statement{}, fmt.Errorf(`creating statement for "%s" operation: %w`, m.Op, err)
 		}
 		s.statement = &stmt
-	case OpAnd, OpOr, OpAny, OpAll:
+	case OpAnd, OpOr:
 		stmts := make([]*Statement, 0, len(m.Statements))
 		for i, m := range m.Statements {
 			ss, err := newStatement(*m)
@@ -391,7 +413,7 @@ func toStatement(stmt ucan.Statement) (Statement, error) {
 	switch stmt.Operator() {
 	case OpEqual, OpNotEqual, OpGreaterThan, OpGreaterThanOrEqual, OpLessThan, OpLessThanOrEqual:
 		model.Value = &datamodel.Any{Value: stmt.Argument()}
-	case OpAnd, OpOr, OpAll, OpAny:
+	case OpAnd, OpOr:
 		rt := reflect.TypeOf(stmt.Argument())
 		switch rt.Kind() {
 		case reflect.Slice:
@@ -412,7 +434,7 @@ func toStatement(stmt ucan.Statement) (Statement, error) {
 		default:
 			return Statement{}, fmt.Errorf(`unexpected argument type for operator "%s": %s`, stmt.Operator(), rt.Kind())
 		}
-	case OpNot:
+	case OpAll, OpAny, OpNot:
 		ns, ok := stmt.Argument().(ucan.Statement)
 		if !ok {
 			return Statement{}, fmt.Errorf(`"%s" statement argument is not a statement`, stmt.Operator())

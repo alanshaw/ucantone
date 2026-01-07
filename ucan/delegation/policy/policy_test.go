@@ -2,9 +2,13 @@ package policy_test
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"testing"
 
+	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
+	fdm "github.com/alanshaw/ucantone/ucan/delegation/policy/internal/fixtures/datamodel"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,4 +33,46 @@ func TestParse(t *testing.T) {
 	]`)
 	require.NoError(t, err)
 	require.Len(t, initial.Statements(), 2)
+}
+
+func TestFixtures(t *testing.T) {
+	fixturesFile, err := os.Open("./internal/fixtures/policy.json")
+	require.NoError(t, err)
+
+	var fixtures fdm.FixturesModel
+	err = fixtures.UnmarshalDagJSON(fixturesFile)
+	require.NoError(t, err)
+
+	for i, vector := range fixtures.Valid {
+		for j, p := range vector.Policies {
+			t.Run(fmt.Sprintf("valid %d policy %d", i, j), func(t *testing.T) {
+				args := datamodel.Map{}
+				err := args.UnmarshalDagJSON(bytes.NewReader(vector.Args.Raw))
+				require.NoError(t, err)
+				t.Logf("Args: %s\n", vector.Args.Raw)
+				t.Logf("Policy: %s\n", p)
+
+				match, err := policy.Match(p, args)
+				require.NoError(t, err)
+				require.True(t, match)
+			})
+		}
+	}
+
+	for i, vector := range fixtures.Invalid {
+		for j, p := range vector.Policies {
+			t.Run(fmt.Sprintf("invalid %d policy %d", i, j), func(t *testing.T) {
+				args := datamodel.Map{}
+				err := args.UnmarshalDagJSON(bytes.NewReader(vector.Args.Raw))
+				require.NoError(t, err)
+				t.Logf("Args: %s\n", vector.Args.Raw)
+				t.Logf("Policy: %s\n", p)
+
+				match, err := policy.Match(p, args)
+				require.Error(t, err)
+				t.Logf("Error: %s\n", err)
+				require.False(t, match)
+			})
+		}
+	}
 }

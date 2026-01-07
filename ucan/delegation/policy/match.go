@@ -33,7 +33,10 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		statementValue := s.model.Value.Value
+		var statementValue any
+		if s.model.Value != nil {
+			statementValue = s.model.Value.Value
+		}
 		if !reflect.DeepEqual(statementValue, selectedValue) {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" does not equal "%v"`, s.Selector(), selectedValue, statementValue))
 		}
@@ -43,7 +46,10 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		statementValue := s.model.Value.Value
+		var statementValue any
+		if s.model.Value != nil {
+			statementValue = s.model.Value.Value
+		}
 		if reflect.DeepEqual(statementValue, selectedValue) {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" equals "%v"`, s.Selector(), selectedValue, statementValue))
 		}
@@ -56,8 +62,12 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 		if selectedValue == nil {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), selectedValue, OpGreaterThan))
 		}
-		if !isOrdered(selectedValue, s.model.Value.Value, gt) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not greater than "%v"`, s.Selector(), selectedValue, s.model.Value.Value))
+		var statementValue any
+		if s.model.Value != nil {
+			statementValue = s.model.Value.Value
+		}
+		if !isOrdered(selectedValue, statementValue, gt) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not greater than "%v"`, s.Selector(), selectedValue, statementValue))
 		}
 		return true, nil
 	case OpGreaterThanOrEqual:
@@ -68,8 +78,12 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 		if selectedValue == nil {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), selectedValue, OpGreaterThanOrEqual))
 		}
-		if !isOrdered(selectedValue, s.model.Value.Value, gte) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not greater than or equal to "%v"`, s.Selector(), selectedValue, s.model.Value.Value))
+		var statementValue any
+		if s.model.Value != nil {
+			statementValue = s.model.Value.Value
+		}
+		if !isOrdered(selectedValue, statementValue, gte) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not greater than or equal to "%v"`, s.Selector(), selectedValue, statementValue))
 		}
 		return true, nil
 	case OpLessThan:
@@ -80,8 +94,12 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 		if selectedValue == nil {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), selectedValue, OpLessThan))
 		}
-		if !isOrdered(selectedValue, s.model.Value.Value, lt) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not less than "%v"`, s.Selector(), selectedValue, s.model.Value.Value))
+		var statementValue any
+		if s.model.Value != nil {
+			statementValue = s.model.Value.Value
+		}
+		if !isOrdered(selectedValue, statementValue, lt) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not less than "%v"`, s.Selector(), selectedValue, statementValue))
 		}
 		return true, nil
 	case OpLessThanOrEqual:
@@ -92,8 +110,12 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 		if selectedValue == nil {
 			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not applicable to operator "%s"`, s.Selector(), selectedValue, OpLessThanOrEqual))
 		}
-		if !isOrdered(selectedValue, s.model.Value.Value, lte) {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not less than or equal to "%v"`, s.Selector(), selectedValue, s.model.Value.Value))
+		var statementValue any
+		if s.model.Value != nil {
+			statementValue = s.model.Value.Value
+		}
+		if !isOrdered(selectedValue, statementValue, lte) {
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not less than or equal to "%v"`, s.Selector(), selectedValue, statementValue))
 		}
 		return true, nil
 	case OpNot:
@@ -144,18 +166,29 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 			return false, err
 		}
 		selectedValueVal := reflect.ValueOf(selectedValue)
-		if selectedValueVal.Kind() != reflect.Slice {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not a list`, s.Selector(), selectedValue))
-		}
-		for i := range selectedValueVal.Len() {
-			ss := make([]Statement, 0, len(s.statements))
-			for _, m := range s.statements {
-				ss = append(ss, *m)
+		switch selectedValueVal.Kind() {
+		case reflect.Slice:
+			pol := Policy{[]Statement{*s.statement}}
+			for i := range selectedValueVal.Len() {
+				itemVal := selectedValueVal.Index(i).Interface()
+				ok, err := Match(pol, itemVal)
+				if !ok {
+					return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" did not match all statements: %w`, s.Selector(), itemVal, err))
+				}
 			}
-			ok, err := Match(Policy{ss}, selectedValueVal.Index(i).Interface())
-			if !ok {
-				return false, err
+			return true, nil
+		case reflect.Map:
+			pol := Policy{[]Statement{*s.statement}}
+			iter := selectedValueVal.MapRange()
+			for iter.Next() {
+				entVal := iter.Value().Interface()
+				ok, err := Match(pol, entVal)
+				if !ok {
+					return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" did not match all statements: %w`, s.Selector(), entVal, err))
+				}
 			}
+		default:
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not a list or map`, s.Selector(), selectedValue))
 		}
 		return true, nil
 	case OpAny:
@@ -164,18 +197,26 @@ func MatchStatement(statement ucan.Statement, value any) (bool, error) {
 			return false, err
 		}
 		selectedValueVal := reflect.ValueOf(selectedValue)
-		if selectedValueVal.Kind() != reflect.Slice {
-			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not a list`, s.Selector(), selectedValue))
-		}
-		for i := range selectedValueVal.Len() {
-			ss := make([]Statement, 0, len(s.statements))
-			for _, m := range s.statements {
-				ss = append(ss, *m)
+		switch selectedValueVal.Kind() {
+		case reflect.Slice:
+			pol := Policy{[]Statement{*s.statement}}
+			for i := range selectedValueVal.Len() {
+				ok, _ := Match(pol, selectedValueVal.Index(i).Interface())
+				if ok {
+					return true, nil
+				}
 			}
-			ok, _ := Match(Policy{ss}, selectedValueVal.Index(i).Interface())
-			if ok {
-				return true, nil
+		case reflect.Map:
+			pol := Policy{[]Statement{*s.statement}}
+			iter := selectedValueVal.MapRange()
+			for iter.Next() {
+				ok, _ := Match(pol, iter.Value().Interface())
+				if ok {
+					return true, nil
+				}
 			}
+		default:
+			return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" is not a list or map`, s.Selector(), selectedValue))
 		}
 		return false, NewMatchError(statement, fmt.Errorf(`matching "%s": "%v" did not match any statements`, s.Selector(), selectedValue))
 	}
