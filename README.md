@@ -26,7 +26,7 @@ fmt.Println("DID:", principal.DID())
 ```go
 // generate a new ed25519 signer (it is also a principal - has a DID() method)
 signerPrincipal, err := ed25519.Generate()
-fmt.Println("DID:", signer.DID())
+fmt.Println("DID:", signerPrincipal.DID())
 
 // this principal can sign
 sig := signerPrincipal.Sign([]byte{1, 2, 3})
