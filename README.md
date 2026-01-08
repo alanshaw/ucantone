@@ -135,8 +135,8 @@ serviceID, err := ed25519.Generate()
 ucanSrv := server.NewHTTP(serviceID)
 
 // Register an echo handler that returns the invocation arguments as the result
-ucanSrv.Handle(echoCapability, func(req execution.Request) (execution.Response, error) {
-  return execution.NewResponse(execution.WithSuccess(req.Invocation().Arguments()))
+ucanSrv.Handle(echoCapability, func(req execution.Request, res execution.Response) error {
+  return res.SetSuccess(req.Invocation().Arguments())
 })
 
 http.ListenAndServe(":3000", ucanSrv)

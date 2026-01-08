@@ -2,6 +2,7 @@ package bindexec
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/alanshaw/ucantone/execution"
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
@@ -89,79 +90,62 @@ func (r *Request[A]) Task() *Task[A] {
 	return r.task
 }
 
+type SignerSetter interface {
+	SetSigner(ucan.Signer) error
+}
+
 type ResponseOption[O Success] func(r *Response[O]) error
+
+func WithSigner[O Success](signer ucan.Signer) ResponseOption[O] {
+	return func(resp *Response[O]) error {
+		setter, ok := resp.res.(SignerSetter)
+		if !ok {
+			return fmt.Errorf("cannot set signer: underlying response is not a signer setter")
+		}
+		return setter.SetSigner(signer)
+	}
+}
 
 func WithReceipt[O Success](receipt ucan.Receipt) ResponseOption[O] {
 	return func(resp *Response[O]) error {
-		exr, err := execution.NewResponse(
-			execution.WithReceipt(receipt),
-			execution.WithMetadata(resp.Response.Metadata()),
-		)
-		if err != nil {
-			return err
-		}
-		resp.Response = exr
+		resp.SetReceipt(receipt)
 		return nil
 	}
 }
 
 // WithSuccess issues and sets a receipt for a successful execution of a task.
-func WithSuccess[O Success](signer ucan.Signer, task cid.Cid, o O) ResponseOption[O] {
+func WithSuccess[O Success](o O) ResponseOption[O] {
 	return func(resp *Response[O]) error {
-		m := datamodel.Map{}
-		err := datamodel.Rebind(o, &m)
-		if err != nil {
-			return err
-		}
-		exr, err := execution.NewResponse(
-			execution.WithSuccess(signer, task, m),
-			execution.WithMetadata(resp.Metadata()),
-		)
-		if err != nil {
-			return err
-		}
-		resp.Response = exr
-		return nil
+		return resp.SetSuccess(o)
 	}
 }
 
 // WithFailure issues and sets a receipt for a failed execution of a task.
 func WithFailure[O Success](signer ucan.Signer, task cid.Cid, x error) ResponseOption[O] {
 	return func(resp *Response[O]) error {
-		exr, err := execution.NewResponse(
-			execution.WithFailure(signer, task, x),
-			execution.WithMetadata(resp.Response.Metadata()),
-		)
-		if err != nil {
-			return err
-		}
-		resp.Response = exr
-		return nil
+		return resp.SetFailure(x)
 	}
 }
 
-func WithMetadata[O Success](m ucan.Container) ResponseOption[O] {
+func WithMetadata[O Success](meta ucan.Container) ResponseOption[O] {
 	return func(resp *Response[O]) error {
-		exr, err := execution.NewResponse(
-			execution.WithReceipt(resp.Receipt()),
-			execution.WithMetadata(m),
-		)
-		if err != nil {
-			return err
-		}
-		resp.Response = exr
+		resp.SetMetadata(meta)
 		return nil
 	}
 }
 
 type Response[O Success] struct {
-	execution.Response
+	res execution.Response
 }
 
 // NewResponse creates a new response object, representing the result of
-// executing a task. Note: a receipt MUST be provided via options.
-func NewResponse[O Success](options ...ResponseOption[O]) (*Response[O], error) {
-	response := Response[O]{Response: &execution.ExecResponse{}}
+// executing a task.
+func NewResponse[O Success](task cid.Cid, options ...ResponseOption[O]) (*Response[O], error) {
+	xres, err := execution.NewResponse(task)
+	if err != nil {
+		return nil, err
+	}
+	response := Response[O]{res: xres}
 	for _, opt := range options {
 		err := opt(&response)
 		if err != nil {
@@ -171,17 +155,46 @@ func NewResponse[O Success](options ...ResponseOption[O]) (*Response[O], error) 
 	return &response, nil
 }
 
-type HandlerFunc[A Arguments, O Success] = func(req *Request[A]) (*Response[O], error)
+func (r *Response[O]) Metadata() ucan.Container {
+	return r.res.Metadata()
+}
+
+func (r *Response[O]) Receipt() ucan.Receipt {
+	return r.res.Receipt()
+}
+
+func (r *Response[O]) SetFailure(x error) error {
+	return r.res.SetFailure(x)
+}
+
+func (r *Response[O]) SetMetadata(meta ucan.Container) error {
+	return r.res.SetMetadata(meta)
+}
+
+func (r *Response[O]) SetReceipt(receipt ucan.Receipt) error {
+	return r.res.SetReceipt(receipt)
+}
+
+func (r *Response[O]) SetSuccess(o O) error {
+	m := datamodel.Map{}
+	err := datamodel.Rebind(o, &m)
+	if err != nil {
+		return err
+	}
+	return r.res.SetSuccess(m)
+}
+
+type HandlerFunc[A Arguments, O Success] = func(*Request[A], *Response[O]) error
 
 // NewHandler creates a new [execution.HandlerFunc] from the provided typed
 // handler.
 func NewHandler[A Arguments, O Success](handler HandlerFunc[A, O]) execution.HandlerFunc {
-	return func(req execution.Request) (execution.Response, error) {
+	return func(req execution.Request, res execution.Response) error {
 		inv := req.Invocation()
 		task, err := NewTask[A](inv.Subject(), inv.Command(), inv.Arguments(), inv.Nonce())
 		if err != nil {
-			return nil, NewMalformedArgumentsError(err)
+			return res.SetFailure(NewMalformedArgumentsError(err))
 		}
-		return handler(&Request[A]{Request: req, task: task})
+		return handler(&Request[A]{Request: req, task: task}, &Response[O]{res: res})
 	}
 }

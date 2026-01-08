@@ -36,11 +36,11 @@ func TestServer(t *testing.T) {
 	ucanSrv := server.NewHTTP(serviceID)
 
 	// Register an echo handler that returns the invocation arguments as the result
-	ucanSrv.Handle(echoCapability, func(req execution.Request) (execution.Response, error) {
+	ucanSrv.Handle(echoCapability, func(req execution.Request, res execution.Response) error {
 		inv := req.Invocation()
 		args := inv.Arguments()
 		fmt.Printf("Echo: %s\n", args["message"])
-		return execution.NewResponse(execution.WithSuccess(serviceID, inv.Task().Link(), args))
+		return res.SetSuccess(args)
 	})
 
 	// Start the server on a random available port
@@ -128,11 +128,11 @@ func TestTypedServer(t *testing.T) {
 	ucanSrv := server.NewHTTP(serviceID)
 
 	// Register an echo handler that returns the invocation arguments as the result
-	ucanSrv.Handle(echoCapability, bindexec.NewHandler(func(req *bindexec.Request[*types.EchoArguments]) (*bindexec.Response[*types.EchoArguments], error) {
+	ucanSrv.Handle(echoCapability, bindexec.NewHandler(func(req *bindexec.Request[*types.EchoArguments], res *bindexec.Response[*types.EchoArguments]) error {
 		task := req.Task()
 		args := task.BindArguments()
 		fmt.Printf("Echo: %s\n", args.Message)
-		return bindexec.NewResponse(bindexec.WithSuccess(serviceID, task.Link(), args))
+		return res.SetSuccess(args)
 	}))
 
 	// Start the server on a random available port

@@ -3,6 +3,7 @@ package execution
 import (
 	"context"
 
+	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/ucan"
 )
 
@@ -17,16 +18,26 @@ type Request interface {
 type Response interface {
 	// Receipt for the executed task.
 	Receipt() ucan.Receipt
+	// SetReceipt sets the receipt for the executed task.
+	SetReceipt(ucan.Receipt) error
+	// SetSuccess issues a receipt with a successful result for the executed task
+	// and sets it on the response.
+	SetSuccess(ipld.Any) error
+	// SetFailure issues a receipt with a failure result for the executed task and
+	// sets it on the response.
+	SetFailure(error) error
 	// Metadata provides additional information about the response.
 	Metadata() ucan.Container
+	// SetMetadata sets additional information about the response.
+	SetMetadata(ucan.Container) error
 }
 
 // Executor executes UCAN invocations. In order to execute an invocation, proof
 // chains must be validated and delegation policies matched. Hence a UCAN
 // executor is responsible for both validation and execution of invocations.
 type Executor interface {
-	Execute(req Request) (Response, error)
+	Execute(Request) (Response, error)
 }
 
 // HandlerFunc is a function that can handle a specific UCAN invocation.
-type HandlerFunc = func(req Request) (Response, error)
+type HandlerFunc = func(Request, Response) error

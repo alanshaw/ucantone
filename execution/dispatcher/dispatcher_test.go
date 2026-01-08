@@ -23,14 +23,14 @@ func TestDispatcher(t *testing.T) {
 		executor := dispatcher.New(service)
 
 		var messages []ipld.Any
-		executor.Handle(testutil.ConsoleLogCapability, func(req execution.Request) (execution.Response, error) {
+		executor.Handle(testutil.ConsoleLogCapability, func(req execution.Request, res execution.Response) error {
 			msg := req.Invocation().Arguments()["message"]
 			t.Log(msg)
 			messages = append(messages, msg)
-			return execution.NewResponse(execution.WithSuccess(service, req.Invocation().Task().Link(), ipld.Map{}))
+			return res.SetSuccess(ipld.Map{})
 		})
-		executor.Handle(testutil.TestEchoCapability, func(req execution.Request) (execution.Response, error) {
-			return execution.NewResponse(execution.WithSuccess(service, req.Invocation().Task().Link(), req.Invocation().Arguments()))
+		executor.Handle(testutil.TestEchoCapability, func(req execution.Request, res execution.Response) error {
+			return res.SetSuccess(req.Invocation().Arguments())
 		})
 
 		logInv, err := testutil.ConsoleLogCapability.Invoke(
@@ -117,8 +117,8 @@ func TestDispatcher(t *testing.T) {
 	t.Run("handler execution error", func(t *testing.T) {
 		executor := dispatcher.New(service)
 
-		executor.Handle(testutil.ConsoleLogCapability, func(req execution.Request) (execution.Response, error) {
-			return nil, fmt.Errorf("boom")
+		executor.Handle(testutil.ConsoleLogCapability, func(req execution.Request, res execution.Response) error {
+			return fmt.Errorf("boom")
 		})
 
 		logInv, err := testutil.ConsoleLogCapability.Invoke(
@@ -142,8 +142,8 @@ func TestDispatcher(t *testing.T) {
 
 	t.Run("validation error", func(t *testing.T) {
 		executor := dispatcher.New(service)
-		executor.Handle(testutil.TestEchoCapability, func(req execution.Request) (execution.Response, error) {
-			return execution.NewResponse(execution.WithSuccess(service, req.Invocation().Task().Link(), req.Invocation().Arguments()))
+		executor.Handle(testutil.TestEchoCapability, func(req execution.Request, res execution.Response) error {
+			return res.SetSuccess(req.Invocation().Arguments())
 		})
 
 		logInv, err := testutil.TestEchoCapability.Invoke(

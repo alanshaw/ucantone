@@ -23,8 +23,8 @@ func TestHTTPClient(t *testing.T) {
 	t.Run("invocation execution round trip", func(t *testing.T) {
 		server := server.NewHTTP(service)
 
-		server.Handle(testutil.TestEchoCapability, func(req execution.Request) (execution.Response, error) {
-			return execution.NewResponse(execution.WithSuccess(service, req.Invocation().Task().Link(), req.Invocation().Arguments()))
+		server.Handle(testutil.TestEchoCapability, func(req execution.Request, res execution.Response) error {
+			return res.SetSuccess(req.Invocation().Arguments())
 		})
 
 		c, err := client.NewHTTP(

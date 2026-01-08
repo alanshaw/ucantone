@@ -1,6 +1,8 @@
 package dispatcher
 
 import (
+	"fmt"
+
 	"github.com/alanshaw/ucantone/execution"
 	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/ucan"
@@ -42,22 +44,26 @@ func (d *Dispatcher) Handle(capability validator.Capability, fn execution.Handle
 }
 
 func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) {
-	id := d.authority
-	task := req.Invocation().Task().Link()
 	aud := req.Invocation().Audience()
 	if aud == nil {
 		aud = req.Invocation().Subject()
 	}
 	if aud.DID() != d.authority.DID() {
 		return execution.NewResponse(
-			execution.WithFailure(id, task, execution.NewInvalidAudienceError(d.authority, aud)),
+			req.Invocation().Task().Link(),
+			execution.WithSigner(d.authority),
+			execution.WithFailure(execution.NewInvalidAudienceError(d.authority, aud)),
 		)
 	}
 
 	cmd := req.Invocation().Command()
 	handler, ok := d.handlers[cmd]
 	if !ok {
-		return execution.NewResponse(execution.WithFailure(id, task, NewHandlerNotFoundError(cmd)))
+		return execution.NewResponse(
+			req.Invocation().Task().Link(),
+			execution.WithSigner(d.authority),
+			execution.WithFailure(NewHandlerNotFoundError(cmd)),
+		)
 	}
 
 	opts := append([]validator.Option{}, d.validationOpts...)
@@ -73,13 +79,24 @@ func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) 
 		opts...,
 	)
 	if err != nil {
-		return execution.NewResponse(execution.WithFailure(id, task, err))
+		return execution.NewResponse(
+			req.Invocation().Task().Link(),
+			execution.WithSigner(d.authority),
+			execution.WithFailure(err),
+		)
 	}
 
-	res, err := handler.Func(req)
+	res, err := execution.NewResponse(req.Invocation().Task().Link(), execution.WithSigner(d.authority))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create response: %w", err)
+	}
+
+	err = handler.Func(req, res)
 	if err != nil {
 		return execution.NewResponse(
-			execution.WithFailure(id, task, execution.NewHandlerExecutionError(cmd, err)),
+			req.Invocation().Task().Link(),
+			execution.WithSigner(d.authority),
+			execution.WithFailure(execution.NewHandlerExecutionError(cmd, err)),
 		)
 	}
 	return res, nil
