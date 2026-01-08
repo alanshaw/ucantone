@@ -1,7 +1,14 @@
 package errors
 
 import (
+	"errors"
+
 	edm "github.com/alanshaw/ucantone/errors/datamodel"
+)
+
+var (
+	Is = errors.Is
+	As = errors.As
 )
 
 type Named interface {
