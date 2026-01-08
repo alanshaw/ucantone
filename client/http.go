@@ -22,7 +22,7 @@ func NewHTTP(serviceURL *url.URL, options ...HTTPOption) (*HTTPClient, error) {
 		opt(&cfg)
 	}
 	c := New(&httpTransport{cfg.client, serviceURL}, cfg.codec)
-	c.Observers = cfg.observers
+	c.Listeners = cfg.listeners
 	return &HTTPClient{Client: c}, nil
 }
 
