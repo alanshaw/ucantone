@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/alanshaw/ucantone/execution"
@@ -12,6 +13,7 @@ import (
 type Client[Req transport.Request, Res any] struct {
 	Codec     transport.OutboundCodec[Req, Res]
 	Transport transport.RoundTripper[Req, Res]
+	Listeners []EventListener
 }
 
 func New[Req transport.Request, Res any](transport transport.RoundTripper[Req, Res], codec transport.OutboundCodec[Req, Res]) *Client[Req, Res] {
@@ -19,6 +21,31 @@ func New[Req transport.Request, Res any](transport transport.RoundTripper[Req, R
 		Transport: transport,
 		Codec:     codec,
 	}
+}
+
+func (c *Client[Req, Res]) emitRequestEncode(ct ucan.Container) error {
+	var notifyErrs error
+	for _, listener := range c.Listeners {
+		if reqEncodeListener, ok := listener.(RequestEncodeListener); ok {
+			err := reqEncodeListener.OnRequestEncode(ct)
+			if err != nil {
+				notifyErrs = errors.Join(notifyErrs, err)
+			}
+		}
+	}
+	return notifyErrs
+}
+
+func (c *Client[Req, Res]) emitResponseDecode(ct ucan.Container) error {
+	for _, listener := range c.Listeners {
+		if resDecodeListener, ok := listener.(ResponseDecodeListener); ok {
+			err := resDecodeListener.OnResponseDecode(ct)
+			if err != nil {
+				return fmt.Errorf("notifying response decode: %w", err)
+			}
+		}
+	}
+	return nil
 }
 
 func (c *Client[Req, Res]) Execute(execRequest execution.Request) (execution.Response, error) {
@@ -35,6 +62,10 @@ func (c *Client[Req, Res]) Execute(execRequest execution.Request) (execution.Res
 		container.WithDelegations(delegations...),
 		container.WithReceipts(receipts...),
 	)
+	err := c.emitRequestEncode(reqContainer)
+	if err != nil {
+		return nil, fmt.Errorf("notifying request encode: %w", err)
+	}
 	request, err := c.Codec.Encode(reqContainer)
 	if err != nil {
 		return nil, fmt.Errorf("encoding container: %w", err)
@@ -46,6 +77,10 @@ func (c *Client[Req, Res]) Execute(execRequest execution.Request) (execution.Res
 	resContainer, err := c.Codec.Decode(response)
 	if err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
+	}
+	err = c.emitResponseDecode(resContainer)
+	if err != nil {
+		return nil, fmt.Errorf("notifying response decode: %w", err)
 	}
 	task := execRequest.Invocation().Task()
 	var receipt ucan.Receipt

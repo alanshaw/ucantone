@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Is = errors.Is
-	As = errors.As
+	Is   = errors.Is
+	As   = errors.As
+	Join = errors.Join
 )
 
 type Named interface {

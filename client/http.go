@@ -21,9 +21,9 @@ func NewHTTP(serviceURL *url.URL, options ...HTTPOption) (*HTTPClient, error) {
 	for _, opt := range options {
 		opt(&cfg)
 	}
-	return &HTTPClient{
-		Client: New(&httpTransport{cfg.client, serviceURL}, cfg.codec),
-	}, nil
+	c := New(&httpTransport{cfg.client, serviceURL}, cfg.codec)
+	c.Observers = cfg.observers
+	return &HTTPClient{Client: c}, nil
 }
 
 func (c *HTTPClient) Execute(execRequest execution.Request) (execution.Response, error) {
