@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -23,11 +24,11 @@ func New[Req transport.Request, Res any](transport transport.RoundTripper[Req, R
 	}
 }
 
-func (c *Client[Req, Res]) emitRequestEncode(ct ucan.Container) error {
+func (c *Client[Req, Res]) emitRequestEncode(ctx context.Context, ct ucan.Container) error {
 	var notifyErrs error
 	for _, listener := range c.Listeners {
 		if reqEncodeListener, ok := listener.(RequestEncodeListener); ok {
-			err := reqEncodeListener.OnRequestEncode(ct)
+			err := reqEncodeListener.OnRequestEncode(ctx, ct)
 			if err != nil {
 				notifyErrs = errors.Join(notifyErrs, err)
 			}
@@ -36,10 +37,10 @@ func (c *Client[Req, Res]) emitRequestEncode(ct ucan.Container) error {
 	return notifyErrs
 }
 
-func (c *Client[Req, Res]) emitResponseDecode(ct ucan.Container) error {
+func (c *Client[Req, Res]) emitResponseDecode(ctx context.Context, ct ucan.Container) error {
 	for _, listener := range c.Listeners {
 		if resDecodeListener, ok := listener.(ResponseDecodeListener); ok {
-			err := resDecodeListener.OnResponseDecode(ct)
+			err := resDecodeListener.OnResponseDecode(ctx, ct)
 			if err != nil {
 				return fmt.Errorf("notifying response decode: %w", err)
 			}
@@ -62,7 +63,7 @@ func (c *Client[Req, Res]) Execute(execRequest execution.Request) (execution.Res
 		container.WithDelegations(delegations...),
 		container.WithReceipts(receipts...),
 	)
-	err := c.emitRequestEncode(reqContainer)
+	err := c.emitRequestEncode(execRequest.Context(), reqContainer)
 	if err != nil {
 		return nil, fmt.Errorf("notifying request encode: %w", err)
 	}
@@ -78,7 +79,7 @@ func (c *Client[Req, Res]) Execute(execRequest execution.Request) (execution.Res
 	if err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
-	err = c.emitResponseDecode(resContainer)
+	err = c.emitResponseDecode(execRequest.Context(), resContainer)
 	if err != nil {
 		return nil, fmt.Errorf("notifying response decode: %w", err)
 	}
