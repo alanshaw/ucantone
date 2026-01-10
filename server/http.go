@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,9 +17,10 @@ import (
 )
 
 type HTTPServer struct {
-	id       principal.Signer
-	executor *dispatcher.Dispatcher
-	codec    transport.InboundCodec[*http.Request, *http.Response]
+	id        principal.Signer
+	executor  *dispatcher.Dispatcher
+	codec     transport.InboundCodec[*http.Request, *http.Response]
+	listeners []EventListener
 }
 
 // NewHTTP creates a new server capable of handling UCAN invocations over HTTP.
@@ -34,6 +37,32 @@ func NewHTTP(id principal.Signer, options ...HTTPOption) *HTTPServer {
 		codec:    cfg.codec,
 		executor: executor,
 	}
+}
+
+func (s *HTTPServer) emitRequestDecode(ctx context.Context, ct ucan.Container) error {
+	var errs error
+	for _, listener := range s.listeners {
+		if reqDecodeListener, ok := listener.(RequestDecodeListener); ok {
+			err := reqDecodeListener.OnRequestDecode(ctx, ct)
+			if err != nil {
+				errs = errors.Join(errs, err)
+			}
+		}
+	}
+	return errs
+}
+
+func (s *HTTPServer) emitResponseEncode(ctx context.Context, ct ucan.Container) error {
+	var errs error
+	for _, listener := range s.listeners {
+		if resEncodeListener, ok := listener.(ResponseEncodeListener); ok {
+			err := resEncodeListener.OnResponseEncode(ctx, ct)
+			if err != nil {
+				errs = errors.Join(errs, err)
+			}
+		}
+	}
+	return errs
 }
 
 func (s *HTTPServer) Handle(capability validator.Capability, fn execution.HandlerFunc) {
@@ -61,6 +90,10 @@ func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
 	reqContainer, err := s.codec.Decode(r)
 	if err != nil {
 		return nil, fmt.Errorf("decoding request: %w", err)
+	}
+	err = s.emitRequestDecode(r.Context(), reqContainer)
+	if err != nil {
+		return nil, fmt.Errorf("emitting request decode event: %w", err)
 	}
 
 	var invocations []ucan.Invocation
@@ -104,6 +137,10 @@ func (s *HTTPServer) RoundTrip(r *http.Request) (*http.Response, error) {
 		container.WithReceipts(receipts...),
 	)
 
+	err = s.emitResponseEncode(r.Context(), respContainer)
+	if err != nil {
+		return nil, fmt.Errorf("emitting response encode event: %w", err)
+	}
 	resp, err := s.codec.Encode(respContainer)
 	if err != nil {
 		return nil, fmt.Errorf("encoding response container: %w", err)

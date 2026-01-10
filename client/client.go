@@ -25,28 +25,29 @@ func New[Req transport.Request, Res any](transport transport.RoundTripper[Req, R
 }
 
 func (c *Client[Req, Res]) emitRequestEncode(ctx context.Context, ct ucan.Container) error {
-	var notifyErrs error
+	var errs error
 	for _, listener := range c.Listeners {
 		if reqEncodeListener, ok := listener.(RequestEncodeListener); ok {
 			err := reqEncodeListener.OnRequestEncode(ctx, ct)
 			if err != nil {
-				notifyErrs = errors.Join(notifyErrs, err)
+				errs = errors.Join(errs, err)
 			}
 		}
 	}
-	return notifyErrs
+	return errs
 }
 
 func (c *Client[Req, Res]) emitResponseDecode(ctx context.Context, ct ucan.Container) error {
+	var errs error
 	for _, listener := range c.Listeners {
 		if resDecodeListener, ok := listener.(ResponseDecodeListener); ok {
 			err := resDecodeListener.OnResponseDecode(ctx, ct)
 			if err != nil {
-				return fmt.Errorf("notifying response decode: %w", err)
+				errs = errors.Join(errs, err)
 			}
 		}
 	}
-	return nil
+	return errs
 }
 
 func (c *Client[Req, Res]) Execute(execRequest execution.Request) (execution.Response, error) {
@@ -65,7 +66,7 @@ func (c *Client[Req, Res]) Execute(execRequest execution.Request) (execution.Res
 	)
 	err := c.emitRequestEncode(execRequest.Context(), reqContainer)
 	if err != nil {
-		return nil, fmt.Errorf("notifying request encode: %w", err)
+		return nil, fmt.Errorf("emitting request encode event: %w", err)
 	}
 	request, err := c.Codec.Encode(reqContainer)
 	if err != nil {
@@ -81,7 +82,7 @@ func (c *Client[Req, Res]) Execute(execRequest execution.Request) (execution.Res
 	}
 	err = c.emitResponseDecode(execRequest.Context(), resContainer)
 	if err != nil {
-		return nil, fmt.Errorf("notifying response decode: %w", err)
+		return nil, fmt.Errorf("emitting response decode event: %w", err)
 	}
 	task := execRequest.Invocation().Task()
 	var receipt ucan.Receipt
