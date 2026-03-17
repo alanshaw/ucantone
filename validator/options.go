@@ -9,6 +9,7 @@ type validationConfig struct {
 	resolveProof          ProofResolverFunc
 	resolveDIDKey         DIDResolverFunc
 	validateAuthorization ValidateAuthorizationFunc
+	validationTime        ucan.UTCUnixTimestamp
 }
 
 // Option is an option configuring the validator.
@@ -49,5 +50,13 @@ func WithDIDResolver(resolveDIDKey DIDResolverFunc) Option {
 func WithAuthorizationValidator(validateAuthorization ValidateAuthorizationFunc) Option {
 	return func(vc *validationConfig) {
 		vc.validateAuthorization = validateAuthorization
+	}
+}
+
+// WithValidationTime sets the time to be used as "now" when validation is
+// performed.
+func WithValidationTime(now ucan.UTCUnixTimestamp) Option {
+	return func(vc *validationConfig) {
+		vc.validationTime = now
 	}
 }

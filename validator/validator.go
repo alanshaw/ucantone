@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
@@ -121,6 +122,7 @@ func Access(
 		resolveProof:          ProofUnavailable,
 		resolveDIDKey:         FailDIDKeyResolution,
 		validateAuthorization: NopValidateAuthorization,
+		validationTime:        ucan.UTCUnixTimestamp(time.Now().Unix()),
 	}
 	for _, opt := range options {
 		opt(&cfg)
@@ -136,7 +138,7 @@ func Access(
 		return Authorization{}, err
 	}
 
-	err = Validate(ctx, authority, cfg.canIssue, cfg.parsePrincipal, cfg.resolveDIDKey, invocation, proofs)
+	err = Validate(ctx, authority, cfg.canIssue, cfg.parsePrincipal, cfg.resolveDIDKey, cfg.validationTime, invocation, proofs)
 	if err != nil {
 		return Authorization{}, err
 	}
@@ -177,20 +179,21 @@ func Validate(
 	canIssue CanIssueFunc,
 	parsePrincipal PrincipalParserFunc,
 	resolveDIDKey DIDResolverFunc,
+	now ucan.UTCUnixTimestamp,
 	inv ucan.Invocation,
 	prfs map[cid.Cid]ucan.Delegation,
 ) error {
-	err := ValidateNotExpired(inv)
+	err := ValidateNotExpired(inv, now)
 	if err != nil {
 		return err
 	}
 
 	for _, p := range prfs {
-		err := ValidateNotExpired(p)
+		err := ValidateNotExpired(p, now)
 		if err != nil {
 			return err
 		}
-		err = ValidateNotTooEarly(p)
+		err = ValidateNotTooEarly(p, now)
 		if err != nil {
 			return err
 		}
@@ -199,15 +202,23 @@ func Validate(
 	return VerifyAuthorization(ctx, authority, canIssue, parsePrincipal, resolveDIDKey, inv, prfs)
 }
 
-func ValidateNotExpired(token ucan.Token) error {
-	if ucan.IsExpired(token) {
+func ValidateNotExpired(token ucan.Token, now ucan.UTCUnixTimestamp) error {
+	exp := token.Expiration()
+	if exp == nil {
+		return nil
+	}
+	if *exp <= now {
 		return verrs.NewExpiredError(token)
 	}
 	return nil
 }
 
-func ValidateNotTooEarly(dlg ucan.Delegation) error {
-	if ucan.IsTooEarly(dlg) {
+func ValidateNotTooEarly(dlg ucan.Delegation, now ucan.UTCUnixTimestamp) error {
+	nbf := dlg.NotBefore()
+	if nbf == nil {
+		return nil
+	}
+	if *nbf != 0 && now <= *nbf {
 		return verrs.NewTooEarlyError(dlg)
 	}
 	return nil
@@ -277,10 +288,11 @@ func VerifyAuthorization(
 		}
 	}
 
-	if len(inv.Proofs()) > 0 {
-		prf, ok := prfs[inv.Proofs()[0]]
+	prfChain := inv.Proofs()
+	if len(prfChain) > 0 {
+		prf, ok := prfs[prfChain[len(prfChain)-1]]
 		if !ok {
-			return verrs.NewUnavailableProofError(inv.Proofs()[0], errors.New("missing from map"))
+			return verrs.NewUnavailableProofError(prfChain[len(prfChain)-1], errors.New("missing from map"))
 		}
 
 		// check principal alignment
@@ -288,21 +300,37 @@ func VerifyAuthorization(
 			return verrs.NewPrincipalAlignmentError(inv.Issuer(), prf)
 		}
 
-		for i, p := range inv.Proofs() {
-			var next ucan.Delegation
-			if i+1 < len(inv.Proofs()) {
-				np, ok := prfs[inv.Proofs()[i+1]]
-				if !ok {
-					return verrs.NewUnavailableProofError(inv.Proofs()[i+1], errors.New("missing from map"))
-				}
-				next = np
-			}
-
+		for i, p := range prfChain {
 			prf, ok := prfs[p]
 			if !ok {
 				return verrs.NewUnavailableProofError(p, errors.New("missing from map"))
 			}
 			issuer := prf.Issuer().DID()
+
+			// this is the root delegation
+			if i == 0 {
+				// powerline is not allowed as root delegation.
+				// a priori there is no such thing as a null subject.
+				if prf.Subject() == nil {
+					return verrs.NewInvalidClaimError("root delegation subject is null")
+				}
+				if prf.Subject().DID() != inv.Subject().DID() {
+					return verrs.NewSubjectAlignmentError(inv.Subject(), prf)
+				}
+				// check root issuer/subject alignment
+				if !canIssue(ucan.Capability(prf), prf.Issuer()) {
+					return verrs.NewInvalidClaimError(fmt.Sprintf("%q cannot issue delegations for %q", issuer, prf.Subject().DID()))
+				}
+			} else {
+				// otherwise check subject and principal alignment
+				if prf.Subject() != nil && prf.Subject().DID() != inv.Subject().DID() {
+					return verrs.NewSubjectAlignmentError(inv.Subject(), prf)
+				}
+				prev := prfs[inv.Proofs()[i-1]]
+				if issuer != prev.Audience().DID() {
+					return verrs.NewPrincipalAlignmentError(prf.Issuer(), prev)
+				}
+			}
 
 			// If the issuer is a did:key we just verify a signature
 			if strings.HasPrefix(issuer.String(), "did:key:") {
@@ -313,7 +341,7 @@ func VerifyAuthorization(
 				if err := VerifyDelegationSignature(prf, verifier); err != nil {
 					return err
 				}
-			} else if prf.Issuer().DID() == authority.DID() {
+			} else if issuer == authority.DID() {
 				if err := VerifyDelegationSignature(prf, authority); err != nil {
 					return err
 				}
@@ -346,30 +374,6 @@ func VerifyAuthorization(
 				}
 				if verifyErr != nil {
 					return verrs.NewUnverifiableSignatureError(prf, verifyErr)
-				}
-			}
-
-			// this is the root delegation
-			if next == nil {
-				// powerline is not allowed as root delegation.
-				// a priori there is no such thing as a null subject.
-				if prf.Subject() == nil {
-					return verrs.NewInvalidClaimError("root delegation subject is null")
-				}
-				if prf.Subject().DID() != inv.Subject().DID() {
-					return verrs.NewSubjectAlignmentError(inv.Subject(), prf)
-				}
-				// check root issuer/subject alignment
-				if !canIssue(ucan.Capability(prf), prf.Issuer()) {
-					return verrs.NewInvalidClaimError(fmt.Sprintf("%q cannot issue delegations for %q", prf.Issuer().DID(), prf.Subject().DID()))
-				}
-			} else {
-				// otherwise check subject and principal alignment
-				if prf.Subject() != nil && prf.Subject().DID() != inv.Subject().DID() {
-					return verrs.NewSubjectAlignmentError(inv.Subject(), prf)
-				}
-				if prf.Issuer().DID() != next.Audience().DID() {
-					return verrs.NewPrincipalAlignmentError(prf.Issuer(), next)
 				}
 			}
 		}

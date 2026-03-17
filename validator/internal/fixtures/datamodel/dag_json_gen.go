@@ -553,6 +553,28 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 	}
 
 	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Time (uint64) (uint64)
+	if len("time") > 8192 {
+		return fmt.Errorf("String in field \"time\" was too long")
+	}
+	if err := jw.WriteString(string("time")); err != nil {
+		return fmt.Errorf("\"time\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+
+	if err := jw.WriteUint64(uint64(t.Time)); err != nil {
+		return fmt.Errorf("t.Time: %w", err)
+	}
+
+	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -689,6 +711,18 @@ func (t *InvalidModel) UnmarshalDagJSON(r io.Reader) (err error) {
 							}
 						}
 					}
+
+				}
+
+				// t.Time (uint64) (uint64)
+			case "time":
+				{
+
+					nval, err := jr.ReadNumberAsUint64()
+					if err != nil {
+						return fmt.Errorf("t.Time: %w", err)
+					}
+					t.Time = uint64(nval)
 
 				}
 			default:
@@ -832,6 +866,28 @@ func (t *ValidModel) MarshalDagJSON(w io.Writer) error {
 	}
 
 	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Time (uint64) (uint64)
+	if len("time") > 8192 {
+		return fmt.Errorf("String in field \"time\" was too long")
+	}
+	if err := jw.WriteString(string("time")); err != nil {
+		return fmt.Errorf("\"time\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+
+	if err := jw.WriteUint64(uint64(t.Time)); err != nil {
+		return fmt.Errorf("t.Time: %w", err)
+	}
+
+	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -961,6 +1017,18 @@ func (t *ValidModel) UnmarshalDagJSON(r io.Reader) (err error) {
 							}
 						}
 					}
+
+				}
+
+				// t.Time (uint64) (uint64)
+			case "time":
+				{
+
+					nval, err := jr.ReadNumberAsUint64()
+					if err != nil {
+						return fmt.Errorf("t.Time: %w", err)
+					}
+					t.Time = uint64(nval)
 
 				}
 			default:
