@@ -99,7 +99,7 @@ dlg, err := messageSend.Delegate(mailer, alice, mailer)
 invocation, err := messageSend.Invoke(
   alice,
   mailer,
-  datamodel.Map{
+  ipld.Map{
 		"to":      []string{"bob@example.com"},
 		"subject": "Hello!",
 		"message": "Hello Bob, How do you do?",
@@ -140,6 +140,37 @@ ucanSrv.Handle(echoCapability, func(req execution.Request, res execution.Respons
 })
 
 http.ListenAndServe(":3000", ucanSrv)
+```
+
+#### Client
+
+See examples in [server_test.go](./examples/server_test.go)
+
+```go
+// delegate echo capability to alice
+dlg, err := echoCapability.Delegate(serviceID, alice, serviceID)
+
+// invoke (exercise) the capability
+inv, err := echoCapability.Invoke(
+  alice,
+  serviceID,
+  ipld.Map{"message": "Hello, UCAN!"},
+  invocation.WithProofs(dlg.Link()),
+)
+
+c, err := client.NewHTTP(serviceURL)
+
+// create an execution request and send it to the service, passing the
+// invocation and the delegation as proof we are authorized
+req := execution.NewRequest(context.Background(), inv, execution.WithProofs(dlg))
+resp, err := c.Execute(req)
+
+o, x := result.Unwrap(resp.Receipt().Out())
+if x != nil {
+  fmt.Printf("Invocation failed: %v\n", x)
+} else {
+  fmt.Printf("Echo response: %+v\n", o)
+}
 ```
 
 ## Contributing
