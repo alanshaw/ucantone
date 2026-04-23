@@ -9,13 +9,14 @@ import (
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/principal/multiformat"
-	vsed "github.com/alanshaw/ucantone/varsig/algorithm/ed25519"
+	varsig_ed25519 "github.com/alanshaw/ucantone/varsig/algorithm/ed25519"
 	"github.com/multiformats/go-multibase"
 	"github.com/multiformats/go-varint"
 )
 
 const Code = 0xed
-const SignatureCode = vsed.Code
+
+var SignatureAlgorithm = varsig_ed25519.New()
 
 var publicTagSize = varint.UvarintSize(Code)
 

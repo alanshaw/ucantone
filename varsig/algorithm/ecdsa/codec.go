@@ -21,6 +21,10 @@ func (sa SignatureAlgorithm) Code() uint64 {
 	return Code
 }
 
+func (sa SignatureAlgorithm) Segments() []uint64 {
+	return []uint64{Code, sa.curve, sa.hashAlgo}
+}
+
 func (sa SignatureAlgorithm) Curve() uint64 {
 	return sa.curve
 }
@@ -42,6 +46,10 @@ func (sac Codec) Code() uint64 {
 	return Code
 }
 
+func (sac Codec) Segments() []uint64 {
+	return []uint64{Code, sac.curve, sac.hashAlgo}
+}
+
 func (sac Codec) Curve() uint64 {
 	return sac.curve
 }
@@ -50,14 +58,14 @@ func (sac Codec) HashAlgorithm() uint64 {
 	return sac.hashAlgo
 }
 
-func (sac Codec) Encode(enc SignatureAlgorithm) ([]byte, error) {
+func (sac Codec) Encode() ([]byte, error) {
 	size := varint.UvarintSize(Code)
-	size += varint.UvarintSize(enc.curve)
-	size += varint.UvarintSize(enc.hashAlgo)
+	size += varint.UvarintSize(sac.curve)
+	size += varint.UvarintSize(sac.hashAlgo)
 	out := make([]byte, size)
 	offset := varint.PutUvarint(out, Code)
-	offset += varint.PutUvarint(out[offset:], enc.curve)
-	varint.PutUvarint(out[offset:], enc.hashAlgo)
+	offset += varint.PutUvarint(out[offset:], sac.curve)
+	varint.PutUvarint(out[offset:], sac.hashAlgo)
 	return out, nil
 }
 

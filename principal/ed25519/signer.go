@@ -8,13 +8,14 @@ import (
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/principal/ed25519/verifier"
+	"github.com/alanshaw/ucantone/varsig"
 	"github.com/multiformats/go-multibase"
 	"github.com/multiformats/go-varint"
 )
 
 const Code = 0x1300
 
-const SignatureCode = verifier.SignatureCode
+var SignatureAlgorithm = verifier.SignatureAlgorithm
 
 var tagSize = varint.UvarintSize(Code)
 
@@ -86,8 +87,8 @@ func (s Signer) Code() uint64 {
 	return Code
 }
 
-func (s Signer) SignatureCode() uint64 {
-	return SignatureCode
+func (s Signer) SignatureAlgorithm() varsig.SignatureAlgorithm {
+	return SignatureAlgorithm
 }
 
 func (s Signer) Verifier() principal.Verifier {

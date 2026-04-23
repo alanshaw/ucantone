@@ -2,6 +2,8 @@ package varsig
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	varint "github.com/multiformats/go-varint"
 )
@@ -11,18 +13,32 @@ const Version = 0x01
 
 type Codec[T any] interface {
 	Code() uint64
-	Encode(T) ([]byte, error)
+	Encode() ([]byte, error)
 	Decode([]byte) (T, int, error)
 }
 
 type SignatureAlgorithm interface {
 	// Discriminant for the signature segments.
 	Code() uint64
+	// Signature segments including the signature algorithm code.
+	Segments() []uint64
 }
 
-type SignatureAlgorithmCodec[T SignatureAlgorithm] Codec[T]
+type SignatureAlgorithmCodec[T SignatureAlgorithm] interface {
+	SignatureAlgorithm
+	Codec[T]
+}
 
-var signatureAlgorithmCodecs = map[uint64]SignatureAlgorithmCodec[SignatureAlgorithm]{}
+// code -> segments -> codec
+var signatureAlgorithmCodecs = map[uint64]map[string]SignatureAlgorithmCodec[SignatureAlgorithm]{}
+
+func signatureAlgorithmSegmentKey(segments []uint64) string {
+	k := make([]string, 0, len(segments))
+	for _, s := range segments {
+		k = append(k, strconv.FormatUint(s, 16))
+	}
+	return strings.Join(k, "-")
+}
 
 type signatureAlgorithmCodecAdapter[T SignatureAlgorithm] struct {
 	codec SignatureAlgorithmCodec[T]
@@ -32,8 +48,12 @@ func (a signatureAlgorithmCodecAdapter[T]) Code() uint64 {
 	return a.codec.Code()
 }
 
-func (a signatureAlgorithmCodecAdapter[T]) Encode(algo SignatureAlgorithm) ([]byte, error) {
-	return a.codec.Encode(algo.(T))
+func (a signatureAlgorithmCodecAdapter[T]) Segments() []uint64 {
+	return a.codec.Segments()
+}
+
+func (a signatureAlgorithmCodecAdapter[T]) Encode() ([]byte, error) {
+	return a.codec.Encode()
 }
 
 func (a signatureAlgorithmCodecAdapter[T]) Decode(input []byte) (SignatureAlgorithm, int, error) {
@@ -45,7 +65,22 @@ func (a signatureAlgorithmCodecAdapter[T]) Decode(input []byte) (SignatureAlgori
 }
 
 func RegisterSignatureAlgorithm[T SignatureAlgorithm](codec SignatureAlgorithmCodec[T]) {
-	signatureAlgorithmCodecs[codec.Code()] = signatureAlgorithmCodecAdapter[T]{codec}
+	codecs, ok := signatureAlgorithmCodecs[codec.Code()]
+	if !ok {
+		codecs = map[string]SignatureAlgorithmCodec[SignatureAlgorithm]{}
+		signatureAlgorithmCodecs[codec.Code()] = codecs
+	}
+	codecs[signatureAlgorithmSegmentKey(codec.Segments())] = signatureAlgorithmCodecAdapter[T]{codec}
+}
+
+// GetSignatureAlgorithmCodec returns a registered codec for the given signature algorithm. The boolean will be false if no codec is registered for the algorithm.
+func GetSignatureAlgorithmCodec(algo SignatureAlgorithm) (SignatureAlgorithmCodec[SignatureAlgorithm], bool) {
+	codecs, ok := signatureAlgorithmCodecs[algo.Code()]
+	if !ok {
+		return nil, false
+	}
+	c, ok := codecs[signatureAlgorithmSegmentKey(algo.Segments())]
+	return c, ok
 }
 
 type PayloadEncoding interface {
@@ -65,8 +100,8 @@ func (a payloadEncodingCodecAdapter[T]) Code() uint64 {
 	return a.codec.Code()
 }
 
-func (a payloadEncodingCodecAdapter[T]) Encode(algo PayloadEncoding) ([]byte, error) {
-	return a.codec.Encode(algo.(T))
+func (a payloadEncodingCodecAdapter[T]) Encode() ([]byte, error) {
+	return a.codec.Encode()
 }
 
 func (a payloadEncodingCodecAdapter[T]) Decode(input []byte) (PayloadEncoding, int, error) {
@@ -77,8 +112,15 @@ func (a payloadEncodingCodecAdapter[T]) Decode(input []byte) (PayloadEncoding, i
 	return PayloadEncoding(algo), n, nil
 }
 
-func RegisterPayloadEncoding[T SignatureAlgorithm](codec PayloadEncodingCodec[T]) {
+func RegisterPayloadEncoding[T PayloadEncoding](codec PayloadEncodingCodec[T]) {
 	payloadEncodingCodecs[codec.Code()] = payloadEncodingCodecAdapter[T]{codec}
+}
+
+// GetPayloadEncodingCodec returns a registered codec for the given payload
+// encoding. The boolean will be false if no codec is registered for the encoding.
+func GetPayloadEncodingCodec(enc PayloadEncoding) (PayloadEncodingCodec[PayloadEncoding], bool) {
+	c, ok := payloadEncodingCodecs[enc.Code()]
+	return c, ok
 }
 
 type VarsigHeader[S SignatureAlgorithm, P PayloadEncoding] interface {
@@ -115,21 +157,21 @@ func Encode[S SignatureAlgorithm, P PayloadEncoding](header VarsigHeader[S, P]) 
 	size := varint.UvarintSize(Prefix)
 	size += varint.UvarintSize(Version)
 
-	sigAlgoCodec, ok := signatureAlgorithmCodecs[header.SignatureAlgorithm().Code()]
+	sigAlgoCodec, ok := GetSignatureAlgorithmCodec(header.SignatureAlgorithm())
 	if !ok {
 		return nil, fmt.Errorf("missing codec for signature algorithm: %d", header.SignatureAlgorithm().Code())
 	}
-	sigAlgoBytes, err := sigAlgoCodec.Encode(header.SignatureAlgorithm())
+	sigAlgoBytes, err := sigAlgoCodec.Encode()
 	if err != nil {
 		return nil, err
 	}
 	size += len(sigAlgoBytes)
 
-	payloadEncCodec, ok := payloadEncodingCodecs[header.PayloadEncoding().Code()]
+	payloadEncCodec, ok := GetPayloadEncodingCodec(header.PayloadEncoding())
 	if !ok {
 		return nil, fmt.Errorf("missing codec for payload encoding: %d", header.PayloadEncoding().Code())
 	}
-	payloadEncBytes, err := payloadEncCodec.Encode(header.PayloadEncoding())
+	payloadEncBytes, err := payloadEncCodec.Encode()
 	if err != nil {
 		return nil, err
 	}
@@ -167,15 +209,24 @@ func Decode(input []byte) (Header[SignatureAlgorithm, PayloadEncoding], error) {
 	if err != nil {
 		return Header[SignatureAlgorithm, PayloadEncoding]{}, fmt.Errorf("reading signature algorithm code: %w", err)
 	}
-	sigAlgoCodec, ok := signatureAlgorithmCodecs[sigAlgoCode]
+
+	codecs, ok := signatureAlgorithmCodecs[sigAlgoCode]
 	if !ok {
-		return Header[SignatureAlgorithm, PayloadEncoding]{}, fmt.Errorf("missing codec for signature algorithm: 0x%02x", sigAlgoCode)
+		return Header[SignatureAlgorithm, PayloadEncoding]{}, fmt.Errorf("unsupported signature algorithm codec: 0x%02x", sigAlgoCode)
 	}
-	sigAlgo, n, err := sigAlgoCodec.Decode(input[offset:])
-	if err != nil {
-		return Header[SignatureAlgorithm, PayloadEncoding]{}, fmt.Errorf("decoding signature algorithm: %w", err)
+	var sigAlgo SignatureAlgorithm
+	for _, codec := range codecs {
+		sa, n, err := codec.Decode(input[offset:])
+		if err != nil {
+			continue
+		}
+		sigAlgo = sa
+		offset += n
+		break
 	}
-	offset += n
+	if sigAlgo == nil {
+		return Header[SignatureAlgorithm, PayloadEncoding]{}, fmt.Errorf("unsupported signature algorithm code: 0x%02x", sigAlgoCode)
+	}
 
 	payloadEncCode, _, err := varint.FromUvarint(input[offset:])
 	if err != nil {
@@ -183,7 +234,7 @@ func Decode(input []byte) (Header[SignatureAlgorithm, PayloadEncoding], error) {
 	}
 	payloadEncCodec, ok := payloadEncodingCodecs[payloadEncCode]
 	if !ok {
-		return Header[SignatureAlgorithm, PayloadEncoding]{}, fmt.Errorf("missing codec for payload encoding: 0x%02x", sigAlgoCode)
+		return Header[SignatureAlgorithm, PayloadEncoding]{}, fmt.Errorf("unsupported payload encoding codec: 0x%02x", payloadEncCode)
 	}
 	payloadEnc, _, err := payloadEncCodec.Decode(input[offset:])
 	if err != nil {

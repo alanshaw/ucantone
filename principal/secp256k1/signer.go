@@ -9,6 +9,7 @@ import (
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/principal/secp256k1/verifier"
+	"github.com/alanshaw/ucantone/varsig"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/multiformats/go-multibase"
@@ -17,7 +18,7 @@ import (
 
 const Code = 0x1301
 
-const SignatureCode = verifier.SignatureCode
+var SignatureAlgorithm = verifier.SignatureAlgorithm
 
 var tagSize = varint.UvarintSize(Code)
 
@@ -84,8 +85,8 @@ func (s Signer) Code() uint64 {
 	return Code
 }
 
-func (s Signer) SignatureCode() uint64 {
-	return SignatureCode
+func (s Signer) SignatureAlgorithm() varsig.SignatureAlgorithm {
+	return SignatureAlgorithm
 }
 
 func (s Signer) Verifier() principal.Verifier {
