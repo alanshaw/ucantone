@@ -18,6 +18,7 @@ const KeyPrefix = Prefix + "key:"
 const DIDCore = 0x0d1d
 const Ed25519 = 0xed
 const RSA = 0x1205
+const Secp256k1 = 0xe7
 
 var MethodOffset = varint.UvarintSize(uint64(DIDCore))
 
