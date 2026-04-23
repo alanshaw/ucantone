@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/alanshaw/ucantone" target="_blank">
-    <img src="https://bafybeie4ekdzrcfj6ydaztiw6eeom7l74dlakjn575tkjk5qikittjutfi.ipfs.w3s.link/ucanto.png" alt="ucantone logo" height="250" />
+    <img src="https://github.com/user-attachments/assets/4f541813-b946-4dbc-a170-709b6ae4f05e" alt="ucantone logo" height="250" />
   </a>
   <h1 align="center">ucantone</h1>
   <p align="center">Ucanto for UCAN 1.0.</p>
