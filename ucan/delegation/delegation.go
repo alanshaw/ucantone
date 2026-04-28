@@ -206,7 +206,7 @@ func Encode(dlg ucan.Delegation) ([]byte, error) {
 	return dlg.Bytes(), nil
 }
 
-// Encode delegation from CBOR.
+// Decode delegation from CBOR.
 func Decode(b []byte) (*Delegation, error) {
 	d := Delegation{}
 	err := d.UnmarshalCBOR(bytes.NewReader(b))
