@@ -1,8 +1,7 @@
 package secp256k1
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
+	"crypto"
 	"crypto/sha256"
 	"fmt"
 
@@ -10,10 +9,9 @@ import (
 	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/principal/secp256k1/verifier"
 	"github.com/alanshaw/ucantone/varsig"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/multiformats/go-multibase"
 	"github.com/multiformats/go-varint"
+	"gitlab.com/yawning/secp256k1-voi/secec"
 )
 
 const Code = 0x1301
@@ -27,13 +25,13 @@ const keySize = 32
 var size = tagSize + keySize
 
 func Generate() (Signer, error) {
-	priv, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	sk, err := secec.GenerateKey()
 	if err != nil {
 		return nil, fmt.Errorf("generating secp256k1 key: %w", err)
 	}
 	s := make(Signer, size)
 	varint.PutUvarint(s, Code)
-	priv.D.FillBytes(s[tagSize:])
+	copy(s[tagSize:], sk.Bytes())
 	return s, nil
 }
 
@@ -90,8 +88,8 @@ func (s Signer) SignatureAlgorithm() varsig.SignatureAlgorithm {
 }
 
 func (s Signer) Verifier() principal.Verifier {
-	x, y := secp256k1.S256().ScalarBaseMult(s[tagSize:])
-	v, _ := verifier.FromRaw(secp256k1.CompressPubkey(x, y))
+	sk, _ := secec.NewPrivateKey(s[tagSize:])
+	v, _ := verifier.FromRaw(sk.PublicKey().CompressedBytes())
 	return v
 }
 
@@ -112,8 +110,17 @@ func (s Signer) Raw() []byte {
 }
 
 func (s Signer) Sign(msg []byte) []byte {
+	sk, _ := secec.NewPrivateKey(s[tagSize:])
 	hash := sha256.New()
 	hash.Write(msg)
-	sig, _ := secp256k1.Sign(hash.Sum(nil), s[tagSize:])
-	return sig[:crypto.RecoveryIDOffset]
+	sig, _ := sk.Sign(
+		secec.RFC6979SHA256(), // for deterministic signatures, per RFC6979
+		hash.Sum(nil),
+		&secec.ECDSAOptions{
+			Encoding:   secec.EncodingCompact,
+			Hash:       crypto.SHA256,
+			SelfVerify: false,
+		},
+	)
+	return sig
 }

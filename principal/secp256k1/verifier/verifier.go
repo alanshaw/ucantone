@@ -1,6 +1,7 @@
 package verifier
 
 import (
+	"crypto"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -11,9 +12,9 @@ import (
 	"github.com/alanshaw/ucantone/principal/multiformat"
 	"github.com/alanshaw/ucantone/varsig"
 	varsig_secp256k1 "github.com/alanshaw/ucantone/varsig/algorithm/secp256k1"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/multiformats/go-multibase"
 	"github.com/multiformats/go-varint"
+	"gitlab.com/yawning/secp256k1-voi/secec"
 )
 
 const Code = 0xe7
@@ -55,11 +56,10 @@ func Decode(b []byte) (Verifier, error) {
 	if code != Code {
 		return nil, fmt.Errorf("invalid public key codec: 0x%02x, expected: 0x%02x", code, Code)
 	}
-	x, y := secp256k1.DecompressPubkey(b[publicTagSize:])
-	if x == nil || y == nil {
-		return nil, fmt.Errorf("invalid public key bytes")
+	_, err = secec.NewPublicKey(b[publicTagSize:])
+	if err != nil {
+		return nil, fmt.Errorf("invalid public key bytes: %w", err)
 	}
-
 	v := make(Verifier, size)
 	copy(v, b)
 	return v, nil
@@ -83,11 +83,21 @@ func (v Verifier) Code() uint64 {
 }
 
 func (v Verifier) Verify(msg []byte, sig []byte) bool {
-	x, y := secp256k1.DecompressPubkey(v[publicTagSize:])
-	pubkey := secp256k1.S256().Marshal(x, y)
+	pk, err := secec.NewPublicKey(v[publicTagSize:])
+	if err != nil {
+		return false
+	}
 	hash := sha256.New()
 	hash.Write(msg)
-	return secp256k1.VerifySignature(pubkey, hash.Sum(nil), sig)
+	return pk.Verify(
+		hash.Sum(nil),
+		sig,
+		&secec.ECDSAOptions{
+			Encoding:        secec.EncodingCompact,
+			Hash:            crypto.SHA256,
+			RejectMalleable: true,
+		},
+	)
 }
 
 func (v Verifier) DID() did.DID {

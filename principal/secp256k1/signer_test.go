@@ -1,16 +1,14 @@
 package secp256k1_test
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
+	"crypto"
 	"crypto/sha256"
 	"testing"
 
 	secp256k1 "github.com/alanshaw/ucantone/principal/secp256k1"
 	"github.com/alanshaw/ucantone/principal/signer"
-	"github.com/ethereum/go-ethereum/crypto"
-	eth_secp256k1 "github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/stretchr/testify/require"
+	"gitlab.com/yawning/secp256k1-voi/secec"
 )
 
 func TestGenerateEncodeDecode(t *testing.T) {
@@ -61,21 +59,33 @@ func TestSignerRaw(t *testing.T) {
 	hash := sha256.New()
 	hash.Write(msg)
 	raw := s.Raw()
-	sig, err := eth_secp256k1.Sign(hash.Sum(nil), raw)
+
+	sk, err := secec.NewPrivateKey(raw)
 	require.NoError(t, err)
 
-	require.Equal(t, s.Sign(msg), sig[:crypto.RecoveryIDOffset])
+	sig, err := sk.Sign(
+		secec.RFC6979SHA256(),
+		hash.Sum(nil),
+		&secec.ECDSAOptions{
+			Encoding:   secec.EncodingCompact,
+			SelfVerify: false,
+			Hash:       crypto.SHA256,
+		},
+	)
+	require.NoError(t, err)
+
+	require.Equal(t, s.Sign(msg), sig)
 }
 
 func TestFromRaw(t *testing.T) {
 	t.Run("round trip", func(t *testing.T) {
-		priv, err := ecdsa.GenerateKey(eth_secp256k1.S256(), rand.Reader)
+		priv, err := secec.GenerateKey()
 		require.NoError(t, err)
 
-		s, err := secp256k1.FromRaw(priv.D.Bytes())
+		s, err := secp256k1.FromRaw(priv.Bytes())
 		require.NoError(t, err)
 
-		require.Equal(t, priv.D.Bytes(), s.Raw())
+		require.Equal(t, priv.Bytes(), s.Raw())
 	})
 
 	t.Run("invalid length", func(t *testing.T) {

@@ -1,13 +1,11 @@
 package verifier_test
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
 	"testing"
 
 	"github.com/alanshaw/ucantone/principal/secp256k1/verifier"
-	eth_secp256k1 "github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/stretchr/testify/require"
+	"gitlab.com/yawning/secp256k1-voi/secec"
 )
 
 func TestParse(t *testing.T) {
@@ -19,10 +17,10 @@ func TestParse(t *testing.T) {
 
 func TestFromRaw(t *testing.T) {
 	t.Run("round trip", func(t *testing.T) {
-		priv, err := ecdsa.GenerateKey(eth_secp256k1.S256(), rand.Reader)
+		priv, err := secec.GenerateKey()
 		require.NoError(t, err)
 
-		pub := eth_secp256k1.CompressPubkey(priv.PublicKey.X, priv.PublicKey.Y)
+		pub := priv.PublicKey().CompressedBytes()
 		v, err := verifier.FromRaw(pub)
 		require.NoError(t, err)
 
