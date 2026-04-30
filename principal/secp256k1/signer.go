@@ -58,6 +58,10 @@ func Decode(b []byte) (Signer, error) {
 	if skc != Code {
 		return nil, fmt.Errorf("invalid private key codec: 0x%02x, expected: 0x%02x", skc, Code)
 	}
+	_, err = secec.NewPrivateKey(b[tagSize:])
+	if err != nil {
+		return nil, fmt.Errorf("creating private key: %w", err)
+	}
 	s := make(Signer, size)
 	copy(s, b)
 	return s, nil
