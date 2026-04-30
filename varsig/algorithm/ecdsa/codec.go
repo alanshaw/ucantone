@@ -92,7 +92,7 @@ func (sac Codec) Decode(input []byte) (SignatureAlgorithm, int, error) {
 	if err != nil {
 		return SignatureAlgorithm{}, 0, err
 	}
-	if curve != sac.curve {
+	if hashAlgo != sac.hashAlgo {
 		return SignatureAlgorithm{}, n, fmt.Errorf("unexpected hash algorithm code: 0x%02x, expected: 0x%02x", hashAlgo, sac.hashAlgo)
 	}
 	offset += n
