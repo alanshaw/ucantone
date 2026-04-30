@@ -8,11 +8,20 @@ import (
 type Option func(cfg *execConfig)
 
 type execConfig struct {
-	validationOpts []validator.Option
+	validationOpts    []validator.Option
+	receiptTimestamps bool
 }
 
 func WithValidationOptions(options ...validator.Option) Option {
 	return func(cfg *execConfig) {
 		cfg.validationOpts = append(cfg.validationOpts, options...)
+	}
+}
+
+// WithReceiptTimestamps configures the dispatcher to issue receipts with
+// issuance timestamps or not.
+func WithReceiptTimestamps(enabled bool) Option {
+	return func(cfg *execConfig) {
+		cfg.receiptTimestamps = enabled
 	}
 }

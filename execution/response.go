@@ -14,10 +14,11 @@ import (
 )
 
 type ExecResponse struct {
-	signer   ucan.Signer
-	task     cid.Cid
-	receipt  ucan.Receipt
-	metadata ucan.Container
+	signer           ucan.Signer
+	task             cid.Cid
+	receipt          ucan.Receipt
+	metadata         ucan.Container
+	receiptTimestamp bool
 }
 
 type ResponseOption func(r *ExecResponse) error
@@ -32,6 +33,16 @@ func WithSigner(signer ucan.Signer) ResponseOption {
 func WithReceipt(receipt ucan.Receipt) ResponseOption {
 	return func(resp *ExecResponse) error {
 		resp.SetReceipt(receipt)
+		return nil
+	}
+}
+
+// WithReceiptTimestamp configures the response to issue receipts with
+// issuance timestamps. Note: this option should be ordered before [WithSuccess]
+// or [WithFailure], since these options issue a receipt.
+func WithReceiptTimestamp(enabled bool) ResponseOption {
+	return func(resp *ExecResponse) error {
+		resp.receiptTimestamp = enabled
 		return nil
 	}
 }

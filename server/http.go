@@ -31,11 +31,16 @@ func NewHTTP(id principal.Signer, options ...HTTPOption) *HTTPServer {
 	for _, opt := range options {
 		opt(&cfg)
 	}
-	executor := dispatcher.New(id, dispatcher.WithValidationOptions(cfg.validationOpts...))
+	executor := dispatcher.New(
+		id,
+		dispatcher.WithValidationOptions(cfg.validationOpts...),
+		dispatcher.WithReceiptTimestamps(cfg.receiptTimestamps),
+	)
 	return &HTTPServer{
-		id:       id,
-		codec:    cfg.codec,
-		executor: executor,
+		id:        id,
+		codec:     cfg.codec,
+		executor:  executor,
+		listeners: cfg.listeners,
 	}
 }
 

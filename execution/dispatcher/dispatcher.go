@@ -17,9 +17,10 @@ type handler struct {
 // Dispatcher executes UCAN invocations by dispatching them to registered
 // handlers.
 type Dispatcher struct {
-	authority      principal.Signer
-	handlers       map[ucan.Command]handler
-	validationOpts []validator.Option
+	authority         principal.Signer
+	handlers          map[ucan.Command]handler
+	validationOpts    []validator.Option
+	receiptTimestamps bool
 }
 
 // New creates an invocation executor that executes UCAN invocations by
@@ -33,9 +34,10 @@ func New(authority principal.Signer, options ...Option) *Dispatcher {
 		opt(&cfg)
 	}
 	return &Dispatcher{
-		authority:      authority,
-		handlers:       map[ucan.Command]handler{},
-		validationOpts: cfg.validationOpts,
+		authority:         authority,
+		handlers:          map[ucan.Command]handler{},
+		validationOpts:    cfg.validationOpts,
+		receiptTimestamps: cfg.receiptTimestamps,
 	}
 }
 
@@ -52,6 +54,7 @@ func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) 
 		return execution.NewResponse(
 			req.Invocation().Task().Link(),
 			execution.WithSigner(d.authority),
+			execution.WithReceiptTimestamp(d.receiptTimestamps),
 			execution.WithFailure(execution.NewInvalidAudienceError(d.authority, aud)),
 		)
 	}
@@ -62,6 +65,7 @@ func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) 
 		return execution.NewResponse(
 			req.Invocation().Task().Link(),
 			execution.WithSigner(d.authority),
+			execution.WithReceiptTimestamp(d.receiptTimestamps),
 			execution.WithFailure(NewHandlerNotFoundError(cmd)),
 		)
 	}
@@ -82,11 +86,16 @@ func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) 
 		return execution.NewResponse(
 			req.Invocation().Task().Link(),
 			execution.WithSigner(d.authority),
+			execution.WithReceiptTimestamp(d.receiptTimestamps),
 			execution.WithFailure(err),
 		)
 	}
 
-	res, err := execution.NewResponse(req.Invocation().Task().Link(), execution.WithSigner(d.authority))
+	res, err := execution.NewResponse(
+		req.Invocation().Task().Link(),
+		execution.WithSigner(d.authority),
+		execution.WithReceiptTimestamp(d.receiptTimestamps),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create response: %w", err)
 	}
@@ -96,6 +105,7 @@ func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) 
 		return execution.NewResponse(
 			req.Invocation().Task().Link(),
 			execution.WithSigner(d.authority),
+			execution.WithReceiptTimestamp(d.receiptTimestamps),
 			execution.WithFailure(execution.NewHandlerExecutionError(cmd, err)),
 		)
 	}

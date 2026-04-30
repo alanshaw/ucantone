@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/alanshaw/ucantone/execution"
 	"github.com/alanshaw/ucantone/ipld"
@@ -22,7 +23,7 @@ func TestHTTPServer(t *testing.T) {
 	alice := testutil.RandomSigner(t)
 
 	t.Run("invocation execution round trip", func(t *testing.T) {
-		server := server.NewHTTP(service)
+		server := server.NewHTTP(service, server.WithReceiptTimestamps(true))
 
 		var messages []ipld.Any
 		server.Handle(testutil.ConsoleLogCapability, func(req execution.Request, res execution.Response) error {
@@ -97,8 +98,13 @@ func TestHTTPServer(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Len(t, ctResp.Receipts(), 1)
+		rcpt := ctResp.Receipts()[0]
 
-		o, x := result.Unwrap(ctResp.Receipts()[0].Out())
+		require.NotNil(t, rcpt.IssuedAt())
+		// we can't assert an exact timestamp, but check that it is recent
+		require.GreaterOrEqual(t, int64(*rcpt.IssuedAt()), time.Now().Add(-time.Second).Unix())
+
+		o, x := result.Unwrap(rcpt.Out())
 		require.NotNil(t, o)
 		require.Nil(t, x)
 		t.Log(o)
