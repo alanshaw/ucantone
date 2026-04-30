@@ -17,6 +17,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/validator/capability"
 	verrs "github.com/alanshaw/ucantone/validator/errors"
+	"github.com/alanshaw/ucantone/varsig/algorithm/nonstandard"
 	"github.com/ipfs/go-cid"
 )
 
@@ -66,6 +67,11 @@ type DIDResolverFunc func(ctx context.Context, nonDIDKey did.DID) ([]did.DID, er
 // PrincipalParserFunc provides verifier instances that can validate UCANs
 // issued by a given principal.
 type PrincipalParserFunc func(str string) (principal.Verifier, error)
+
+// NonStandardSignatureVerifierFunc is used to verify signatures from
+// non-standard signature algorithms. It can be passed into a UCAN validator in
+// order to support delegations signed with non-standard signature algorithms.
+type NonStandardSignatureVerifierFunc func(ctx context.Context, token ucan.Token, meta ucan.Container) error
 
 // ValidationContext is the contextual information required by the validator in
 // order to validate the delegation chain of an invocation.
@@ -117,12 +123,13 @@ func Access(
 	options ...Option,
 ) (Authorization, error) {
 	cfg := validationConfig{
-		canIssue:              IsSelfIssued,
-		parsePrincipal:        ParsePrincipal,
-		resolveProof:          ProofUnavailable,
-		resolveDIDKey:         FailDIDKeyResolution,
-		validateAuthorization: NopValidateAuthorization,
-		validationTime:        ucan.UTCUnixTimestamp(time.Now().Unix()),
+		canIssue:                   IsSelfIssued,
+		parsePrincipal:             ParsePrincipal,
+		resolveProof:               ProofUnavailable,
+		resolveDIDKey:              FailDIDKeyResolution,
+		validateAuthorization:      NopValidateAuthorization,
+		validationTime:             ucan.UTCUnixTimestamp(time.Now().Unix()),
+		verifyNonStandardSignature: FailNonStandardSignatureVerification,
 	}
 	for _, opt := range options {
 		opt(&cfg)
@@ -138,7 +145,7 @@ func Access(
 		return Authorization{}, err
 	}
 
-	err = Validate(ctx, authority, cfg.canIssue, cfg.parsePrincipal, cfg.resolveDIDKey, cfg.validationTime, invocation, proofs)
+	err = Validate(ctx, authority, cfg.canIssue, cfg.parsePrincipal, cfg.resolveDIDKey, cfg.verifyNonStandardSignature, cfg.validationTime, invocation, proofs, cfg.metadata)
 	if err != nil {
 		return Authorization{}, err
 	}
@@ -179,9 +186,11 @@ func Validate(
 	canIssue CanIssueFunc,
 	parsePrincipal PrincipalParserFunc,
 	resolveDIDKey DIDResolverFunc,
+	verifyNonStandardSignature NonStandardSignatureVerifierFunc,
 	now ucan.UTCUnixTimestamp,
 	inv ucan.Invocation,
 	prfs map[cid.Cid]ucan.Delegation,
+	meta ucan.Container,
 ) error {
 	err := ValidateNotExpired(inv, now)
 	if err != nil {
@@ -199,7 +208,7 @@ func Validate(
 		}
 	}
 
-	return VerifyAuthorization(ctx, authority, canIssue, parsePrincipal, resolveDIDKey, inv, prfs)
+	return VerifyAuthorization(ctx, authority, canIssue, parsePrincipal, resolveDIDKey, verifyNonStandardSignature, inv, prfs, meta)
 }
 
 func ValidateNotExpired(token ucan.Token, now ucan.UTCUnixTimestamp) error {
@@ -237,8 +246,10 @@ func VerifyAuthorization(
 	canIssue CanIssueFunc,
 	parsePrincipal PrincipalParserFunc,
 	resolveDIDKey DIDResolverFunc,
+	verifyNonStandardSignature NonStandardSignatureVerifierFunc,
 	inv ucan.Invocation,
 	prfs map[cid.Cid]ucan.Delegation,
+	meta ucan.Container,
 ) error {
 	issuer := inv.Issuer().DID()
 	// If the issuer is a did:key we just verify a signature
@@ -345,6 +356,10 @@ func VerifyAuthorization(
 				if err := VerifyDelegationSignature(prf, authority); err != nil {
 					return err
 				}
+			} else if prf.Signature().Header().SignatureAlgorithm().Code() == nonstandard.Code {
+				if err := verifyNonStandardSignature(ctx, prf, meta); err != nil {
+					return err
+				}
 			} else {
 				// Otherwise we try to resolve did:key from the DID instead
 				// and use that to verify the signature
@@ -430,6 +445,12 @@ func ProofUnavailable(ctx context.Context, p ucan.Link) (ucan.Delegation, error)
 // FailDIDKeyResolution is a [DIDResolverFunc] that always fails.
 func FailDIDKeyResolution(ctx context.Context, d did.DID) ([]did.DID, error) {
 	return []did.DID{}, verrs.NewDIDKeyResolutionError(d, errors.New("no DID resolver configured"))
+}
+
+// FailNonStandardSignatureVerification is a [NonStandardSignatureVerifierFunc]
+// that always fails.
+func FailNonStandardSignatureVerification(ctx context.Context, token ucan.Token, meta ucan.Container) error {
+	return verrs.NewUnverifiableSignatureError(token, errors.New("no non-standard signature verifier configured"))
 }
 
 // NopValidateAuthorization is a [ValidateAuthorizationFunc] that does no

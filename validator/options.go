@@ -3,13 +3,15 @@ package validator
 import "github.com/alanshaw/ucantone/ucan"
 
 type validationConfig struct {
-	canIssue              CanIssueFunc
-	parsePrincipal        PrincipalParserFunc
-	proofs                []ucan.Delegation
-	resolveProof          ProofResolverFunc
-	resolveDIDKey         DIDResolverFunc
-	validateAuthorization ValidateAuthorizationFunc
-	validationTime        ucan.UTCUnixTimestamp
+	canIssue                   CanIssueFunc
+	metadata                   ucan.Container
+	parsePrincipal             PrincipalParserFunc
+	proofs                     []ucan.Delegation
+	resolveProof               ProofResolverFunc
+	resolveDIDKey              DIDResolverFunc
+	validateAuthorization      ValidateAuthorizationFunc
+	validationTime             ucan.UTCUnixTimestamp
+	verifyNonStandardSignature NonStandardSignatureVerifierFunc
 }
 
 // Option is an option configuring the validator.
@@ -58,5 +60,20 @@ func WithAuthorizationValidator(validateAuthorization ValidateAuthorizationFunc)
 func WithValidationTime(now ucan.UTCUnixTimestamp) Option {
 	return func(vc *validationConfig) {
 		vc.validationTime = now
+	}
+}
+
+// WithNonStandardSignatureVerifier sets the function to be used for verifying
+// non-standard signature algorithms.
+func WithNonStandardSignatureVerifier(verifyNonStandardSignature NonStandardSignatureVerifierFunc) Option {
+	return func(vc *validationConfig) {
+		vc.verifyNonStandardSignature = verifyNonStandardSignature
+	}
+}
+
+// WithMetadata sets additional metadata that may be used during validation.
+func WithMetadata(meta ucan.Container) Option {
+	return func(vc *validationConfig) {
+		vc.metadata = meta
 	}
 }
