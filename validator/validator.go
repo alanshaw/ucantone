@@ -265,9 +265,11 @@ func VerifyAuthorization(
 		if err := VerifyInvocationSignature(inv, authority); err != nil {
 			return err
 		}
+	} else if inv.Signature().Header().SignatureAlgorithm().Code() == nonstandard.Code {
+		if err := verifyNonStandardSignature(ctx, inv, meta); err != nil {
+			return err
+		}
 	} else {
-		// TODO: verify attestations?
-
 		// Otherwise we try to resolve did:key from the DID instead
 		// and use that to verify the signature
 		ids, err := resolveDIDKey(ctx, issuer)
