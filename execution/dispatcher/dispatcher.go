@@ -70,7 +70,8 @@ func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) 
 		)
 	}
 
-	opts := append([]validator.Option{}, d.validationOpts...)
+	opts := []validator.Option{validator.WithMetadata(req.Metadata())}
+	opts = append(opts, d.validationOpts...)
 	if req.Metadata() != nil {
 		opts = append(opts, validator.WithProofs(req.Metadata().Delegations()...))
 	}

@@ -6,9 +6,14 @@ import (
 	"os"
 	"testing"
 
+	"github.com/alanshaw/ucantone/did"
+	"github.com/alanshaw/ucantone/ipld/datamodel"
+	"github.com/alanshaw/ucantone/principal/absentee"
 	"github.com/alanshaw/ucantone/principal/ed25519"
+	"github.com/alanshaw/ucantone/testutil"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
+	"github.com/alanshaw/ucantone/ucan/container"
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/validator"
@@ -89,6 +94,109 @@ func TestFixtures(t *testing.T) {
 			require.Equal(t, vector.Error.Name, namedErr.Name())
 		})
 	}
+}
+
+func TestNonStandardSignatureVerification(t *testing.T) {
+	space := testutil.RandomSigner(t)
+	account := absentee.From(testutil.Must(did.Parse("did:mailto:web.mail:alice"))(t))
+	service := testutil.RandomSigner(t)
+
+	BlobAdd, err := capability.New("/blob/add")
+	require.NoError(t, err)
+
+	// space -> account
+	accountDlg, err := BlobAdd.Delegate(space, account, space)
+	require.NoError(t, err)
+
+	inv, err := BlobAdd.Invoke(
+		account,
+		space,
+		datamodel.Map{"digest": []byte(testutil.RandomDigest(t))},
+		invocation.WithAudience(service),
+		invocation.WithProofs(accountDlg.Link()),
+	)
+	require.NoError(t, err)
+
+	auth, err := validator.Access(
+		t.Context(),
+		service.Verifier(),
+		BlobAdd,
+		inv,
+		validator.WithProofs(accountDlg),
+		validator.WithNonStandardSignatureVerifier(
+			func(ctx context.Context, token ucan.Token, meta ucan.Container) error {
+				if token.Link() != inv.Link() {
+					return verrs.NewUnverifiableSignatureError(token, errors.New("unexpected verification token"))
+				}
+				return nil
+			},
+		),
+	)
+	require.NoError(t, err)
+	t.Log(auth)
+}
+
+func TestNonStandardSignatureVerificationViaAttestation(t *testing.T) {
+	space := testutil.RandomSigner(t)
+	account := absentee.From(testutil.Must(did.Parse("did:mailto:web.mail:alice"))(t))
+	service := testutil.RandomSigner(t)
+	agent := testutil.RandomSigner(t)
+
+	BlobAdd, err := capability.New("/blob/add")
+	require.NoError(t, err)
+
+	Attest, err := capability.New("/ucan/attest")
+	require.NoError(t, err)
+
+	// space -> account
+	accountDlg, err := BlobAdd.Delegate(space, account, space)
+	require.NoError(t, err)
+
+	// account -> agent
+	agentDlg, err := BlobAdd.Delegate(account, agent, space)
+	require.NoError(t, err)
+
+	// service attests to the delegation from the account to the agent
+	args := datamodel.Map{"proof": agentDlg.Link()}
+	attestation, err := Attest.Invoke(service, agent, args)
+	require.NoError(t, err)
+
+	inv, err := BlobAdd.Invoke(
+		agent,
+		space,
+		datamodel.Map{"digest": []byte(testutil.RandomDigest(t))},
+		invocation.WithAudience(service),
+		invocation.WithProofs(accountDlg.Link(), agentDlg.Link()),
+	)
+	require.NoError(t, err)
+
+	auth, err := validator.Access(
+		t.Context(),
+		service.Verifier(),
+		BlobAdd,
+		inv,
+		validator.WithProofs(accountDlg, agentDlg),
+		// include the attestation when validating
+		validator.WithMetadata(container.New(container.WithInvocations(attestation))),
+		validator.WithNonStandardSignatureVerifier(
+			// This is a contrived example of a non-standard signature verification
+			// function that checks for the presence of a trusted attestation in the
+			// validation metadata instead of verifying a cryptographic signature.
+			func(ctx context.Context, token ucan.Token, meta ucan.Container) error {
+				for _, inv := range meta.Invocations() {
+					// Typically one would validate the attestation invocation's signature
+					// and check its claims, but for this example we'll just check that it
+					// attests to the token we're trying to verify.
+					if inv.Command() == Attest.Command() && inv.Arguments()["proof"] == token.Link() {
+						return nil
+					}
+				}
+				return verrs.NewUnverifiableSignatureError(token, errors.New("no matching attestation found"))
+			},
+		),
+	)
+	require.NoError(t, err)
+	t.Log(auth)
 }
 
 func newMapProofResolver(proofs map[ucan.Link]ucan.Delegation) validator.ProofResolverFunc {
