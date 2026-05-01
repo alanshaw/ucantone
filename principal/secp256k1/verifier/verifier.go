@@ -10,7 +10,6 @@ import (
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/principal/multiformat"
-	"github.com/alanshaw/ucantone/varsig"
 	varsig_secp256k1 "github.com/alanshaw/ucantone/varsig/algorithm/secp256k1"
 	"github.com/multiformats/go-multibase"
 	"github.com/multiformats/go-varint"
@@ -26,10 +25,6 @@ var publicTagSize = varint.UvarintSize(Code)
 const keySize = 33
 
 var size = publicTagSize + keySize
-
-func init() {
-	varsig.RegisterSignatureAlgorithm(varsig_secp256k1.NewCodec())
-}
 
 func Parse(str string) (Verifier, error) {
 	if !strings.HasPrefix(str, did.KeyPrefix) {
