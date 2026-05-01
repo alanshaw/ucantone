@@ -6,7 +6,6 @@ import (
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
-	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/principal/verifier"
 	"github.com/alanshaw/ucantone/varsig"
 	"github.com/multiformats/go-multibase"
@@ -71,8 +70,4 @@ func Wrap(key principal.Signer, id did.DID) (*WrappedSigner, error) {
 func Format(signer principal.Signer) string {
 	s, _ := multibase.Encode(multibase.Base64pad, signer.Bytes())
 	return s
-}
-
-func Parse(s string) (principal.Signer, error) {
-	return ed25519.Parse(s)
 }

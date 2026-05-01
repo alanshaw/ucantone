@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	ed "github.com/alanshaw/ucantone/principal/ed25519"
-	"github.com/alanshaw/ucantone/principal/signer"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,7 +27,7 @@ func TestGenerateFormatParse(t *testing.T) {
 
 	t.Log(s0.DID().String())
 
-	str := signer.Format(s0)
+	str := ed.Format(s0)
 	t.Log(str)
 
 	s1, err := ed.Parse(str)

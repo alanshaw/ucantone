@@ -38,6 +38,10 @@ func Parse(str string) (Verifier, error) {
 	return Decode(bytes)
 }
 
+func Format(verifier principal.Verifier) string {
+	return verifier.DID().String()
+}
+
 func Decode(b []byte) (Verifier, error) {
 	if len(b) != size {
 		return nil, fmt.Errorf("invalid length: %d wanted: %d", len(b), size)
@@ -52,6 +56,10 @@ func Decode(b []byte) (Verifier, error) {
 	v := make(Verifier, size)
 	copy(v, b)
 	return v, nil
+}
+
+func Encode(verifier Verifier) []byte {
+	return verifier
 }
 
 // FromRaw takes raw ed25519 public key bytes and tags with the ed25519 verifier

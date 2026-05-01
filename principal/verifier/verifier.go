@@ -51,3 +51,7 @@ func Wrap(key principal.Verifier, id did.DID) (*WrappedVerifier, error) {
 	}
 	return &WrappedVerifier{id, key}, nil
 }
+
+func Format(verifier principal.Verifier) string {
+	return verifier.DID().String()
+}

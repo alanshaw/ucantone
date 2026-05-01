@@ -46,6 +46,11 @@ func Parse(str string) (Signer, error) {
 	return Decode(bytes)
 }
 
+func Format(signer principal.Signer) string {
+	s, _ := multibase.Encode(multibase.Base64pad, signer.Bytes())
+	return s
+}
+
 // Decode decodes a buffer of an ed25519 signer multiformat varint (0x1300) + 32
 // byte ed25519 private key.
 func Decode(b []byte) (Signer, error) {
@@ -65,6 +70,10 @@ func Decode(b []byte) (Signer, error) {
 	copy(s, b)
 
 	return s, nil
+}
+
+func Encode(signer Signer) []byte {
+	return signer.Bytes()
 }
 
 // FromRaw takes raw 32 byte ed25519 private key bytes and tags with the ed25519

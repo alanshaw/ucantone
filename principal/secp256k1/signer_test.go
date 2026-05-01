@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	secp256k1 "github.com/alanshaw/ucantone/principal/secp256k1"
-	"github.com/alanshaw/ucantone/principal/signer"
 	"github.com/stretchr/testify/require"
 	"gitlab.com/yawning/secp256k1-voi/secec"
 )
@@ -30,7 +29,7 @@ func TestGenerateFormatParse(t *testing.T) {
 
 	t.Log(s0.DID().String())
 
-	str := signer.Format(s0)
+	str := secp256k1.Format(s0)
 	t.Log(str)
 
 	s1, err := secp256k1.Parse(str)

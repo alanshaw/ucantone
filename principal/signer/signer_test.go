@@ -17,7 +17,7 @@ func TestFormatParse(t *testing.T) {
 	str := signer.Format(s0)
 	t.Log(str)
 
-	s1, err := signer.Parse(str)
+	s1, err := ed25519.Parse(str)
 	require.NoError(t, err)
 
 	t.Log(s1.DID().String())

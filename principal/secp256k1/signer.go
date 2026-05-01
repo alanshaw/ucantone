@@ -45,6 +45,11 @@ func Parse(str string) (Signer, error) {
 	return Decode(bytes)
 }
 
+func Format(signer principal.Signer) string {
+	s, _ := multibase.Encode(multibase.Base64pad, signer.Bytes())
+	return s
+}
+
 // Decode decodes a buffer of a secp256k1 signer multiformat varint (0x1301) +
 // 32 byte secp256k1 raw scalar value.
 func Decode(b []byte) (Signer, error) {
@@ -65,6 +70,10 @@ func Decode(b []byte) (Signer, error) {
 	s := make(Signer, size)
 	copy(s, b)
 	return s, nil
+}
+
+func Encode(signer Signer) []byte {
+	return signer
 }
 
 // FromRaw takes raw 32 byte scalar value and tags with the secp256k1
