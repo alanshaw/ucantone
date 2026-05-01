@@ -1,4 +1,4 @@
-package eddsa
+package ecdsa
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	varint "github.com/multiformats/go-varint"
 )
 
-const Code = 0xED
+const Code = 0xec
 
 type SignatureAlgorithm struct {
 	curve    uint64
@@ -75,7 +75,7 @@ func (sac Codec) Decode(input []byte) (SignatureAlgorithm, int, error) {
 		return SignatureAlgorithm{}, 0, err
 	}
 	if code != Code {
-		return SignatureAlgorithm{}, n, fmt.Errorf("signature code is not EdDSA: 0x%02x, expected: 0x%02x", code, Code)
+		return SignatureAlgorithm{}, n, fmt.Errorf("signature code is not ECDSA: 0x%02x, expected: 0x%02x", code, Code)
 	}
 	offset := n
 

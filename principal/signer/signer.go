@@ -8,6 +8,7 @@ import (
 	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/principal/verifier"
+	"github.com/alanshaw/ucantone/varsig"
 	"github.com/multiformats/go-multibase"
 )
 
@@ -41,8 +42,8 @@ func (w *WrappedSigner) Sign(msg []byte) []byte {
 	return w.key.Sign(msg)
 }
 
-func (w *WrappedSigner) SignatureCode() uint64 {
-	return w.key.SignatureCode()
+func (w *WrappedSigner) SignatureAlgorithm() varsig.SignatureAlgorithm {
+	return w.key.SignatureAlgorithm()
 }
 
 func (w *WrappedSigner) Unwrap() principal.Signer {

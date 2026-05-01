@@ -8,6 +8,7 @@ import (
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal/ed25519"
+	"github.com/alanshaw/ucantone/principal/secp256k1"
 	"github.com/alanshaw/ucantone/testutil"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
@@ -37,6 +38,25 @@ func TestDelegation(t *testing.T) {
 		require.Nil(t, decoded.Subject())
 		require.NotEmpty(t, decoded.Nonce())
 		require.GreaterOrEqual(t, *decoded.Expiration(), then)
+	})
+
+	t.Run("secp256k1", func(t *testing.T) {
+		issuer := testutil.Must(secp256k1.Generate())(t)
+		audience := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
+
+		dlg, err := delegation.Delegate(issuer, audience, nil, command)
+		require.NoError(t, err)
+
+		encoded, err := delegation.Encode(dlg)
+		require.NoError(t, err)
+
+		decoded, err := delegation.Decode(encoded)
+		require.NoError(t, err)
+
+		ok, err := delegation.VerifySignature(decoded, issuer.Verifier())
+		require.NoError(t, err)
+		require.True(t, ok)
 	})
 }
 

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/alanshaw/ucantone/ipld"
+	"github.com/alanshaw/ucantone/principal/secp256k1"
 	"github.com/alanshaw/ucantone/testutil"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
@@ -157,5 +158,25 @@ func TestInvoke(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, arguments, decoded.Arguments())
+	})
+
+	t.Run("secp256k1", func(t *testing.T) {
+		issuer := testutil.Must(secp256k1.Generate())(t)
+		subject := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
+		arguments := ipld.Map{}
+
+		inv, err := invocation.Invoke(issuer, subject, command, arguments)
+		require.NoError(t, err)
+
+		encoded, err := invocation.Encode(inv)
+		require.NoError(t, err)
+
+		decoded, err := invocation.Decode(encoded)
+		require.NoError(t, err)
+
+		ok, err := invocation.VerifySignature(decoded, issuer.Verifier())
+		require.NoError(t, err)
+		require.True(t, ok)
 	})
 }

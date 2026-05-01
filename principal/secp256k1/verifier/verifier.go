@@ -1,7 +1,8 @@
 package verifier
 
 import (
-	"crypto/ed25519"
+	"crypto"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,20 +10,26 @@ import (
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
 	"github.com/alanshaw/ucantone/principal/multiformat"
-	varsig_ed25519 "github.com/alanshaw/ucantone/varsig/algorithm/ed25519"
+	"github.com/alanshaw/ucantone/varsig"
+	varsig_secp256k1 "github.com/alanshaw/ucantone/varsig/algorithm/secp256k1"
 	"github.com/multiformats/go-multibase"
 	"github.com/multiformats/go-varint"
+	"gitlab.com/yawning/secp256k1-voi/secec"
 )
 
-const Code = 0xed
+const Code = 0xe7
 
-var SignatureAlgorithm = varsig_ed25519.New()
+var SignatureAlgorithm = varsig_secp256k1.New()
 
 var publicTagSize = varint.UvarintSize(Code)
 
-const keySize = ed25519.PublicKeySize
+const keySize = 33
 
 var size = publicTagSize + keySize
+
+func init() {
+	varsig.RegisterSignatureAlgorithm(varsig_secp256k1.NewCodec())
+}
 
 func Parse(str string) (Verifier, error) {
 	if !strings.HasPrefix(str, did.KeyPrefix) {
@@ -49,16 +56,20 @@ func Decode(b []byte) (Verifier, error) {
 	if code != Code {
 		return nil, fmt.Errorf("invalid public key codec: 0x%02x, expected: 0x%02x", code, Code)
 	}
+	_, err = secec.NewPublicKey(b[publicTagSize:])
+	if err != nil {
+		return nil, fmt.Errorf("invalid public key bytes: %w", err)
+	}
 	v := make(Verifier, size)
 	copy(v, b)
 	return v, nil
 }
 
-// FromRaw takes raw ed25519 public key bytes and tags with the ed25519 verifier
-// multiformat code, returning an ed25519 verifier.
+// FromRaw takes raw secp256k1 compressed public key bytes and tags with the
+// secp256k1 verifier multiformat code, returning a secp256k1 verifier.
 func FromRaw(b []byte) (Verifier, error) {
-	if len(b) != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("invalid length: %d wanted: %d", len(b), ed25519.PublicKeySize)
+	if len(b) != keySize {
+		return nil, fmt.Errorf("invalid length: %d wanted: %d", len(b), keySize)
 	}
 	return Verifier(multiformat.TagWith(Code, b)), nil
 }
@@ -72,7 +83,21 @@ func (v Verifier) Code() uint64 {
 }
 
 func (v Verifier) Verify(msg []byte, sig []byte) bool {
-	return ed25519.Verify(ed25519.PublicKey(v[publicTagSize:]), msg, sig)
+	pk, err := secec.NewPublicKey(v[publicTagSize:])
+	if err != nil {
+		return false
+	}
+	hash := sha256.New()
+	hash.Write(msg)
+	return pk.Verify(
+		hash.Sum(nil),
+		sig,
+		&secec.ECDSAOptions{
+			Encoding:        secec.EncodingCompact,
+			Hash:            crypto.SHA256,
+			RejectMalleable: true,
+		},
+	)
 }
 
 func (v Verifier) DID() did.DID {
@@ -88,7 +113,7 @@ func (v Verifier) Bytes() []byte {
 
 // Raw encodes the bytes of the public key without multiformats tags.
 func (v Verifier) Raw() []byte {
-	k := make(ed25519.PublicKey, ed25519.PublicKeySize)
+	k := make([]byte, keySize)
 	copy(k, v[publicTagSize:])
 	return k
 }

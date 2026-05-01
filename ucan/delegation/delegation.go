@@ -17,8 +17,7 @@ import (
 	"github.com/alanshaw/ucantone/ucan/delegation/policy"
 	"github.com/alanshaw/ucantone/ucan/nonce"
 	"github.com/alanshaw/ucantone/varsig"
-	"github.com/alanshaw/ucantone/varsig/algorithm/ed25519"
-	"github.com/alanshaw/ucantone/varsig/common"
+	varsig_dagcbor "github.com/alanshaw/ucantone/varsig/payload/dagcbor"
 	cid "github.com/ipfs/go-cid"
 	multihash "github.com/multiformats/go-multihash/core"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -228,10 +227,12 @@ func Delegate(
 		}
 	}
 
-	if issuer.SignatureCode() != ed25519.Code {
-		return nil, fmt.Errorf("unknown signature code: %d", issuer.SignatureCode())
+	sigAlgo, ok := varsig.GetSignatureAlgorithmCodec(issuer.SignatureAlgorithm())
+	if !ok {
+		return nil, fmt.Errorf("missing codec for signature algorithm: %d", issuer.SignatureAlgorithm().Code())
 	}
-	h, err := varsig.Encode(common.Ed25519DagCbor)
+	sigHeader := varsig.NewHeader(sigAlgo, varsig_dagcbor.NewCodec())
+	h, err := varsig.Encode(sigHeader)
 	if err != nil {
 		return nil, fmt.Errorf("encoding varsig header: %w", err)
 	}
@@ -295,7 +296,7 @@ func Delegate(
 	}
 
 	sigBytes := issuer.Sign(sigBuf.Bytes())
-	sig := signature.NewSignature(common.Ed25519DagCbor, sigBytes)
+	sig := signature.NewSignature(sigHeader, sigBytes)
 
 	model := ddm.EnvelopeModel{
 		Signature:  sigBytes,

@@ -44,10 +44,9 @@ type Signer interface {
 	Principal
 	crypto.Signer
 
-	// SignatureCode is an integer corresponding to the byteprefix of the
-	// signature algorithm. It is used by varsig to tag the signature so it can
-	// self describe what algorithm was used.
-	SignatureCode() uint64
+	// SignatureAlgorithm identifies the signature algorithm used by this signer
+	// as well as any additional fields needed to configure it.
+	SignatureAlgorithm() varsig.SignatureAlgorithm
 }
 
 // Signature encapsulates the bytes that comprise the signature as well as the

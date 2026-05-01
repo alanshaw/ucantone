@@ -3,12 +3,17 @@ package dagcbor
 import (
 	"fmt"
 
+	"github.com/alanshaw/ucantone/varsig"
 	varint "github.com/multiformats/go-varint"
 )
 
 const Code = 0x71
 
 type PayloadEncoding struct{}
+
+func init() {
+	varsig.RegisterPayloadEncoding(NewCodec())
+}
 
 func New() PayloadEncoding {
 	return PayloadEncoding{}
@@ -28,7 +33,7 @@ func (dcc Codec) Code() uint64 {
 	return Code
 }
 
-func (dcc Codec) Encode(enc PayloadEncoding) ([]byte, error) {
+func (dcc Codec) Encode() ([]byte, error) {
 	return varint.ToUvarint(Code), nil
 }
 

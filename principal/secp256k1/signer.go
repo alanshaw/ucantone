@@ -1,43 +1,42 @@
-package ed25519
+package secp256k1
 
 import (
-	"crypto/ed25519"
-	"crypto/rand"
+	"crypto"
+	"crypto/sha256"
 	"fmt"
 
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/principal"
-	"github.com/alanshaw/ucantone/principal/ed25519/verifier"
+	"github.com/alanshaw/ucantone/principal/secp256k1/verifier"
 	"github.com/alanshaw/ucantone/varsig"
 	"github.com/multiformats/go-multibase"
 	"github.com/multiformats/go-varint"
+	"gitlab.com/yawning/secp256k1-voi/secec"
 )
 
-const Code = 0x1300
+const Code = 0x1301
 
 var SignatureAlgorithm = verifier.SignatureAlgorithm
 
 var tagSize = varint.UvarintSize(Code)
 
-// Go ed25519 private key size is private + public. Go refers to the private key
-// bytes as the "seed".
-const keySize = ed25519.SeedSize
+const keySize = 32
 
 var size = tagSize + keySize
 
 func Generate() (Signer, error) {
-	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	sk, err := secec.GenerateKey()
 	if err != nil {
-		return nil, fmt.Errorf("generating Ed25519 key: %w", err)
+		return nil, fmt.Errorf("generating secp256k1 key: %w", err)
 	}
 	s := make(Signer, size)
 	varint.PutUvarint(s, Code)
-	copy(s[tagSize:], priv)
+	copy(s[tagSize:], sk.Bytes())
 	return s, nil
 }
 
-// Parse parses a multibase encoded string containing a ed25519 signer
-// multiformat varint (0x1300) + 32 byte ed25519 private key
+// Parse parses a multibase encoded string containing a secp256k1 signer
+// multiformat varint (0x1301) +  byte secp256k1 raw scalar value.
 func Parse(str string) (Signer, error) {
 	_, bytes, err := multibase.Decode(str)
 	if err != nil {
@@ -46,13 +45,12 @@ func Parse(str string) (Signer, error) {
 	return Decode(bytes)
 }
 
-// Decode decodes a buffer of an ed25519 signer multiformat varint (0x1300) + 32
-// byte ed25519 private key.
+// Decode decodes a buffer of a secp256k1 signer multiformat varint (0x1301) +
+// 32 byte secp256k1 raw scalar value.
 func Decode(b []byte) (Signer, error) {
 	if len(b) != size {
 		return nil, fmt.Errorf("invalid length: %d wanted: %d", len(b), size)
 	}
-
 	skc, _, err := varint.FromUvarint(b)
 	if err != nil {
 		return nil, fmt.Errorf("reading private key uvarint: %w", err)
@@ -60,22 +58,24 @@ func Decode(b []byte) (Signer, error) {
 	if skc != Code {
 		return nil, fmt.Errorf("invalid private key codec: 0x%02x, expected: 0x%02x", skc, Code)
 	}
-
+	_, err = secec.NewPrivateKey(b[tagSize:])
+	if err != nil {
+		return nil, fmt.Errorf("creating private key: %w", err)
+	}
 	s := make(Signer, size)
 	copy(s, b)
-
 	return s, nil
 }
 
-// FromRaw takes raw 32 byte ed25519 private key bytes and tags with the ed25519
-// signer multiformat code, returning an ed25519 signer.
+// FromRaw takes raw 32 byte scalar value and tags with the secp256k1
+// signer multiformat code, returning a secp256k1 signer.
 func FromRaw(b []byte) (Signer, error) {
-	if len(b) != ed25519.SeedSize {
-		return nil, fmt.Errorf("invalid length: %d wanted: %d", len(b), ed25519.SeedSize)
+	if len(b) != keySize {
+		return nil, fmt.Errorf("invalid length: %d wanted: %d", len(b), keySize)
 	}
 	s := make(Signer, size)
 	varint.PutUvarint(s, Code)
-	copy(s[tagSize:size], b[:ed25519.SeedSize])
+	copy(s[tagSize:], b)
 	return s, nil
 }
 
@@ -92,8 +92,8 @@ func (s Signer) SignatureAlgorithm() varsig.SignatureAlgorithm {
 }
 
 func (s Signer) Verifier() principal.Verifier {
-	sk := ed25519.NewKeyFromSeed(s[tagSize:])
-	v, _ := verifier.FromRaw(sk.Public().(ed25519.PublicKey))
+	sk, _ := secec.NewPrivateKey(s[tagSize:])
+	v, _ := verifier.FromRaw(sk.PublicKey().CompressedBytes())
 	return v
 }
 
@@ -114,6 +114,17 @@ func (s Signer) Raw() []byte {
 }
 
 func (s Signer) Sign(msg []byte) []byte {
-	sk := ed25519.NewKeyFromSeed(s[tagSize:])
-	return ed25519.Sign(sk, msg)
+	sk, _ := secec.NewPrivateKey(s[tagSize:])
+	hash := sha256.New()
+	hash.Write(msg)
+	sig, _ := sk.Sign(
+		secec.RFC6979SHA256(), // for deterministic signatures, per RFC6979
+		hash.Sum(nil),
+		&secec.ECDSAOptions{
+			Encoding:   secec.EncodingCompact,
+			Hash:       crypto.SHA256,
+			SelfVerify: false,
+		},
+	)
+	return sig
 }
