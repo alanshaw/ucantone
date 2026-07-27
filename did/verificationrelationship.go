@@ -8,6 +8,12 @@ import (
 type VerificationRelationship struct {
 	allMethods          *VerificationMethods
 	relationshipMethods []URL
+	// declared records whether this relationship was explicitly stated —
+	// present in the document JSON (even as an empty array) or built up via
+	// Add. An undeclared relationship endorses every method in the document
+	// (the default Document.UnmarshalJSON establishes); a declared one
+	// endorses exactly its references.
+	declared bool
 }
 
 func (vr *VerificationRelationship) Add(method VerificationMethod) error {
@@ -18,10 +24,22 @@ func (vr *VerificationRelationship) Add(method VerificationMethod) error {
 		return err
 	}
 	vr.relationshipMethods = append(vr.relationshipMethods, method.ID)
+	vr.declared = true
 	return nil
 }
 
+// All returns the verification methods this relationship endorses. An
+// undeclared relationship (no such section in the document — e.g. every
+// document the PLC directory serves) falls back to all of the document's
+// methods; a declared relationship, even an empty one, yields exactly its
+// references.
 func (vr *VerificationRelationship) All() []VerificationMethod {
+	if !vr.declared {
+		if vr.allMethods == nil {
+			return nil
+		}
+		return vr.allMethods.All()
+	}
 	vms := make([]VerificationMethod, 0, len(vr.relationshipMethods))
 	for _, u := range vr.relationshipMethods {
 		if vm, ok := (*vr.allMethods)[u.String()]; ok {
@@ -53,6 +71,7 @@ func (vr *VerificationRelationship) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	vr.declared = true
 
 	for _, raw := range raws {
 		var u URL
