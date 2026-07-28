@@ -1,6 +1,7 @@
 package did_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/fil-forge/ucantone/did"
@@ -95,6 +96,71 @@ func TestVerificationRelationship_DeclaredEmptyYieldsNoMethods(t *testing.T) {
 	require.Empty(t, doc.CapabilityDelegation.All())
 	// Undeclared sibling still defaults to all methods.
 	require.Len(t, doc.CapabilityInvocation.All(), 1)
+}
+
+func TestVerificationRelationship_NullIsUndeclared(t *testing.T) {
+	docJSON := `{
+		"@context": "https://www.w3.org/ns/did/v1",
+		"id": "did:example:123",
+		"verificationMethod": [
+			{
+				"id": "did:example:123#key-1",
+				"type": "Multikey",
+				"controller": "did:example:123",
+				"publicKeyMultibase": "zABC"
+			}
+		],
+		"capabilityDelegation": null
+	}`
+	var doc did.Document
+	require.NoError(t, doc.UnmarshalJSON([]byte(docJSON)))
+
+	// A null relationship declares nothing, so it defaults to all methods —
+	// unlike an explicitly empty array, which endorses none.
+	require.Len(t, doc.CapabilityDelegation.All(), 1)
+	require.True(t, doc.CapabilityDelegation.IsZero())
+}
+
+// TestVerificationRelationship_MarshalRoundTrip guards the declared/undeclared
+// distinction across serialization: a declared empty relationship endorses no
+// methods, so dropping it on marshal would silently widen it to endorsing every
+// method in the document.
+func TestVerificationRelationship_MarshalRoundTrip(t *testing.T) {
+	docJSON := `{
+		"@context": "https://www.w3.org/ns/did/v1",
+		"id": "did:example:123",
+		"verificationMethod": [
+			{
+				"id": "did:example:123#key-1",
+				"type": "Multikey",
+				"controller": "did:example:123",
+				"publicKeyMultibase": "zABC"
+			}
+		],
+		"capabilityDelegation": []
+	}`
+	var doc did.Document
+	require.NoError(t, doc.UnmarshalJSON([]byte(docJSON)))
+
+	b, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	var fields map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(b, &fields))
+	// The declared relationship is emitted as an empty array...
+	require.Equal(t, "[]", string(fields["capabilityDelegation"]))
+	// ...and the undeclared ones stay absent, rather than being emitted empty
+	// and thereby restricted to nothing.
+	for _, name := range []string{
+		"authentication", "assertionMethod", "keyAgreement", "capabilityInvocation",
+	} {
+		require.NotContains(t, fields, name)
+	}
+
+	var reparsed did.Document
+	require.NoError(t, json.Unmarshal(b, &reparsed))
+	require.Empty(t, reparsed.CapabilityDelegation.All(), "declared empty must survive a round trip")
+	require.Len(t, reparsed.CapabilityInvocation.All(), 1, "undeclared must still default to all methods")
 }
 
 func TestVerificationRelationship_DeclaredSubset(t *testing.T) {

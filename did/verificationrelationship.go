@@ -57,15 +57,33 @@ func (vr *VerificationRelationship) Len() int {
 	return len(vr.relationshipMethods)
 }
 
+// IsZero reports whether this relationship was never declared, and so is the
+// `omitzero` predicate for the [Document] relationship fields: an undeclared
+// relationship is absent from the document JSON, while a declared one is
+// emitted even when it endorses nothing. It is deliberately NOT "endorses no
+// methods" — that would marshal a declared empty relationship as an absent
+// one, widening it from endorsing nothing to endorsing everything.
 func (vr *VerificationRelationship) IsZero() bool {
-	return len(vr.relationshipMethods) == 0
+	return !vr.declared
 }
 
 func (vr *VerificationRelationship) MarshalJSON() ([]byte, error) {
+	if vr.relationshipMethods == nil {
+		// A declared relationship with no references is an empty array, not
+		// null: null unmarshals back as undeclared.
+		return []byte("[]"), nil
+	}
 	return json.Marshal(vr.relationshipMethods)
 }
 
 func (vr *VerificationRelationship) UnmarshalJSON(data []byte) error {
+	// By convention an unmarshaler treats null as a no-op, and here that is
+	// also the right semantics: a null relationship declares nothing, so it
+	// falls back to all of the document's methods rather than endorsing none.
+	if string(data) == "null" {
+		return nil
+	}
+
 	var raws []json.RawMessage
 	err := json.Unmarshal(data, &raws)
 	if err != nil {
