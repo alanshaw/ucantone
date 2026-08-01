@@ -16,7 +16,7 @@ import (
 func DeriveVerifier(_ context.Context, mat did.VerificationMaterial) (ucan.Verifier, error) {
 	pkm, ok := mat[did.MultikeyPublicKeyMultibaseProp].(string)
 	if !ok {
-		return nil, fmt.Errorf("Multikey verification method missing %s", did.MultikeyPublicKeyMultibaseProp)
+		return nil, fmt.Errorf("missing %s in Multikey verification method", did.MultikeyPublicKeyMultibaseProp)
 	}
 	return Parse(pkm)
 }
