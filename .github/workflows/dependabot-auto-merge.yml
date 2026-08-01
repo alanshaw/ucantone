@@ -1,0 +1,50 @@
+name: dependabot-auto-merge
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      - name: Approve (patch/minor only)
+        if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.meta.outputs.update-type)
+        continue-on-error: true
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr review --approve "$PR_URL"
+      - name: Merge when the other checks are green (patch/minor only)
+        if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.meta.outputs.update-type)
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for i in $(seq 1 60); do
+            sleep 30
+            state=$(gh pr view "$PR_URL" --json statusCheckRollup --jq '
+              [.statusCheckRollup[]
+               | select((.name // .context) != "auto-merge")
+               | ((.conclusion // .state // "PENDING") | ascii_upcase)]
+              | if length == 0 then "PENDING"
+                elif any(. == "FAILURE" or . == "ERROR" or . == "CANCELLED" or . == "TIMED_OUT" or . == "ACTION_REQUIRED" or . == "STARTUP_FAILURE") then "RED"
+                elif all(. == "SUCCESS" or . == "SKIPPED" or . == "NEUTRAL") then "GREEN"
+                else "PENDING" end')
+            echo "checks: $state (poll $i)"
+            if [ "$state" = "GREEN" ]; then
+              gh pr merge --squash "$PR_URL"
+              exit 0
+            fi
+            if [ "$state" = "RED" ]; then
+              echo "Checks failed - leaving this PR for a human."
+              exit 1
+            fi
+          done
+          echo "Timed out waiting for checks - leaving this PR for a human."
+          exit 1
