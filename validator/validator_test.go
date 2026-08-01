@@ -755,8 +755,7 @@ func expiredKeyResolver(t *testing.T, issuer ucan.Issuer, expires, revoked *did.
 }
 
 type StubVerifier struct {
-	did          did.DID
-	resolverUsed string
+	did did.DID
 }
 
 func (s StubVerifier) DID() did.DID {

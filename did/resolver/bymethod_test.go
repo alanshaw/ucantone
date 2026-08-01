@@ -30,18 +30,18 @@ func TestByMethod(t *testing.T) {
 		"example": expectDID(did3),
 	}
 
-	doc, err := resolver.Resolve(nil, did1)
+	doc, err := resolver.Resolve(t.Context(), did1)
 	require.NoError(t, err)
 	require.Equal(t, did1, doc.ID)
 
-	doc, err = resolver.Resolve(nil, did2)
+	doc, err = resolver.Resolve(t.Context(), did2)
 	require.NoError(t, err)
 	require.Equal(t, did2, doc.ID)
 
-	doc, err = resolver.Resolve(nil, did3)
+	doc, err = resolver.Resolve(t.Context(), did3)
 	require.NoError(t, err)
 	require.Equal(t, did3, doc.ID)
 
-	_, err = resolver.Resolve(nil, did.MustParse("did:unknown:abc123"))
+	_, err = resolver.Resolve(t.Context(), did.MustParse("did:unknown:abc123"))
 	require.Error(t, err)
 }
