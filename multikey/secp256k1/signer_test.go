@@ -3,6 +3,7 @@ package secp256k1_test
 import (
 	"crypto"
 	"crypto/sha256"
+	"fmt"
 	"testing"
 
 	"github.com/fil-forge/ucantone/multikey"
@@ -39,6 +40,13 @@ func TestGenerateFormatParse(t *testing.T) {
 
 	t.Log(multikey.FormatVerifier(s1.Verifier().(multikey.Verifier)))
 	require.Equal(t, s0.Verifier(), s1.Verifier(), "public key mismatch")
+}
+
+func TestSignerString(t *testing.T) {
+	s, err := secp256k1.Generate()
+	require.NoError(t, err)
+
+	require.Equal(t, s.KeyDID().String(), fmt.Sprint(s))
 }
 
 func TestVerify(t *testing.T) {

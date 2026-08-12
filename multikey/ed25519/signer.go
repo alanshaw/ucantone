@@ -5,15 +5,16 @@ import (
 	"crypto/rand"
 	"fmt"
 
+	"github.com/multiformats/go-multibase"
+	"github.com/multiformats/go-multicodec"
+	"github.com/multiformats/go-varint"
+
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/multikey"
 	"github.com/fil-forge/ucantone/multikey/ed25519/verifier"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/varsig"
 	"github.com/fil-forge/ucantone/varsig/algorithm/eddsa"
-	"github.com/multiformats/go-multibase"
-	"github.com/multiformats/go-multicodec"
-	"github.com/multiformats/go-varint"
 )
 
 const Code = multicodec.Ed25519Priv
@@ -95,6 +96,12 @@ func FromRaw(b []byte) (Signer, error) {
 type Signer []byte
 
 var _ multikey.Signer = (Signer)(nil)
+
+// String returns the signer's key DID. It deliberately never exposes the
+// private key bytes, so that passing a Signer to fmt.* cannot leak them.
+func (s Signer) String() string {
+	return s.KeyDID().String()
+}
 
 func (s Signer) Code() multicodec.Code {
 	return Code
