@@ -228,8 +228,8 @@ type Invocation interface {
 // On the wire a receipt is a /ucan/assert/receipt invocation (per the UCAN WG
 // draft, ucan-wg/receipt#1). At the Go level, however, Receipt is its own
 // type — it does not embed Invocation — so the interface exposes only what is
-// meaningful for a receipt. Receipt-shaped accessors for proofs and
-// expiration will be added once those semantics settle in the spec.
+// meaningful for a receipt. Receipt-shaped accessors for proofs will be added
+// once delegated receipt issuance is supported.
 type Receipt interface {
 	ipld.Block
 
@@ -243,6 +243,9 @@ type Receipt interface {
 	Out() result.Result[[]byte, []byte]
 	// IssuedAt is the timestamp the executor signed at, or nil if unset.
 	IssuedAt() *UnixTimestamp
+	// Expiration is the time until which the executor commits to uphold the
+	// asserted result, or nil for a permanent assertion.
+	Expiration() *UnixTimestamp
 	// Nonce is the receipt's nonce.
 	Nonce() []byte
 	// MetadataBytes returns the raw CBOR bytes of the meta field, or nil if
