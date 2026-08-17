@@ -2,6 +2,7 @@ package dispatcher
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/fil-forge/ucantone/execution"
 	"github.com/fil-forge/ucantone/ucan"
@@ -11,10 +12,11 @@ import (
 // Dispatcher executes UCAN invocations by dispatching them to registered
 // handlers.
 type Dispatcher struct {
-	authority         ucan.Issuer
-	handlers          map[ucan.Command]execution.HandlerFunc
-	validationOpts    []validator.Option
-	receiptTimestamps bool
+	authority              ucan.Issuer
+	handlers               map[ucan.Command]execution.HandlerFunc
+	validationOpts         []validator.Option
+	receiptTimestamps      bool
+	handlerErrorReceiptTTL time.Duration
 }
 
 // New creates an invocation executor that executes UCAN invocations by
@@ -23,15 +25,16 @@ type Dispatcher struct {
 // The authority is the identity of the local authority, used to verify
 // signatures of delegations signed by it and sign receipts for executed tasks.
 func New(authority ucan.Issuer, options ...Option) *Dispatcher {
-	cfg := execConfig{}
+	cfg := execConfig{handlerErrorReceiptTTL: DefaultHandlerErrorReceiptTTL}
 	for _, opt := range options {
 		opt(&cfg)
 	}
 	return &Dispatcher{
-		authority:         authority,
-		handlers:          map[ucan.Command]execution.HandlerFunc{},
-		validationOpts:    cfg.validationOpts,
-		receiptTimestamps: cfg.receiptTimestamps,
+		authority:              authority,
+		handlers:               map[ucan.Command]execution.HandlerFunc{},
+		validationOpts:         cfg.validationOpts,
+		receiptTimestamps:      cfg.receiptTimestamps,
+		handlerErrorReceiptTTL: cfg.handlerErrorReceiptTTL,
 	}
 }
 
@@ -95,12 +98,19 @@ func (d *Dispatcher) Execute(req execution.Request) (execution.Response, error) 
 
 	err = handler(req, res)
 	if err != nil {
-		return execution.NewResponse(
-			req.Invocation().Task().Link(),
+		respOpts := []execution.ResponseOption{
 			execution.WithIssuer(d.authority),
 			execution.WithReceiptTimestamp(d.receiptTimestamps),
-			execution.WithFailure(execution.NewHandlerExecutionError(cmd, err)),
-		)
+		}
+		// Errors returned from handlers are unexpected and likely transient,
+		// so the receipt asserting the failure is short-lived. Permanent
+		// errors are set as error results on the response by the handler.
+		if d.handlerErrorReceiptTTL > 0 {
+			exp := ucan.Now() + ucan.UnixTimestamp(d.handlerErrorReceiptTTL.Seconds())
+			respOpts = append(respOpts, execution.WithReceiptExpiration(exp))
+		}
+		respOpts = append(respOpts, execution.WithFailure(execution.NewHandlerExecutionError(cmd, err)))
+		return execution.NewResponse(req.Invocation().Task().Link(), respOpts...)
 	}
 	return res, nil
 }
