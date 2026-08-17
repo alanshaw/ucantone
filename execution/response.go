@@ -12,11 +12,12 @@ import (
 )
 
 type ExecResponse struct {
-	issuer           ucan.Issuer
-	task             cid.Cid
-	receipt          ucan.Receipt
-	metadata         ucan.Container
-	receiptTimestamp bool
+	issuer            ucan.Issuer
+	task              cid.Cid
+	receipt           ucan.Receipt
+	metadata          ucan.Container
+	receiptTimestamp  bool
+	receiptExpiration *ucan.UnixTimestamp
 }
 
 type ResponseOption func(r *ExecResponse) error
@@ -41,6 +42,16 @@ func WithReceipt(receipt ucan.Receipt) ResponseOption {
 func WithReceiptTimestamp(enabled bool) ResponseOption {
 	return func(resp *ExecResponse) error {
 		resp.receiptTimestamp = enabled
+		return nil
+	}
+}
+
+// WithReceiptExpiration configures the response to issue receipts with the
+// given expiration. Note: this option should be ordered before [WithSuccess]
+// or [WithFailure], since these options issue a receipt.
+func WithReceiptExpiration(exp ucan.UnixTimestamp) ResponseOption {
+	return func(resp *ExecResponse) error {
+		resp.receiptExpiration = &exp
 		return nil
 	}
 }
@@ -146,10 +157,14 @@ func (r *ExecResponse) SetSuccess(ok cbg.CBORMarshaler) error {
 // receiptOptions builds the receipt issuance options from the response
 // configuration.
 func (r *ExecResponse) receiptOptions() []receipt.Option {
-	if r.receiptTimestamp {
-		return []receipt.Option{receipt.WithIssuedAt(ucan.Now())}
+	var opts []receipt.Option
+  if r.receiptTimestamp {
+    opts = append(opts, receipt.WithIssuedAt(ucan.Now()))
 	}
-	return nil
+	if r.receiptExpiration != nil {
+		opts = append(opts, receipt.WithExpiration(*r.receiptExpiration))
+	}
+	return opts
 }
 
 var _ Response = (*ExecResponse)(nil)

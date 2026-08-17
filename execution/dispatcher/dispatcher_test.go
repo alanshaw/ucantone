@@ -3,6 +3,7 @@ package dispatcher_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/fil-forge/ucantone/execution"
 	"github.com/fil-forge/ucantone/execution/dispatcher"
@@ -155,6 +156,7 @@ func TestDispatcher(t *testing.T) {
 		t.Log(x)
 
 		require.Equal(t, dispatcher.HandlerNotFoundErrorName, testutil.ResultMap(t, x)["name"])
+		require.Nil(t, resp.Receipt().Expiration())
 	})
 
 	t.Run("invalid audience", func(t *testing.T) {
@@ -196,6 +198,7 @@ func TestDispatcher(t *testing.T) {
 		)
 		require.NoError(t, err)
 
+		before := ucan.Now()
 		resp, err := executor.Execute(execution.NewRequest(t.Context(), logInv))
 		require.NoError(t, err)
 
@@ -205,6 +208,62 @@ func TestDispatcher(t *testing.T) {
 		t.Log(x)
 
 		require.Equal(t, execution.HandlerExecutionErrorName, testutil.ResultMap(t, x)["name"])
+
+		// Handler errors are unexpected and likely transient, so the receipt
+		// asserting the failure expires after the default TTL.
+		ttl := ucan.UnixTimestamp(dispatcher.DefaultHandlerErrorReceiptTTL.Seconds())
+		exp := resp.Receipt().Expiration()
+		require.NotNil(t, exp)
+		require.GreaterOrEqual(t, *exp, before+ttl)
+		require.LessOrEqual(t, *exp, ucan.Now()+ttl)
+	})
+
+	t.Run("handler execution error with custom receipt TTL", func(t *testing.T) {
+		executor := dispatcher.New(service, dispatcher.WithHandlerErrorReceiptTTL(time.Minute))
+
+		executor.Handle(testutil.ConsoleLogCommand, func(req execution.Request, res execution.Response) error {
+			return fmt.Errorf("boom")
+		})
+
+		logInv, err := invocation.Invoke(
+			alice,
+			alice.DID(),
+			testutil.ConsoleLogCommand,
+			datamodel.Map{"message": "Hello, World!"},
+			invocation.WithAudience(service.DID()),
+		)
+		require.NoError(t, err)
+
+		before := ucan.Now()
+		resp, err := executor.Execute(execution.NewRequest(t.Context(), logInv))
+		require.NoError(t, err)
+
+		exp := resp.Receipt().Expiration()
+		require.NotNil(t, exp)
+		require.GreaterOrEqual(t, *exp, before+60)
+		require.LessOrEqual(t, *exp, ucan.Now()+60)
+	})
+
+	t.Run("handler execution error with receipt TTL disabled", func(t *testing.T) {
+		executor := dispatcher.New(service, dispatcher.WithHandlerErrorReceiptTTL(0))
+
+		executor.Handle(testutil.ConsoleLogCommand, func(req execution.Request, res execution.Response) error {
+			return fmt.Errorf("boom")
+		})
+
+		logInv, err := invocation.Invoke(
+			alice,
+			alice.DID(),
+			testutil.ConsoleLogCommand,
+			datamodel.Map{"message": "Hello, World!"},
+			invocation.WithAudience(service.DID()),
+		)
+		require.NoError(t, err)
+
+		resp, err := executor.Execute(execution.NewRequest(t.Context(), logInv))
+		require.NoError(t, err)
+
+		require.Nil(t, resp.Receipt().Expiration())
 	})
 
 	t.Run("validation error", func(t *testing.T) {

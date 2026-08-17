@@ -11,8 +11,8 @@ import (
 // A receipt is encoded on the wire as a /ucan/assert/receipt invocation (see
 // ucan-wg/receipt#1), so each receipt Option translates to an invocation
 // Option internally. Only the options that are meaningful for a receipt are
-// exposed here; proof/expiration options will be added once their semantics
-// are settled in the spec.
+// exposed here; proof options will be added once delegated receipt issuance
+// is supported.
 type Option func(cfg *receiptConfig)
 
 type receiptConfig struct {
@@ -30,6 +30,17 @@ func WithNonce(nnc []byte) Option {
 func WithNoNonce() Option {
 	return func(cfg *receiptConfig) {
 		cfg.invOpts = append(cfg.invOpts, invocation.WithNoNonce())
+	}
+}
+
+// WithExpiration sets the time until which the executor commits to uphold
+// the asserted result, in seconds since the Unix epoch. Use it when the
+// result is impermanent (e.g. it references state that may be garbage
+// collected). By default a receipt never expires (exp: null), which is
+// appropriate for permanent facts such as the result of a pure computation.
+func WithExpiration(exp ucan.UnixTimestamp) Option {
+	return func(cfg *receiptConfig) {
+		cfg.invOpts = append(cfg.invOpts, invocation.WithExpiration(exp))
 	}
 }
 

@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
+	"github.com/fil-forge/ucantone/ipld/datamodel"
+	rsdm "github.com/fil-forge/ucantone/result/datamodel"
 	"github.com/fil-forge/ucantone/testutil"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/invocation"
@@ -98,6 +100,51 @@ func TestOptions(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, rcpt.Nonce())
 	})
+
+	t.Run("WithExpiration", func(t *testing.T) {
+		ok := cbg.CborInt(1)
+		exp := ucan.Now() + 3600
+		rcpt, err := receipt.IssueOK(executor, ran, &ok, receipt.WithExpiration(exp))
+		require.NoError(t, err)
+		require.NotNil(t, rcpt.Expiration())
+		require.Equal(t, exp, *rcpt.Expiration())
+
+		decoded, err := receipt.Decode(testutil.Must(receipt.Encode(rcpt))(t))
+		require.NoError(t, err)
+		require.NotNil(t, decoded.Expiration())
+		require.Equal(t, exp, *decoded.Expiration())
+	})
+
+	t.Run("DefaultNoExpiration", func(t *testing.T) {
+		ok := cbg.CborInt(1)
+		rcpt, err := receipt.IssueOK(executor, ran, &ok)
+		require.NoError(t, err)
+		require.Nil(t, rcpt.Expiration())
+	})
+}
+
+// TestRejectsAudience asserts that an invocation carrying an audience does
+// not decode as a receipt: the spec requires aud to be omitted.
+func TestRejectsAudience(t *testing.T) {
+	executor := testutil.RandomIssuer(t)
+	ran := testutil.RandomCID(t)
+
+	ok := cbg.CborInt(1)
+	var buf bytes.Buffer
+	require.NoError(t, ok.MarshalCBOR(&buf))
+	raw := datamodel.NewRaw(buf.Bytes())
+
+	inv, err := invocation.Invoke(
+		executor,
+		executor.DID(),
+		receipt.Command,
+		&rdm.ArgsModel{Ran: ran, Out: rsdm.ResultModel{Ok: &raw}},
+		invocation.WithAudience(executor.DID()),
+	)
+	require.NoError(t, err)
+
+	_, err = receipt.Decode(inv.Bytes())
+	require.ErrorContains(t, err, "audience must be omitted")
 }
 
 // TestNotInvocation asserts a Receipt does NOT satisfy ucan.Invocation. The
@@ -144,12 +191,15 @@ func TestWireFormatIsInvocation(t *testing.T) {
 	require.Equal(t, encoded, reencoded, "invocation view must re-encode verbatim")
 
 	// It is the /ucan/assert/receipt invocation shape, with the executor as
-	// issuer, subject, and audience (per ucan-wg/receipt#1).
+	// issuer and subject, and the audience omitted — implicitly the subject,
+	// per the invocation spec (ucan-wg/receipt#1).
 	require.Equal(t, receipt.Command, inv.Command())
 	require.Equal(t, executor.DID(), inv.Issuer())
 	require.Equal(t, executor.DID(), inv.Subject())
-	require.True(t, inv.Audience().Defined())
-	require.Equal(t, executor.DID(), inv.Audience())
+	require.False(t, inv.Audience().Defined(), "receipt audience must be omitted")
+
+	// Receipts are permanent assertions by default (exp: null).
+	require.Nil(t, inv.Expiration())
 
 	// The receipt and invocation views agree on identity and signed bytes.
 	require.Equal(t, rcpt.Link(), inv.Link(), "receipt and invocation views share one CID")
