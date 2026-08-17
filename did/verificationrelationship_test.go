@@ -179,6 +179,24 @@ func TestVerificationRelationship_StandaloneMarshal(t *testing.T) {
 	require.True(t, reparsed.IsZero(), "undeclared must survive a standalone round trip")
 }
 
+// TestVerificationRelationship_UnmarshalReuse guards against unmarshaling
+// into an already-populated instance accumulating references from the
+// previous document.
+func TestVerificationRelationship_UnmarshalReuse(t *testing.T) {
+	var vr did.VerificationRelationship
+	require.NoError(t, json.Unmarshal([]byte(`["did:example:123#key-1"]`), &vr))
+	require.NoError(t, json.Unmarshal([]byte(`["did:example:123#key-2"]`), &vr))
+
+	require.Equal(t, 1, vr.Len(), "reuse must replace references, not accumulate them")
+	require.Equal(t, "did:example:123#key-2", vr.Get(0).String())
+
+	// Per json.Unmarshaler convention null is a no-op — it leaves existing
+	// state untouched, like json.Unmarshal on a slice.
+	require.NoError(t, json.Unmarshal([]byte(`null`), &vr))
+	require.Equal(t, 1, vr.Len())
+	require.False(t, vr.IsZero())
+}
+
 func TestVerificationRelationship_DeclaredSubset(t *testing.T) {
 	docJSON := `{
 		"@context": "https://www.w3.org/ns/did/v1",

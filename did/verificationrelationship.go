@@ -97,6 +97,7 @@ func (vr *VerificationRelationship) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	vr.declared = true
+	vr.relationshipMethods = nil
 
 	for _, raw := range raws {
 		var u URL
