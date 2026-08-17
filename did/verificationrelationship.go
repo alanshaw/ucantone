@@ -1,6 +1,7 @@
 package did
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 )
@@ -57,21 +58,50 @@ func (vr *VerificationRelationship) Len() int {
 	return len(vr.relationshipMethods)
 }
 
+// IsZero reports whether this relationship was never declared, and so is the
+// `omitzero` predicate for the [Document] relationship fields: an undeclared
+// relationship is absent from the document JSON, while a declared one is
+// emitted even when it endorses nothing. It is deliberately NOT "endorses no
+// methods" — that would marshal a declared empty relationship as an absent
+// one, widening it from endorsing nothing to endorsing everything.
 func (vr *VerificationRelationship) IsZero() bool {
-	return len(vr.relationshipMethods) == 0
+	return !vr.declared
 }
 
 func (vr *VerificationRelationship) MarshalJSON() ([]byte, error) {
+	if !vr.declared {
+		// Unreachable via Document marshaling (omitzero omits undeclared
+		// relationships), but a standalone marshal must emit null — the value
+		// UnmarshalJSON maps back to undeclared — not "[]", which would
+		// round-trip as declared-empty and endorse nothing.
+		return []byte("null"), nil
+	}
+	if vr.relationshipMethods == nil {
+		// A declared relationship with no references is an empty array, not
+		// null: null unmarshals back as undeclared.
+		return []byte("[]"), nil
+	}
 	return json.Marshal(vr.relationshipMethods)
 }
 
 func (vr *VerificationRelationship) UnmarshalJSON(data []byte) error {
+	// A null relationship declares nothing, so it falls back to all of the
+	// document's methods rather than endorsing none. Unlike the conventional
+	// no-op, reset to undeclared: null has assigned meaning for this type, so
+	// a reused receiver must not retain a previous declaration.
+	if string(bytes.TrimSpace(data)) == "null" {
+		vr.declared = false
+		vr.relationshipMethods = nil
+		return nil
+	}
+
 	var raws []json.RawMessage
 	err := json.Unmarshal(data, &raws)
 	if err != nil {
 		return err
 	}
 	vr.declared = true
+	vr.relationshipMethods = nil
 
 	for _, raw := range raws {
 		var u URL

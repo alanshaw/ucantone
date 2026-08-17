@@ -575,7 +575,8 @@ func TestValidate(t *testing.T) {
 // TestRelationshipFallback covers the optional capability relationships (DID
 // core §5.3): a document that expresses no capabilityInvocation /
 // capabilityDelegation authorizes all of its verification methods, while a
-// document that expresses one restricts verification to the methods listed.
+// document that expresses one restricts verification to the methods listed —
+// including an explicitly empty relationship, which authorizes nothing.
 func TestRelationshipFallback(t *testing.T) {
 	crankWidget := testutil.Must(command.Parse("/widget/crank"))(t)
 
@@ -695,6 +696,78 @@ func TestRelationshipFallback(t *testing.T) {
 		err = validator.ValidateInvocation(t.Context(), inv,
 			validator.WithDIDResolver(resolver))
 		require.Error(t, err)
+	})
+
+	t.Run("explicitly empty capabilityInvocation endorses no methods", func(t *testing.T) {
+		subject := testutil.RandomIssuer(t)
+
+		// The document lists the signer under verificationMethod, but declares
+		// an empty capabilityInvocation. Declaring nothing is not the same as
+		// declaring nothing explicitly: the empty array endorses no methods, so
+		// verification must not fall back to the full verificationMethod set.
+		resolver := did.ResolverFunc(func(_ context.Context, d did.DID) (did.Document, error) {
+			docJSON := fmt.Sprintf(`{
+				"id": %q,
+				"verificationMethod": [{
+					"id": "%s#key",
+					"type": %q,
+					"controller": %q,
+					"publicKeyMultibase": %q
+				}],
+				"capabilityInvocation": []
+			}`, d, d, did.MultikeyVerificationMethodType, d, d.Identifier())
+			var doc did.Document
+			if err := json.Unmarshal([]byte(docJSON), &doc); err != nil {
+				return did.Document{}, err
+			}
+			return doc, nil
+		})
+
+		inv, err := invocation.Invoke(subject, subject.DID(), crankWidget, datamodel.Map{})
+		require.NoError(t, err)
+
+		err = validator.ValidateInvocation(t.Context(), inv,
+			validator.WithDIDResolver(resolver))
+		require.ErrorContains(t, err, "does not have a valid signature")
+	})
+
+	t.Run("explicitly empty capabilityDelegation endorses no methods", func(t *testing.T) {
+		subject := testutil.RandomIssuer(t)
+		bob := testutil.RandomIssuer(t)
+
+		// capabilityInvocation is absent (so the invocation itself verifies
+		// against every method), while capabilityDelegation is explicitly empty
+		// — isolating the proof's signature check, which must fail.
+		resolver := did.ResolverFunc(func(_ context.Context, d did.DID) (did.Document, error) {
+			docJSON := fmt.Sprintf(`{
+				"id": %q,
+				"verificationMethod": [{
+					"id": "%s#key",
+					"type": %q,
+					"controller": %q,
+					"publicKeyMultibase": %q
+				}],
+				"capabilityDelegation": []
+			}`, d, d, did.MultikeyVerificationMethodType, d, d.Identifier())
+			var doc did.Document
+			if err := json.Unmarshal([]byte(docJSON), &doc); err != nil {
+				return did.Document{}, err
+			}
+			return doc, nil
+		})
+
+		del, err := delegation.Delegate(subject, bob.DID(), subject.DID(), crankWidget)
+		require.NoError(t, err)
+		inv, err := invocation.Invoke(bob, subject.DID(), crankWidget, datamodel.Map{},
+			invocation.WithProofs(del.Link()))
+		require.NoError(t, err)
+
+		err = validator.ValidateInvocation(t.Context(), inv,
+			validator.WithDIDResolver(resolver),
+			validator.WithProofResolver(validator.ProofsFromContainer(
+				container.New(container.WithDelegations(del)))),
+		)
+		require.ErrorContains(t, err, "does not have a valid signature")
 	})
 
 	t.Run("nil relationships fall back without panicking", func(t *testing.T) {

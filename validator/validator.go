@@ -122,20 +122,20 @@ func verifyTokenSignature(ctx context.Context, tok ucan.Token, cfg validationCon
 	}
 
 	// The capability relationships are optional (DID core §5.3): a document
-	// that expresses one restricts verification to the methods it lists, but
-	// a document that expresses nothing authorizes all of its verification
-	// methods — e.g. did:plc documents carry only verificationMethod.
-	// (Post-parse, an explicitly empty relationship is indistinguishable
-	// from an absent one and gets the same fallback.) A relationship that
-	// lists entries which fail to resolve to verification methods is NOT
-	// silent: it restricts to those (unresolvable) methods and must not
-	// widen to the full verificationMethod set.
+	// that declares one restricts verification to the methods it lists — an
+	// explicitly empty relationship therefore endorses nothing — while a
+	// document that declares nothing authorizes all of its verification
+	// methods, e.g. did:plc documents carry only verificationMethod.
+	// [did.VerificationRelationship.All] draws that distinction. A
+	// relationship that lists entries which fail to resolve to verification
+	// methods is NOT silent: it restricts to those (unresolvable) methods and
+	// must not widen to the full verificationMethod set.
 	var vms []did.VerificationMethod
-	if verRel == nil || verRel.IsZero() {
+	if verRel == nil {
+		// A document not built by [did.NewDocument] can have nil
+		// relationships; nothing is declared, so all methods are authorized.
 		if doc.VerificationMethods != nil {
-			for _, vm := range *doc.VerificationMethods {
-				vms = append(vms, vm)
-			}
+			vms = doc.VerificationMethods.All()
 		}
 	} else {
 		vms = verRel.All()
