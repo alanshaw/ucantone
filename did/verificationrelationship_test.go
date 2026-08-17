@@ -190,11 +190,12 @@ func TestVerificationRelationship_UnmarshalReuse(t *testing.T) {
 	require.Equal(t, 1, vr.Len(), "reuse must replace references, not accumulate them")
 	require.Equal(t, "did:example:123#key-2", vr.Get(0).String())
 
-	// Per json.Unmarshaler convention null is a no-op — it leaves existing
-	// state untouched, like json.Unmarshal on a slice.
-	require.NoError(t, json.Unmarshal([]byte(`null`), &vr))
-	require.Equal(t, 1, vr.Len())
-	require.False(t, vr.IsZero())
+	// null means undeclared, so it must clear a previous declaration rather
+	// than act as the conventional no-op — including when padded with
+	// whitespace, as raw message data may be.
+	require.NoError(t, vr.UnmarshalJSON([]byte(" null\t\n")))
+	require.Equal(t, 0, vr.Len())
+	require.True(t, vr.IsZero(), "null must reset a reused receiver to undeclared")
 }
 
 func TestVerificationRelationship_DeclaredSubset(t *testing.T) {

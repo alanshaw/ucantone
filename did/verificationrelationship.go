@@ -1,6 +1,7 @@
 package did
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 )
@@ -84,10 +85,13 @@ func (vr *VerificationRelationship) MarshalJSON() ([]byte, error) {
 }
 
 func (vr *VerificationRelationship) UnmarshalJSON(data []byte) error {
-	// By convention an unmarshaler treats null as a no-op, and here that is
-	// also the right semantics: a null relationship declares nothing, so it
-	// falls back to all of the document's methods rather than endorsing none.
-	if string(data) == "null" {
+	// A null relationship declares nothing, so it falls back to all of the
+	// document's methods rather than endorsing none. Unlike the conventional
+	// no-op, reset to undeclared: null has assigned meaning for this type, so
+	// a reused receiver must not retain a previous declaration.
+	if string(bytes.TrimSpace(data)) == "null" {
+		vr.declared = false
+		vr.relationshipMethods = nil
 		return nil
 	}
 
