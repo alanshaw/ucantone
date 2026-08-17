@@ -105,7 +105,7 @@ func (r *ExecResponse) SetFailure(x error) error {
 			"message": x.Error(),
 		}
 	}
-	rcpt, err := receipt.IssueErr(r.issuer, r.task, errVal)
+	rcpt, err := receipt.IssueErr(r.issuer, r.task, errVal, r.receiptOptions()...)
 	if err != nil {
 		return err
 	}
@@ -135,11 +135,20 @@ func (r *ExecResponse) SetSuccess(ok cbg.CBORMarshaler) error {
 	if r.issuer == nil {
 		return fmt.Errorf("cannot issue receipt: missing issuer")
 	}
-	rcpt, err := receipt.IssueOK(r.issuer, r.task, ok)
+	rcpt, err := receipt.IssueOK(r.issuer, r.task, ok, r.receiptOptions()...)
 	if err != nil {
 		return err
 	}
 	r.receipt = rcpt
+	return nil
+}
+
+// receiptOptions builds the receipt issuance options from the response
+// configuration.
+func (r *ExecResponse) receiptOptions() []receipt.Option {
+	if r.receiptTimestamp {
+		return []receipt.Option{receipt.WithIssuedAt(ucan.Now())}
+	}
 	return nil
 }
 

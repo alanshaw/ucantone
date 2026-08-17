@@ -110,6 +110,44 @@ func TestInvoke(t *testing.T) {
 		require.Nil(t, decoded.Expiration())
 	})
 
+	t.Run("no issued at by default", func(t *testing.T) {
+		issuer := testutil.RandomIssuer(t)
+		subject := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
+		arguments := datamodel.Map{}
+
+		initial, err := invocation.Invoke(issuer, subject, command, arguments)
+		require.NoError(t, err)
+
+		encoded, err := invocation.Encode(initial)
+		require.NoError(t, err)
+
+		decoded, err := invocation.Decode(encoded)
+		require.NoError(t, err)
+
+		require.Nil(t, decoded.IssuedAt())
+	})
+
+	t.Run("custom issued at", func(t *testing.T) {
+		issuer := testutil.RandomIssuer(t)
+		subject := testutil.RandomDID(t)
+		command := testutil.Must(command.Parse("/test/invoke"))(t)
+		arguments := datamodel.Map{}
+		issuedAt := ucan.Now()
+
+		initial, err := invocation.Invoke(issuer, subject, command, arguments, invocation.WithIssuedAt(issuedAt))
+		require.NoError(t, err)
+
+		encoded, err := invocation.Encode(initial)
+		require.NoError(t, err)
+
+		decoded, err := invocation.Decode(encoded)
+		require.NoError(t, err)
+
+		require.NotNil(t, decoded.IssuedAt())
+		require.Equal(t, issuedAt, *decoded.IssuedAt())
+	})
+
 	t.Run("custom expiration", func(t *testing.T) {
 		issuer := testutil.RandomIssuer(t)
 		subject := testutil.RandomDID(t)

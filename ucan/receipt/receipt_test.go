@@ -64,7 +64,7 @@ func TestOptions(t *testing.T) {
 	executor := testutil.RandomIssuer(t)
 	ran := testutil.RandomCID(t)
 
-	t.Run("WithIssuedAt", func(t *testing.T) {
+	t.Run("custom issued at", func(t *testing.T) {
 		ok := cbg.CborInt(1)
 		now := ucan.Now()
 		rcpt, err := receipt.IssueOK(executor, ran, &ok, receipt.WithIssuedAt(now))
@@ -73,7 +73,18 @@ func TestOptions(t *testing.T) {
 		require.Equal(t, now, *rcpt.IssuedAt())
 	})
 
-	t.Run("WithNonce", func(t *testing.T) {
+	t.Run("no issued at by default", func(t *testing.T) {
+		ok := cbg.CborInt(1)
+		rcpt, err := receipt.IssueOK(executor, ran, &ok)
+		require.NoError(t, err)
+		require.Nil(t, rcpt.IssuedAt())
+
+		decoded, err := receipt.Decode(testutil.Must(receipt.Encode(rcpt))(t))
+		require.NoError(t, err)
+		require.Nil(t, decoded.IssuedAt())
+	})
+
+	t.Run("custom nonce", func(t *testing.T) {
 		ok := cbg.CborInt(1)
 		nonce := []byte{1, 2, 3, 4, 5, 6, 7, 8}
 		rcpt, err := receipt.IssueOK(executor, ran, &ok, receipt.WithNonce(nonce))
@@ -81,7 +92,7 @@ func TestOptions(t *testing.T) {
 		require.Equal(t, nonce, rcpt.Nonce())
 	})
 
-	t.Run("WithNoNonce", func(t *testing.T) {
+	t.Run("no nonce", func(t *testing.T) {
 		ok := cbg.CborInt(1)
 		rcpt, err := receipt.IssueOK(executor, ran, &ok, receipt.WithNoNonce())
 		require.NoError(t, err)

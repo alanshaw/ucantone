@@ -362,12 +362,6 @@ func Invoke(
 		}
 	}
 
-	iat := cfg.iat
-	if iat == nil {
-		now := ucan.Now()
-		iat = &now
-	}
-
 	tokenPayload := &idm.TokenPayloadModel1_0_0_rc1{
 		Iss:   issuer.DID(),
 		Sub:   subject,
@@ -378,7 +372,7 @@ func Invoke(
 		Meta:  meta,
 		Nonce: nnc,
 		Exp:   exp,
-		Iat:   iat,
+		Iat:   cfg.iat,
 		Cause: cfg.cause,
 	}
 
