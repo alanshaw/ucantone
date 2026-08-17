@@ -25,7 +25,8 @@ var Command = command.MustParse("/ucan/assert/receipt")
 // particular result.
 //
 // On the wire a receipt is a /ucan/assert/receipt invocation (per the UCAN WG
-// draft, ucan-wg/receipt#1): the executor is issuer/subject/audience and the
+// draft, ucan-wg/receipt#1): the executor is issuer and subject, the audience
+// is omitted (implicitly the subject, per the invocation spec), and the
 // Ran/Out fields travel in the invocation's args. That wire shape is
 // deliberate and is not changed here.
 //
@@ -71,6 +72,12 @@ func (rcpt *Receipt) Out() result.Result[[]byte, []byte] {
 // if unset.
 func (rcpt *Receipt) IssuedAt() *ucan.UnixTimestamp {
 	return rcpt.inv.IssuedAt()
+}
+
+// Expiration is the time until which the executor commits to uphold the
+// asserted result, or nil for a permanent assertion.
+func (rcpt *Receipt) Expiration() *ucan.UnixTimestamp {
+	return rcpt.inv.Expiration()
 }
 
 // Nonce returns the receipt's nonce.
@@ -136,6 +143,12 @@ func (rcpt *Receipt) fromInvocation(inv invocation.Invocation) error {
 
 	if inv.Command() != Command {
 		return fmt.Errorf("invalid receipt command %s, expected %s", inv.Command().String(), Command.String())
+	}
+
+	// The audience of a receipt MUST be omitted — it is implicitly the
+	// subject/executor, per the spec.
+	if inv.Audience().Defined() {
+		return errors.New("invalid receipt, audience must be omitted")
 	}
 
 	var receiptArgs rdm.ArgsModel
@@ -214,7 +227,10 @@ func issue(executor ucan.Issuer, ran cid.Cid, ok, errVal cbg.CBORMarshaler, opti
 		outBytes = raw.Bytes()
 	}
 
-	invOpts := append(cfg.invOpts, invocation.WithAudience(executor.DID()))
+	// Receipts are permanent assertions (exp: null) unless the caller scopes
+	// the commitment with WithExpiration. WithNoExpiration goes first so a
+	// caller-supplied expiration option wins.
+	invOpts := append([]invocation.Option{invocation.WithNoExpiration()}, cfg.invOpts...)
 
 	inv, err := invocation.Invoke(executor, executor.DID(), Command, &rdm.ArgsModel{
 		Ran: ran,
