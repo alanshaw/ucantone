@@ -73,6 +73,68 @@ func TestDispatcher(t *testing.T) {
 		require.Equal(t, "echo!", testutil.ResultMap(t, o)["message"])
 	})
 
+	t.Run("no receipt timestamp by default", func(t *testing.T) {
+		executor := dispatcher.New(service)
+
+		executor.Handle(testutil.TestEchoCommand, func(req execution.Request, res execution.Response) error {
+			return res.SetSuccess(testutil.ArgsMap(t, req.Invocation()))
+		})
+
+		inv, err := invocation.Invoke(
+			alice,
+			alice.DID(),
+			testutil.TestEchoCommand,
+			datamodel.Map{"message": "echo!"},
+			invocation.WithAudience(service.DID()),
+		)
+		require.NoError(t, err)
+
+		resp, err := executor.Execute(execution.NewRequest(t.Context(), inv))
+		require.NoError(t, err)
+
+		require.Nil(t, resp.Receipt().IssuedAt())
+	})
+
+	t.Run("receipt timestamps enabled", func(t *testing.T) {
+		executor := dispatcher.New(service, dispatcher.WithReceiptTimestamps(true))
+
+		executor.Handle(testutil.TestEchoCommand, func(req execution.Request, res execution.Response) error {
+			return res.SetSuccess(testutil.ArgsMap(t, req.Invocation()))
+		})
+
+		inv, err := invocation.Invoke(
+			alice,
+			alice.DID(),
+			testutil.TestEchoCommand,
+			datamodel.Map{"message": "echo!"},
+			invocation.WithAudience(service.DID()),
+		)
+		require.NoError(t, err)
+
+		before := ucan.Now()
+		resp, err := executor.Execute(execution.NewRequest(t.Context(), inv))
+		require.NoError(t, err)
+
+		iat := resp.Receipt().IssuedAt()
+		require.NotNil(t, iat)
+		require.GreaterOrEqual(t, *iat, before)
+		require.LessOrEqual(t, *iat, ucan.Now())
+
+		// Failure receipts are timestamped too.
+		notFoundInv, err := invocation.Invoke(
+			alice,
+			alice.DID(),
+			testutil.ConsoleLogCommand,
+			datamodel.Map{"message": "echo!"},
+			invocation.WithAudience(service.DID()),
+		)
+		require.NoError(t, err)
+
+		resp, err = executor.Execute(execution.NewRequest(t.Context(), notFoundInv))
+		require.NoError(t, err)
+		require.NotNil(t, resp.Receipt().IssuedAt())
+	})
+
 	t.Run("handler not found", func(t *testing.T) {
 		executor := dispatcher.New(service)
 
