@@ -68,6 +68,13 @@ func (vr *VerificationRelationship) IsZero() bool {
 }
 
 func (vr *VerificationRelationship) MarshalJSON() ([]byte, error) {
+	if !vr.declared {
+		// Unreachable via Document marshaling (omitzero omits undeclared
+		// relationships), but a standalone marshal must emit null — the value
+		// UnmarshalJSON maps back to undeclared — not "[]", which would
+		// round-trip as declared-empty and endorse nothing.
+		return []byte("null"), nil
+	}
 	if vr.relationshipMethods == nil {
 		// A declared relationship with no references is an empty array, not
 		// null: null unmarshals back as undeclared.

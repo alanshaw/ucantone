@@ -163,6 +163,22 @@ func TestVerificationRelationship_MarshalRoundTrip(t *testing.T) {
 	require.Len(t, reparsed.CapabilityInvocation.All(), 1, "undeclared must still default to all methods")
 }
 
+// TestVerificationRelationship_StandaloneMarshal guards marshaling a
+// relationship outside a Document, where no omitzero drops undeclared ones:
+// undeclared must emit null (which unmarshals back as undeclared), not "[]",
+// which would round-trip as declared-empty and narrow "endorses everything"
+// to "endorses nothing".
+func TestVerificationRelationship_StandaloneMarshal(t *testing.T) {
+	var undeclared did.VerificationRelationship
+	b, err := json.Marshal(&undeclared)
+	require.NoError(t, err)
+	require.Equal(t, "null", string(b))
+
+	var reparsed did.VerificationRelationship
+	require.NoError(t, json.Unmarshal(b, &reparsed))
+	require.True(t, reparsed.IsZero(), "undeclared must survive a standalone round trip")
+}
+
 func TestVerificationRelationship_DeclaredSubset(t *testing.T) {
 	docJSON := `{
 		"@context": "https://www.w3.org/ns/did/v1",
