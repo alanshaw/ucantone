@@ -158,8 +158,8 @@ func (r *ExecResponse) SetSuccess(ok cbg.CBORMarshaler) error {
 // configuration.
 func (r *ExecResponse) receiptOptions() []receipt.Option {
 	var opts []receipt.Option
-  if r.receiptTimestamp {
-    opts = append(opts, receipt.WithIssuedAt(ucan.Now()))
+	if r.receiptTimestamp {
+		opts = append(opts, receipt.WithIssuedAt(ucan.Now()))
 	}
 	if r.receiptExpiration != nil {
 		opts = append(opts, receipt.WithExpiration(*r.receiptExpiration))
