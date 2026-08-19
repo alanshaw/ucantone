@@ -48,6 +48,23 @@ func TestSignerString(t *testing.T) {
 	require.Equal(t, s.KeyDID().String(), fmt.Sprint(s))
 }
 
+func TestSignerStringZeroValue(t *testing.T) {
+	require.Equal(t, "<invalid ed25519 signer>", fmt.Sprint(ed.Signer{}))
+}
+
+func TestSignerFormatDoesNotLeakKey(t *testing.T) {
+	s, err := ed.Generate()
+	require.NoError(t, err)
+
+	for _, verb := range []string{"%v", "%+v", "%#v", "%s", "%q", "%x", "%X", "%d"} {
+		t.Run(verb, func(t *testing.T) {
+			out := fmt.Sprintf(verb, s)
+			require.NotContains(t, out, fmt.Sprintf("%x", s.Raw()))
+			require.NotContains(t, out, fmt.Sprintf("%d", s.Raw()))
+		})
+	}
+}
+
 func TestVerify(t *testing.T) {
 	s0, err := ed.Generate()
 	require.NoError(t, err)

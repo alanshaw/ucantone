@@ -22,7 +22,7 @@ func TestGenerateEncodeDecode(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Log(multikey.FormatVerifier(s1.Verifier().(multikey.Verifier)))
-	require.Equal(t, s0, s1, "private key mismatch")
+	require.Equal(t, s0.Bytes(), s1.Bytes(), "private key mismatch")
 	require.Equal(t, s0.Verifier(), s1.Verifier(), "public key mismatch")
 }
 
@@ -47,6 +47,23 @@ func TestSignerString(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, s.KeyDID().String(), fmt.Sprint(s))
+}
+
+func TestSignerStringZeroValue(t *testing.T) {
+	require.Equal(t, "<invalid secp256k1 signer>", fmt.Sprint(secp256k1.Signer{}))
+}
+
+func TestSignerFormatDoesNotLeakKey(t *testing.T) {
+	s, err := secp256k1.Generate()
+	require.NoError(t, err)
+
+	for _, verb := range []string{"%v", "%+v", "%#v", "%s", "%q", "%x", "%X", "%d"} {
+		t.Run(verb, func(t *testing.T) {
+			out := fmt.Sprintf(verb, s)
+			require.NotContains(t, out, fmt.Sprintf("%x", s.Raw()))
+			require.NotContains(t, out, fmt.Sprintf("%d", s.Raw()))
+		})
+	}
 }
 
 func TestVerify(t *testing.T) {
