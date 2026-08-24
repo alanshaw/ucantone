@@ -1,9 +1,9 @@
 package mldsa44
 
 import (
+	"crypto/mldsa"
 	"fmt"
 
-	"filippo.io/mldsa"
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/multikey"
 	"github.com/fil-forge/ucantone/multikey/mldsa44/verifier"

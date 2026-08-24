@@ -1,9 +1,9 @@
 package verifier_test
 
 import (
+	"crypto/mldsa"
 	"testing"
 
-	"filippo.io/mldsa"
 	"github.com/fil-forge/ucantone/multikey"
 	"github.com/fil-forge/ucantone/multikey/mldsa44"
 	"github.com/fil-forge/ucantone/multikey/mldsa44/verifier"
