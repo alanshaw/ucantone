@@ -118,7 +118,7 @@ func (s *Statement) UnmarshalDagJSON(r io.Reader) error {
 	return nil
 }
 
-// Parse a policy encoded as a DAG-jSON string.
+// Parse a policy encoded as a DAG-JSON string.
 func Parse(input string) (Policy, error) {
 	pol := Policy{}
 	err := pol.UnmarshalDagJSON(strings.NewReader(input))
