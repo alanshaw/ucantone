@@ -29,7 +29,7 @@ func (t *FixtureModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Input (typegen.Deferred) (struct)
 	if len("input") > 8192 {
@@ -44,8 +44,8 @@ func (t *FixtureModel) MarshalDagJSON(w io.Writer) error {
 	if err := t.Input.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Input: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -67,9 +67,9 @@ func (t *FixtureModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Name)); err != nil {
 		return fmt.Errorf("writing string for field t.Name: %w", err)
 	}
-	written++
+	written = true
 	if t.Output != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -90,9 +90,9 @@ func (t *FixtureModel) MarshalDagJSON(w io.Writer) error {
 		if err := t.Output.MarshalDagJSON(jw); err != nil {
 			return fmt.Errorf("marshaling field t.Output: %w", err)
 		}
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -114,7 +114,6 @@ func (t *FixtureModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Selector)); err != nil {
 		return fmt.Errorf("writing string for field t.Selector: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -226,7 +225,7 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Error ([]datamodel.FixtureModel) (slice)
 	if len("fail") > 8192 {
@@ -259,8 +258,8 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Error: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -297,8 +296,8 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Null: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -335,7 +334,6 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Success: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

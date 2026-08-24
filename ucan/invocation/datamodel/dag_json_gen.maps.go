@@ -32,7 +32,7 @@ func (t *TaskModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Args (datamodel.Raw) (struct)
 	if len("args") > 8192 {
@@ -47,8 +47,8 @@ func (t *TaskModel) MarshalDagJSON(w io.Writer) error {
 	if err := t.Args.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Args: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -67,8 +67,8 @@ func (t *TaskModel) MarshalDagJSON(w io.Writer) error {
 	if err := t.Cmd.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Cmd: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -92,8 +92,8 @@ func (t *TaskModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Nonce: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -112,7 +112,6 @@ func (t *TaskModel) MarshalDagJSON(w io.Writer) error {
 	if err := t.Sub.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Sub: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -220,7 +219,7 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Args (datamodel.Raw) (struct)
 	if len("args") > 8192 {
@@ -235,9 +234,9 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 	if err := t.Args.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Args: %w", err)
 	}
-	written++
+	written = true
 	if t.Aud != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -258,10 +257,10 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 		if err := t.Aud.MarshalDagJSON(jw); err != nil {
 			return fmt.Errorf("marshaling field t.Aud: %w", err)
 		}
-		written++
+		written = true
 	}
 	if t.Cause != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -290,9 +289,9 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 			}
 		}
 
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -311,8 +310,8 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 	if err := t.Cmd.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Cmd: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -339,9 +338,9 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	written++
+	written = true
 	if t.Iat != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -370,9 +369,9 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 			}
 		}
 
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -391,9 +390,9 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 	if err := t.Iss.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Iss: %w", err)
 	}
-	written++
+	written = true
 	if t.Meta != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -414,9 +413,9 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 		if err := t.Meta.MarshalDagJSON(jw); err != nil {
 			return fmt.Errorf("marshaling field t.Meta: %w", err)
 		}
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -440,8 +439,8 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Nonce: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -480,8 +479,8 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Prf: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -500,7 +499,6 @@ func (t *TokenPayloadModel1_0_0_rc1) MarshalDagJSON(w io.Writer) error {
 	if err := t.Sub.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Sub: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -743,7 +741,7 @@ func (t *SigPayloadModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Header ([]uint8) (slice)
 	if len("h") > 8192 {
@@ -763,9 +761,9 @@ func (t *SigPayloadModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Header: %w", err)
 	}
 
-	written++
+	written = true
 	if t.TokenPayload1_0_0_rc1 != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -786,7 +784,6 @@ func (t *SigPayloadModel) MarshalDagJSON(w io.Writer) error {
 		if err := t.TokenPayload1_0_0_rc1.MarshalDagJSON(jw); err != nil {
 			return fmt.Errorf("marshaling field t.TokenPayload1_0_0_rc1: %w", err)
 		}
-		written++
 	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err

@@ -29,7 +29,7 @@ func (t *ErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.ErrorName (string) (string)
 	if len("ErrorName") > 8192 {
@@ -47,8 +47,8 @@ func (t *ErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.ErrorName)); err != nil {
 		return fmt.Errorf("writing string for field t.ErrorName: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -70,7 +70,6 @@ func (t *ErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Message)); err != nil {
 		return fmt.Errorf("writing string for field t.Message: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

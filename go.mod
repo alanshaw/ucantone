@@ -1,9 +1,9 @@
 module github.com/fil-forge/ucantone
 
-go 1.25.0
+go 1.27.0
 
 require (
-	github.com/alanshaw/dag-json-gen v0.0.8
+	github.com/alanshaw/dag-json-gen v0.0.9
 	github.com/gobwas/glob v0.2.3
 	github.com/ipfs/go-cid v0.6.2
 	github.com/multiformats/go-multibase v0.3.0

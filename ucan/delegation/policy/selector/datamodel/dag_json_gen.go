@@ -29,7 +29,7 @@ func (t *ParseErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Column (int64) (int64)
 	if len("column") > 8192 {
@@ -46,8 +46,8 @@ func (t *ParseErrorModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing int64 for field t.Column: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -69,8 +69,8 @@ func (t *ParseErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Message)); err != nil {
 		return fmt.Errorf("writing string for field t.Message: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -92,8 +92,8 @@ func (t *ParseErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Name)); err != nil {
 		return fmt.Errorf("writing string for field t.Name: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -115,8 +115,8 @@ func (t *ParseErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Source)); err != nil {
 		return fmt.Errorf("writing string for field t.Source: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -138,7 +138,6 @@ func (t *ParseErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Token)); err != nil {
 		return fmt.Errorf("writing string for field t.Token: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -272,7 +271,7 @@ func (t *ResolutionErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.At ([]string) (slice)
 	if len("at") > 8192 {
@@ -308,8 +307,8 @@ func (t *ResolutionErrorModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.At: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -331,8 +330,8 @@ func (t *ResolutionErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Message)); err != nil {
 		return fmt.Errorf("writing string for field t.Message: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -354,7 +353,6 @@ func (t *ResolutionErrorModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Name)); err != nil {
 		return fmt.Errorf("writing string for field t.Name: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
