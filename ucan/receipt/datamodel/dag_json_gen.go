@@ -29,7 +29,7 @@ func (t *ArgsModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Out (datamodel.ResultModel) (struct)
 	if len("out") > 8192 {
@@ -44,8 +44,8 @@ func (t *ArgsModel) MarshalDagJSON(w io.Writer) error {
 	if err := t.Out.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Out: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -66,7 +66,6 @@ func (t *ArgsModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Ran: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

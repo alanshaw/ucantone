@@ -30,7 +30,7 @@ func (t *Operation) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.AlsoKnownAs ([]string) (slice)
 	if len("alsoKnownAs") > 8192 {
@@ -66,8 +66,8 @@ func (t *Operation) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.AlsoKnownAs: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -95,8 +95,8 @@ func (t *Operation) MarshalDagJSON(w io.Writer) error {
 			return fmt.Errorf("writing string for field t.Previous: %w", err)
 		}
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -133,8 +133,8 @@ func (t *Operation) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.RotationKeys: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -190,8 +190,8 @@ func (t *Operation) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -210,8 +210,8 @@ func (t *Operation) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString("plc_operation"); err != nil {
 		return err
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -267,7 +267,6 @@ func (t *Operation) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -552,7 +551,7 @@ func (t *SignedOperation) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.AlsoKnownAs ([]string) (slice)
 	if len("alsoKnownAs") > 8192 {
@@ -588,8 +587,8 @@ func (t *SignedOperation) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.AlsoKnownAs: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -617,8 +616,8 @@ func (t *SignedOperation) MarshalDagJSON(w io.Writer) error {
 			return fmt.Errorf("writing string for field t.Previous: %w", err)
 		}
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -655,8 +654,8 @@ func (t *SignedOperation) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.RotationKeys: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -712,8 +711,8 @@ func (t *SignedOperation) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -735,8 +734,8 @@ func (t *SignedOperation) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Signature)); err != nil {
 		return fmt.Errorf("writing string for field t.Signature: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -755,8 +754,8 @@ func (t *SignedOperation) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString("plc_operation"); err != nil {
 		return err
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -812,7 +811,6 @@ func (t *SignedOperation) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1110,7 +1108,7 @@ func (t *Service) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Endpoint (string) (string)
 	if len("endpoint") > 8192 {
@@ -1128,8 +1126,8 @@ func (t *Service) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Endpoint)); err != nil {
 		return fmt.Errorf("writing string for field t.Endpoint: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -1151,7 +1149,6 @@ func (t *Service) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Type)); err != nil {
 		return fmt.Errorf("writing string for field t.Type: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1247,7 +1244,7 @@ func (t *Tombstone) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Previous (string) (string)
 	if len("prev") > 8192 {
@@ -1265,8 +1262,8 @@ func (t *Tombstone) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Previous)); err != nil {
 		return fmt.Errorf("writing string for field t.Previous: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -1285,7 +1282,6 @@ func (t *Tombstone) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString("plc_tombstone"); err != nil {
 		return err
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1381,7 +1377,7 @@ func (t *SignedTombstone) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Previous (string) (string)
 	if len("prev") > 8192 {
@@ -1399,8 +1395,8 @@ func (t *SignedTombstone) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Previous)); err != nil {
 		return fmt.Errorf("writing string for field t.Previous: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -1422,8 +1418,8 @@ func (t *SignedTombstone) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Signature)); err != nil {
 		return fmt.Errorf("writing string for field t.Signature: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -1442,7 +1438,6 @@ func (t *SignedTombstone) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString("plc_tombstone"); err != nil {
 		return err
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

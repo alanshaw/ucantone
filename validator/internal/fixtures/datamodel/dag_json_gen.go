@@ -128,7 +128,7 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Comments (string) (string)
 	if len("comments") > 8192 {
@@ -146,8 +146,8 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Comments)); err != nil {
 		return fmt.Errorf("writing string for field t.Comments: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -184,8 +184,8 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Invalid: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -222,8 +222,8 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Valid: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -245,7 +245,6 @@ func (t *FixturesModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Version)); err != nil {
 		return fmt.Errorf("writing string for field t.Version: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -425,7 +424,7 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Description (string) (string)
 	if len("description") > 8192 {
@@ -443,8 +442,8 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Description)); err != nil {
 		return fmt.Errorf("writing string for field t.Description: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -463,8 +462,8 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 	if err := t.Error.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Error: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -488,8 +487,8 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Invocation: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -511,8 +510,8 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Name)); err != nil {
 		return fmt.Errorf("writing string for field t.Name: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -554,8 +553,8 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Proofs: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -576,7 +575,6 @@ func (t *InvalidModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing int64 for field t.Time: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -758,7 +756,7 @@ func (t *ValidModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Description (string) (string)
 	if len("description") > 8192 {
@@ -776,8 +774,8 @@ func (t *ValidModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Description)); err != nil {
 		return fmt.Errorf("writing string for field t.Description: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -801,8 +799,8 @@ func (t *ValidModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Invocation: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -824,8 +822,8 @@ func (t *ValidModel) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Name)); err != nil {
 		return fmt.Errorf("writing string for field t.Name: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -867,8 +865,8 @@ func (t *ValidModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Proofs: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -889,7 +887,6 @@ func (t *ValidModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing int64 for field t.Time: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
