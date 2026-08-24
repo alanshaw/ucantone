@@ -11,6 +11,11 @@ import (
 	"github.com/multiformats/go-multibase"
 	"github.com/multiformats/go-multicodec"
 	"github.com/multiformats/go-varint"
+
+	// ML-DSA-44 is not a spec-defined Varsig algorithm registered centrally by
+	// the varsig package, so a verifier-only importer needs this blank import
+	// for varsig.Decode to recognise ML-DSA signed tokens.
+	_ "github.com/fil-forge/ucantone/varsig/algorithm/mldsa"
 )
 
 func init() {
