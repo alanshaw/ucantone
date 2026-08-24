@@ -1,4 +1,4 @@
-.PHONY: build test cover gen
+.PHONY: build test cover gen codegen-build gen-check ci
 
 build:
 	go build ./...
@@ -12,46 +12,20 @@ cover:
 	go tool cover -html=./coverage/c.out
 
 gen:
-	rm ./errors/datamodel/*_gen.go || true
-	cd ./errors/datamodel/gen && go run ./main.go
+	go generate ./...
 
-	rm ./examples/types/cbor_gen.go || true
-	cd ./examples/types/gen && go run ./main.go
+# Compile the code generators under the `codegen` build tag they actually run
+# with. A normal `go build ./...` never sets this tag, so a generator that no
+# longer compiles (e.g. it references a renamed or removed type) would otherwise
+# go unnoticed until someone runs `go generate`.
+codegen-build:
+	go build -tags codegen $(shell go list ./... | grep '/gen$$')
 
-	rm ./result/datamodel/*_gen.go || true
-	cd ./result/datamodel/gen && go run ./main.go
+# Regenerate everything and fail if the committed output changed, catching both
+# generators that no longer compile and generated files that are out of date.
+gen-check: gen
+	@git diff --exit-code -- '*_gen.go' '*_gen.*.go' || \
+		{ echo "generated files are out of date; run 'make gen' and commit the result" >&2; exit 1; }
 
-	rm ./testutil/datamodel/cbor_gen.go || true
-	cd ./testutil/datamodel/gen && go run ./main.go
-
-	rm ./ucan/container/datamodel/*_gen.go || true
-	cd ./ucan/container/datamodel/gen && go run ./main.go
-
-	rm ./ucan/envelope/datamodel/*_gen.go || true
-	cd ./ucan/envelope/datamodel/gen && go run ./main.go
-
-	rm ./ucan/delegation/datamodel/*_gen.*.go || true
-	cd ./ucan/delegation/datamodel/gen && go run ./main.go
-
-	cd ./ucan/delegation/policy/datamodel/gen && go run ./main.go
-
-	rm ./ucan/delegation/policy/internal/fixtures/datamodel/*_gen.go || true
-	cd ./ucan/delegation/policy/internal/fixtures/datamodel/gen && go run ./main.go
-
-	rm ./ucan/delegation/policy/selector/internal/fixtures/datamodel/*_gen.go || true
-	cd ./ucan/delegation/policy/selector/internal/fixtures/datamodel/gen && go run ./main.go
-
-	rm ./ucan/delegation/policy/selector/datamodel/*_gen.go || true
-	cd ./ucan/delegation/policy/selector/datamodel/gen && go run ./main.go
-
-	rm ./ucan/invocation/datamodel/*_gen.*.go || true
-	cd ./ucan/invocation/datamodel/gen && go run ./main.go
-
-	rm ./ucan/promise/datamodel/*_gen.go || true
-	cd ./ucan/promise/datamodel/gen && go run ./main.go
-
-	rm ./ucan/receipt/datamodel/*_gen.go || true
-	cd ./ucan/receipt/datamodel/gen && go run ./main.go
-
-	rm ./validator/internal/fixtures/datamodel/dag_json_gen.go || true
-	cd ./validator/internal/fixtures/datamodel/gen && go run ./main.go
+# Aggregate target suitable for CI.
+ci: build codegen-build gen-check test
