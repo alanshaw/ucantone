@@ -1,0 +1,29 @@
+name: Codegen
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codegen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      # Compile the generators under the `codegen` build tag. The reusable
+      # go-check/go-test workflows build without this tag, so a generator that
+      # no longer compiles would otherwise slip through CI.
+      - run: make codegen-build
+      # Run `go generate` and fail if the committed generated files are stale.
+      - run: make gen-check
