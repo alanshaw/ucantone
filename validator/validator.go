@@ -142,6 +142,10 @@ func verifyTokenSignature(ctx context.Context, tok ucan.Token, cfg validationCon
 	}
 
 	// Try each verification method, collecting rejection reasons for the error.
+	// Every way a single method can fail (expired, revoked, unsupported type,
+	// undecodable material, signature mismatch) is recorded against that method
+	// and the search moves on: one method the verifier cannot use must never
+	// veto another that it can. The call fails only when no method verifies.
 	validationTime := time.Unix(int64(cfg.validationTime), 0)
 	var rejections []verrs.VMRejection
 
@@ -165,7 +169,12 @@ func verifyTokenSignature(ctx context.Context, tok ucan.Token, cfg validationCon
 			continue
 		}
 		if err != nil {
-			return err
+			// The material could not be turned into a verifier (unknown key code,
+			// malformed multibase, missing property). Reject this method on its
+			// own; the document may carry a non-signing key (e.g. an X25519
+			// key-agreement key) next to the one that signed.
+			rejections = append(rejections, verrs.VMRejection{VM: vm, Reason: fmt.Sprintf("unusable verification material: %v", err)})
+			continue
 		}
 		if token.VerifySignature(tok, v) {
 			return nil

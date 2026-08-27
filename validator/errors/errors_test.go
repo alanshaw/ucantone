@@ -88,6 +88,17 @@ func TestNewInvalidSignatureError(t *testing.T) {
 			err.Error())
 	})
 
+	t.Run("unusable material VM", func(t *testing.T) {
+		err := verrs.NewInvalidSignatureError(tok, []verrs.VMRejection{
+			{VM: vm, Reason: "unusable verification material: no decoder registered for key type code: x25519-pub [0xec]"},
+		})
+		require.Equal(t,
+			`proof "bafkqacyaexampletokenlink" does not have a valid signature from "did:example:123"`+"\n"+
+				`  ℹ️ Tried these verification methods:`+"\n"+
+				`    - did:example:123#key-1: unusable verification material: no decoder registered for key type code: x25519-pub [0xec]`,
+			err.Error())
+	})
+
 	t.Run("multiple rejections", func(t *testing.T) {
 		vm2ID := testutil.Must(did.ParseURL("did:example:123#key-2"))(t)
 		vm2 := did.VerificationMethod{

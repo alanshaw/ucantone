@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/ipfs/go-cid"
+	"github.com/multiformats/go-multibase"
+	"github.com/multiformats/go-varint"
 	"github.com/stretchr/testify/require"
 
 	"github.com/fil-forge/ucantone/absentee"
@@ -455,7 +457,7 @@ func TestValidate(t *testing.T) {
 
 		// Build a DID document with an expired Multikey VM.
 		expires := did.DateTimeStamp(time.Unix(int64(past), 0))
-		resolver := expiredKeyResolver(t, subject, &expires, nil)
+		resolver := expiredKeyResolver(t, &expires, nil)
 
 		inv, err := invocation.Invoke(subject, subject.DID(), crankWidget, datamodel.Map{})
 		require.NoError(t, err)
@@ -471,7 +473,7 @@ func TestValidate(t *testing.T) {
 		subject := testutil.RandomIssuer(t)
 
 		revoked := did.DateTimeStamp(time.Unix(int64(past), 0))
-		resolver := expiredKeyResolver(t, subject, nil, &revoked)
+		resolver := expiredKeyResolver(t, nil, &revoked)
 
 		inv, err := invocation.Invoke(subject, subject.DID(), crankWidget, datamodel.Map{})
 		require.NoError(t, err)
@@ -487,7 +489,7 @@ func TestValidate(t *testing.T) {
 		subject := testutil.RandomIssuer(t)
 
 		expires := did.DateTimeStamp(time.Unix(int64(future), 0))
-		resolver := expiredKeyResolver(t, subject, &expires, nil)
+		resolver := expiredKeyResolver(t, &expires, nil)
 
 		inv, err := invocation.Invoke(subject, subject.DID(), crankWidget, datamodel.Map{})
 		require.NoError(t, err)
@@ -665,6 +667,74 @@ func TestRelationshipFallback(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	// undecodableKeyMultibase is a well-formed Multikey string whose multicodec
+	// key type has no verifier registered: x25519-pub (0xec), a key-agreement
+	// key that can never sign. did:plc documents publish such keys next to the
+	// signing key.
+	undecodableKeyMultibase := func(t *testing.T) string {
+		bytes := append(varint.ToUvarint(0xec), make([]byte, 32)...)
+		mb, err := multibase.Encode(multibase.Base58BTC, bytes)
+		require.NoError(t, err)
+		return mb
+	}
+
+	// docWithMethods serves a document (no relationships declared, like
+	// did:plc) whose verificationMethod set is exactly the given materials,
+	// keyed by fragment.
+	docWithMethods := func(materials map[string]string) did.Resolver {
+		return did.ResolverFunc(func(_ context.Context, d did.DID) (did.Document, error) {
+			doc := did.NewDocument(d)
+			for fragment, material := range materials {
+				vm := did.VerificationMethod{
+					ID:         doc.Fragment(fragment),
+					Controller: d,
+					Type:       did.MultikeyVerificationMethodType,
+					Material:   did.GenericMap{did.MultikeyPublicKeyMultibaseProp: material},
+				}
+				if err := doc.VerificationMethods.Add(vm); err != nil {
+					return did.Document{}, err
+				}
+			}
+			return doc, nil
+		})
+	}
+
+	t.Run("undecodable verification method does not veto a valid one", func(t *testing.T) {
+		subject := testutil.RandomIssuer(t)
+		resolver := docWithMethods(map[string]string{
+			"wrap":   undecodableKeyMultibase(t),
+			"signer": subject.DID().Identifier(),
+		})
+
+		inv, err := invocation.Invoke(subject, subject.DID(), crankWidget, datamodel.Map{})
+		require.NoError(t, err)
+
+		// Verification methods are held in a map, so the order in which they
+		// are tried varies per call. Repeat so the undecodable method is tried
+		// first on some iterations.
+		for range 20 {
+			err = validator.ValidateInvocation(t.Context(), inv,
+				validator.WithDIDResolver(resolver))
+			require.NoError(t, err)
+		}
+	})
+
+	t.Run("undecodable verification method is reported when nothing verifies", func(t *testing.T) {
+		subject := testutil.RandomIssuer(t)
+		resolver := docWithMethods(map[string]string{
+			"wrap": undecodableKeyMultibase(t),
+		})
+
+		inv, err := invocation.Invoke(subject, subject.DID(), crankWidget, datamodel.Map{})
+		require.NoError(t, err)
+
+		err = validator.ValidateInvocation(t.Context(), inv,
+			validator.WithDIDResolver(resolver))
+		require.ErrorContains(t, err, "does not have a valid signature")
+		require.ErrorContains(t, err, "#wrap: unusable verification material")
+		require.ErrorContains(t, err, "no decoder registered for key type code")
+	})
+
 	t.Run("relationship referencing a missing method does not fall back", func(t *testing.T) {
 		subject := testutil.RandomIssuer(t)
 
@@ -800,7 +870,7 @@ func TestRelationshipFallback(t *testing.T) {
 
 // expiredKeyResolver returns a DID resolver that serves a document for the
 // issuer's DID with its Multikey VM marked expired or revoked as specified.
-func expiredKeyResolver(t *testing.T, issuer ucan.Issuer, expires, revoked *did.DateTimeStamp) did.Resolver {
+func expiredKeyResolver(t *testing.T, expires, revoked *did.DateTimeStamp) did.Resolver {
 	t.Helper()
 	return did.ResolverFunc(func(_ context.Context, d did.DID) (did.Document, error) {
 		doc := did.NewDocument(d)
