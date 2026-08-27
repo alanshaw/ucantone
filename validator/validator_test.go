@@ -678,20 +678,31 @@ func TestRelationshipFallback(t *testing.T) {
 		return mb
 	}
 
-	// docWithMethods serves a document (no relationships declared, like
-	// did:plc) whose verificationMethod set is exactly the given materials,
-	// keyed by fragment.
-	docWithMethods := func(materials map[string]string) did.Resolver {
+	// method pairs a verification method fragment with its Multikey material.
+	type method struct{ fragment, material string }
+
+	// docWithMethods serves a document whose verificationMethod set is exactly
+	// the given methods. With declare unset the document carries no
+	// relationships, like did:plc, and the validator tries the methods in
+	// map order. With declare set, capabilityInvocation lists the methods in
+	// the order given, and the validator tries them in that order.
+	docWithMethods := func(declare bool, methods ...method) did.Resolver {
 		return did.ResolverFunc(func(_ context.Context, d did.DID) (did.Document, error) {
 			doc := did.NewDocument(d)
-			for fragment, material := range materials {
+			for _, m := range methods {
 				vm := did.VerificationMethod{
-					ID:         doc.Fragment(fragment),
+					ID:         doc.Fragment(m.fragment),
 					Controller: d,
 					Type:       did.MultikeyVerificationMethodType,
-					Material:   did.GenericMap{did.MultikeyPublicKeyMultibaseProp: material},
+					Material:   did.GenericMap{did.MultikeyPublicKeyMultibaseProp: m.material},
 				}
-				if err := doc.VerificationMethods.Add(vm); err != nil {
+				var err error
+				if declare {
+					err = doc.CapabilityInvocation.Add(vm)
+				} else {
+					err = doc.VerificationMethods.Add(vm)
+				}
+				if err != nil {
 					return did.Document{}, err
 				}
 			}
@@ -701,29 +712,56 @@ func TestRelationshipFallback(t *testing.T) {
 
 	t.Run("undecodable verification method does not veto a valid one", func(t *testing.T) {
 		subject := testutil.RandomIssuer(t)
-		resolver := docWithMethods(map[string]string{
-			"wrap":   undecodableKeyMultibase(t),
-			"signer": subject.DID().Identifier(),
-		})
-
 		inv, err := invocation.Invoke(subject, subject.DID(), crankWidget, datamodel.Map{})
 		require.NoError(t, err)
 
-		// Verification methods are held in a map, so the order in which they
-		// are tried varies per call. Repeat so the undecodable method is tried
-		// first on some iterations.
-		for range 20 {
-			err = validator.ValidateInvocation(t.Context(), inv,
-				validator.WithDIDResolver(resolver))
-			require.NoError(t, err)
+		// The declared relationship fixes the order: the undecodable method is
+		// tried first, so the valid signer is only reached if the failure is
+		// recorded rather than returned.
+		ordered := docWithMethods(true,
+			method{"wrap", undecodableKeyMultibase(t)},
+			method{"signer", subject.DID().Identifier()},
+		)
+		err = validator.ValidateInvocation(t.Context(), inv,
+			validator.WithDIDResolver(ordered))
+		require.NoError(t, err)
+
+		// The same document without relationships, as did:plc publishes it.
+		// The order is unspecified here; the outcome must not depend on it.
+		undeclared := docWithMethods(false,
+			method{"wrap", undecodableKeyMultibase(t)},
+			method{"signer", subject.DID().Identifier()},
+		)
+		err = validator.ValidateInvocation(t.Context(), inv,
+			validator.WithDIDResolver(undeclared))
+		require.NoError(t, err)
+	})
+
+	t.Run("context errors from a verifier factory are propagated", func(t *testing.T) {
+		subject := testutil.RandomIssuer(t)
+		inv, err := invocation.Invoke(subject, subject.DID(), crankWidget, datamodel.Map{})
+		require.NoError(t, err)
+
+		resolver := docWithMethods(true,
+			method{"remote", undecodableKeyMultibase(t)},
+			method{"signer", subject.DID().Identifier()},
+		)
+		cancelled := func(context.Context, did.VerificationMaterial) (ucan.Verifier, error) {
+			return nil, fmt.Errorf("fetching key: %w", context.Canceled)
 		}
+
+		err = validator.ValidateInvocation(t.Context(), inv,
+			validator.WithDIDResolver(resolver),
+			validator.WithVerifierFactories(map[string]validator.VerifierFactory{
+				did.MultikeyVerificationMethodType: cancelled,
+			}))
+		require.ErrorIs(t, err, context.Canceled)
+		require.NotContains(t, err.Error(), "does not have a valid signature")
 	})
 
 	t.Run("undecodable verification method is reported when nothing verifies", func(t *testing.T) {
 		subject := testutil.RandomIssuer(t)
-		resolver := docWithMethods(map[string]string{
-			"wrap": undecodableKeyMultibase(t),
-		})
+		resolver := docWithMethods(false, method{"wrap", undecodableKeyMultibase(t)})
 
 		inv, err := invocation.Invoke(subject, subject.DID(), crankWidget, datamodel.Map{})
 		require.NoError(t, err)
@@ -868,8 +906,9 @@ func TestRelationshipFallback(t *testing.T) {
 	})
 }
 
-// expiredKeyResolver returns a DID resolver that serves a document for the
-// issuer's DID with its Multikey VM marked expired or revoked as specified.
+// expiredKeyResolver returns a DID resolver that serves, for whichever DID it
+// is asked to resolve, a document whose single Multikey VM is that DID's own
+// key, marked expired or revoked as specified.
 func expiredKeyResolver(t *testing.T, expires, revoked *did.DateTimeStamp) did.Resolver {
 	t.Helper()
 	return did.ResolverFunc(func(_ context.Context, d did.DID) (did.Document, error) {

@@ -169,10 +169,15 @@ func verifyTokenSignature(ctx context.Context, tok ucan.Token, cfg validationCon
 			continue
 		}
 		if err != nil {
-			// The material could not be turned into a verifier (unknown key code,
-			// malformed multibase, missing property). Reject this method on its
-			// own; the document may carry a non-signing key (e.g. an X25519
-			// key-agreement key) next to the one that signed.
+			// A cancelled or expired context is an operational failure, not a
+			// verdict on this method: propagate it so callers see the real cause.
+			if ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return err
+			}
+			// Otherwise the material could not be turned into a verifier
+			// (unknown key code, malformed multibase, missing property). Reject
+			// this method on its own; the document may carry a non-signing key
+			// (e.g. an X25519 key-agreement key) next to the one that signed.
 			rejections = append(rejections, verrs.VMRejection{VM: vm, Reason: fmt.Sprintf("unusable verification material: %v", err)})
 			continue
 		}
