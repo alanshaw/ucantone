@@ -227,15 +227,32 @@ func Encode(codec byte, container ucan.Container) ([]byte, error) {
 }
 
 func Decode(input []byte) (*Container, error) {
+	_, raw, err := DecodeTransport(input)
+	if err != nil {
+		return nil, err
+	}
+
+	ct := Container{}
+	if err := ct.UnmarshalCBOR(bytes.NewReader(raw)); err != nil {
+		return nil, err
+	}
+	return &ct, nil
+}
+
+// DecodeTransport strips a container's transport encoding and returns the codec
+// byte and the CBOR of the container model. Callers that want decoded tokens
+// should use Decode; this is for callers that need the container's entries
+// exactly as they appear in the input.
+func DecodeTransport(input []byte) (byte, []byte, error) {
 	if len(input) == 0 {
-		return nil, errors.New("empty container bytes")
+		return 0, nil, errors.New("empty container bytes")
 	}
 	// Textual encodings tolerate surrounding whitespace (e.g. a trailing
 	// newline in a file); a raw CBOR container may legitimately start or end
 	// with whitespace-valued bytes, so trim only for the base64 codecs.
 	trimmed := bytes.TrimSpace(input)
 	if len(trimmed) == 0 {
-		return nil, errors.New("empty container bytes")
+		return 0, nil, errors.New("empty container bytes")
 	}
 	switch trimmed[0] {
 	case Base64, Base64url, Base64Gzip, Base64urlGzip:
@@ -249,39 +266,34 @@ func Decode(input []byte) (*Container, error) {
 	case Base64, Base64Gzip:
 		r, err := base64.StdEncoding.DecodeString(string(input[1:]))
 		if err != nil {
-			return nil, fmt.Errorf("decoding base64: %w", err)
+			return 0, nil, fmt.Errorf("decoding base64: %w", err)
 		}
 		compressed = r
 	case Base64url, Base64urlGzip:
 		r, err := base64.RawURLEncoding.DecodeString(string(input[1:]))
 		if err != nil {
-			return nil, fmt.Errorf("decoding base64url: %w", err)
+			return 0, nil, fmt.Errorf("decoding base64url: %w", err)
 		}
 		compressed = r
 	default:
-		return nil, fmt.Errorf("unknown codec: 0x%02x", codec)
+		return 0, nil, fmt.Errorf("unknown codec: 0x%02x", codec)
 	}
 
 	var raw []byte
 	if codec == RawGzip || codec == Base64Gzip || codec == Base64urlGzip {
 		gz, err := gzip.NewReader(bytes.NewReader(compressed))
 		if err != nil {
-			return nil, fmt.Errorf("creating gzip reader: %w", err)
+			return 0, nil, fmt.Errorf("creating gzip reader: %w", err)
 		}
 		defer gz.Close()
 		if raw, err = io.ReadAll(gz); err != nil {
-			return nil, fmt.Errorf("reading gzipped data: %w", err)
+			return 0, nil, fmt.Errorf("reading gzipped data: %w", err)
 		}
 	} else {
 		raw = compressed // not compressed
 	}
 
-	ct := Container{}
-	err := ct.UnmarshalCBOR(bytes.NewReader(raw))
-	if err != nil {
-		return nil, err
-	}
-	return &ct, nil
+	return codec, raw, nil
 }
 
 func encodeTokens(invs []ucan.Invocation, dlgs []ucan.Delegation, rcpts []ucan.Receipt) ([][]byte, error) {
