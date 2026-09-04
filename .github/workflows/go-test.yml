@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   go-test:
-    uses: ipdxco/unified-github-workflows/.github/workflows/go-test.yml@1822b44541e3ad073b8f9109e346ba0ddd4ce96e # v1.0
+    uses: ipdxco/unified-github-workflows/.github/workflows/go-test.yml@e08e90c46d931f457e5d8e292ffa988c0c0b5b70 # v1.0
     with:
       go-versions: '["this"]'
     secrets:
